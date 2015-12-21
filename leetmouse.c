@@ -62,11 +62,14 @@ static void usb_mouse_irq(struct urb *urb)
 	int status;
 
 	// acceleration happens here
+	signed int polling_rate = 125;
+	signed int ms = 1000 / polling_rate;
+	signed int accel_r = 10; // reciprocal of 0.1
 	signed int delta_x = data[1];
 	signed int delta_y = data[2];
 	signed int rate = int_sqrt(delta_x * delta_x + delta_y * delta_y);
-	signed int accel_x = (rate * delta_x) / 64;
-	signed int accel_y = (rate * delta_y) / 64;
+	signed int accel_x = (rate * delta_x) / ms / accel_r;
+	signed int accel_y = (rate * delta_y) / ms / accel_r;
 
 	delta_x += accel_x;
 	delta_y += accel_y;
@@ -208,11 +211,11 @@ static int usb_mouse_probe(struct usb_interface *intf, const struct usb_device_i
 	usb_set_intfdata(intf, mouse);
 	return 0;
 
-fail3:	
+fail3:
 	usb_free_urb(mouse->irq);
-fail2:	
+fail2:
 	usb_free_coherent(dev, 8, mouse->data, mouse->data_dma);
-fail1:	
+fail1:
 	input_free_device(input_dev);
 	kfree(mouse);
 	return error;
