@@ -1,4 +1,19 @@
 /*
+ * Your mouse's polling rate.
+ * If you don't know what yours is, follow this link:
+ * https://wiki.archlinux.org/index.php/Mouse_polling_rate
+ */
+#define POLLING_RATE 125
+
+/*
+ * This should be the reciprocal of your desired sensitivity.
+ * For example, setting this to 10 is equal to cl_mouseaccel 0.1 in Quake.
+ * Google something like "reciprocal of 0.1" to figure out what this should be.
+ * Unfortunately, it has to be an integer for now.
+ */
+#define ACCEL_RECIPROCAL 10
+
+/*
  *  Copyright (c) 1999-2001 Vojtech Pavlik
  *
  *  USB HIDBP Mouse support
@@ -62,9 +77,9 @@ static void usb_mouse_irq(struct urb *urb)
 	int status;
 
 	// acceleration happens here
-	signed int polling_rate = 125;
-	signed int ms = 1000 / polling_rate;
-	signed int accel_r = 10; // reciprocal of 0.1
+	signed int pr = POLLING_RATE;
+	signed int ms = 1000 / pr;
+	signed int accel_r = ACCEL_RECIPROCAL;
 	signed int delta_x = data[1];
 	signed int delta_y = data[2];
 	signed int rate = int_sqrt(delta_x * delta_x + delta_y * delta_y);
