@@ -1,4 +1,4 @@
-A modded version of the Linux USB mouse driver with acceleration.
+A fork of the Linux USB mouse driver with acceleration.
 
 Change the defines at the top of leetmouse.c to match your mouse's polling rate and your desired acceleration.
 

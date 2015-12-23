@@ -1,19 +1,4 @@
 /*
- * Your mouse's polling rate.
- * If you don't know what yours is, follow this link:
- * https://wiki.archlinux.org/index.php/Mouse_polling_rate
- */
-#define POLLING_RATE 125
-
-/*
- * This should be the reciprocal of your desired sensitivity.
- * For example, setting this to 10 is equal to cl_mouseaccel 0.1 in Quake.
- * Google something like "reciprocal of 0.1" to figure out what this should be.
- * Unfortunately, it has to be an integer for now.
- */
-#define ACCEL_RECIPROCAL 10
-
-/*
  *  Copyright (c) 1999-2001 Vojtech Pavlik
  *
  *  USB HIDBP Mouse support
@@ -38,6 +23,24 @@
  * e-mail - mail your message to <vojtech@ucw.cz>, or by paper mail:
  * Vojtech Pavlik, Simunkova 1594, Prague 8, 182 00 Czech Republic
  */
+
+/*
+ * Your mouse's polling rate.
+ * If you don't know what yours is, follow this link:
+ * https://wiki.archlinux.org/index.php/Mouse_polling_rate
+ */
+#define POLLING_RATE 125
+
+/*
+ * This should be your desired acceleration. It needs to end with an f.
+ * For example, setting this to "0.1f" should be equal to
+ * cl_mouseaccel 0.1 in Quake.
+ */
+#define ACCEL 0.2f
+
+#define POST_SCALE_X 0.5f
+#define POST_SCALE_Y 0.5f
+
 
 #include <linux/kernel.h>
 #include <linux/slab.h>
@@ -69,6 +72,15 @@ struct usb_mouse {
 	dma_addr_t data_dma;
 };
 
+static inline int Leet_round(float x)
+{
+	if (x >= 0) {
+		return (int)(x + 0.5f);
+	} else {
+		return (int)(x - 0.5f);
+	}
+}
+
 static void usb_mouse_irq(struct urb *urb)
 {
 	struct usb_mouse *mouse = urb->context;
@@ -77,17 +89,14 @@ static void usb_mouse_irq(struct urb *urb)
 	int status;
 
 	// acceleration happens here
-	signed int pr = POLLING_RATE;
-	signed int ms = 1000 / pr;
-	signed int accel_r = ACCEL_RECIPROCAL;
+	float ms = 1000.0f / POLLING_RATE;
 	signed int delta_x = data[1];
 	signed int delta_y = data[2];
-	signed int rate = int_sqrt(delta_x * delta_x + delta_y * delta_y);
-	signed int accel_x = (rate * delta_x) / ms / accel_r;
-	signed int accel_y = (rate * delta_y) / ms / accel_r;
-
-	delta_x += accel_x;
-	delta_y += accel_y;
+	float rate = int_sqrt(delta_x * delta_x + delta_y * delta_y);
+	float accel_x = delta_x + ((rate * delta_x) / ms) * ACCEL;
+	float accel_y = delta_y + ((rate * delta_y) / ms) * ACCEL;
+	signed int final_x = Leet_round(accel_x * POST_SCALE_X);
+	signed int final_y = Leet_round(accel_y * POST_SCALE_Y);
 
 	switch (urb->status) {
 	case 0:			/* success */
@@ -107,8 +116,8 @@ static void usb_mouse_irq(struct urb *urb)
 	input_report_key(dev, BTN_SIDE,   data[0] & 0x08);
 	input_report_key(dev, BTN_EXTRA,  data[0] & 0x10);
 
-	input_report_rel(dev, REL_X,     delta_x);
-	input_report_rel(dev, REL_Y,     delta_y);
+	input_report_rel(dev, REL_X,     final_x);
+	input_report_rel(dev, REL_Y,     final_y);
 	input_report_rel(dev, REL_WHEEL, data[3]);
 
 	input_sync(dev);
