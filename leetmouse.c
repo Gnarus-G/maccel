@@ -36,10 +36,16 @@
  * For example, setting this to "0.1f" should be equal to
  * cl_mouseaccel 0.1 in Quake.
  */
-#define ACCEL 0.2f
+#define ACCELERATION 0.2f
 
+#define SENSITIVITY 1.0f
+#define SENS_CAP 0.0f
+#define OFFSET 0.0f
+#define PRE_SCALE_X 1.0f
+#define PRE_SCALE_Y 1.0f
 #define POST_SCALE_X 0.5f
 #define POST_SCALE_Y 0.5f
+#define SPEED_CAP 0.0f
 
 
 #include <linux/kernel.h>
@@ -89,14 +95,32 @@ static void usb_mouse_irq(struct urb *urb)
 	int status;
 
 	// acceleration happens here
+	float delta_x = data[1] * PRE_SCALE_X;
+	float delta_y = data[2] * PRE_SCALE_Y;
 	float ms = 1000.0f / POLLING_RATE;
-	signed int delta_x = data[1];
-	signed int delta_y = data[2];
-	float rate = int_sqrt(delta_x * delta_x + delta_y * delta_y);
-	float accel_x = delta_x + ((rate * delta_x) / ms) * ACCEL;
-	float accel_y = delta_y + ((rate * delta_y) / ms) * ACCEL;
-	signed int final_x = Leet_round(accel_x * POST_SCALE_X);
-	signed int final_y = Leet_round(accel_y * POST_SCALE_Y);
+	float accel_sens = SENSITIVITY;
+	float rate = int_sqrt(Leet_round(delta_x * delta_x + delta_y * delta_y));
+
+	if (SPEED_CAP != 0) {
+		if (rate >= SPEED_CAP) {
+			delta_x *= SPEED_CAP / rate;
+			delta_y *= SPEED_CAP / rate;
+		}
+	}
+	rate /= ms;
+	rate -= OFFSET;
+	if (rate > 0) {
+		rate *= ACCELERATION;
+		accel_sens += rate;
+	}
+	if (SENS_CAP > 0 && accel_sens >= SENS_CAP) {
+		accel_sens = SENS_CAP;
+	}
+	accel_sens /= SENSITIVITY;
+	delta_x *= accel_sens;
+	delta_y *= accel_sens;
+	delta_x *= POST_SCALE_X;
+	delta_y *= POST_SCALE_Y;
 
 	switch (urb->status) {
 	case 0:			/* success */
@@ -116,8 +140,8 @@ static void usb_mouse_irq(struct urb *urb)
 	input_report_key(dev, BTN_SIDE,   data[0] & 0x08);
 	input_report_key(dev, BTN_EXTRA,  data[0] & 0x10);
 
-	input_report_rel(dev, REL_X,     final_x);
-	input_report_rel(dev, REL_Y,     final_y);
+	input_report_rel(dev, REL_X,     Leet_round(delta_x));
+	input_report_rel(dev, REL_Y,     Leet_round(delta_y));
 	input_report_rel(dev, REL_WHEEL, data[3]);
 
 	input_sync(dev);

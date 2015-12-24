@@ -1,5 +1,7 @@
 A fork of the Linux USB mouse driver with acceleration.
 
+It is based on Povohat's mouse driver for Windows: http://accel.drok-radnik.com/old.html
+
 Change the defines at the top of leetmouse.c to match your mouse's polling rate and your desired acceleration.
 
 How to install:
@@ -18,5 +20,5 @@ echo -n "2-2:1.0" > /sys/bus/usb/drivers/leetmouse/bind
 License: GPL
 
 TODO:
-* Feature parity with Povohat's mouse driver for Windows: http://accel.drok-radnik.com/old.html
+* Feature parity with Povohat's mouse driver
 * Easier installation
