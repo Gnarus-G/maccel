@@ -87,6 +87,26 @@ static inline int Leet_round(float x)
 	}
 }
 
+// What do we have here? Code from Quake 3, which is also GPL.
+// https://en.wikipedia.org/wiki/Fast_inverse_square_root
+// Copyright (C) 1999-2005 Id Software, Inc.
+static inline float Q_sqrt(float number)
+{
+	long i;
+	float x2, y;
+	const float threehalfs = 1.5F;
+
+	x2 = number * 0.5F;
+	y  = number;
+	i  = * ( long * ) &y;                       // evil floating point bit level hacking
+	i  = 0x5f3759df - ( i >> 1 );               // what the fuck?
+	y  = * ( float * ) &i;
+	y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
+//	y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
+
+	return 1 / y;
+}
+
 static void usb_mouse_irq(struct urb *urb)
 {
 	struct usb_mouse *mouse = urb->context;
@@ -99,7 +119,7 @@ static void usb_mouse_irq(struct urb *urb)
 	float delta_y = data[2] * PRE_SCALE_Y;
 	float ms = 1000.0f / POLLING_RATE;
 	float accel_sens = SENSITIVITY;
-	float rate = int_sqrt(Leet_round(delta_x * delta_x + delta_y * delta_y));
+	float rate = Q_sqrt(delta_x * delta_x + delta_y * delta_y);
 
 	if (SPEED_CAP != 0) {
 		if (rate >= SPEED_CAP) {
