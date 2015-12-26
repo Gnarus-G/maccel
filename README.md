@@ -6,6 +6,12 @@ It is based on Povohat's mouse driver for Windows: http://accel.drok-radnik.com/
 
 Step 1: Clone this repository and open leetmouse.c in your favorite text editor. Change the defines at the top of leetmouse.c to match your mouse's polling rate and your desired acceleration settings.
 
+If you don't know what your mouse's polling rate is, you can follow this link:
+https://wiki.archlinux.org/index.php/Mouse_polling_rate
+
+The acceleration options are the same as those in Povohat's driver:
+http://accel.drok-radnik.com/old.html
+
 Step 2: Build and install the driver.
 ```
 make
