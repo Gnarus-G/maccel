@@ -43,8 +43,8 @@
 #define OFFSET 0.0f
 #define PRE_SCALE_X 1.0f
 #define PRE_SCALE_Y 1.0f
-#define POST_SCALE_X 0.5f
-#define POST_SCALE_Y 0.5f
+#define POST_SCALE_X 1.0f
+#define POST_SCALE_Y 1.0f
 #define SPEED_CAP 0.0f
 
 
@@ -120,6 +120,8 @@ static void usb_mouse_irq(struct urb *urb)
 	float ms = 1000.0f / POLLING_RATE;
 	float accel_sens = SENSITIVITY;
 	float rate = Q_sqrt(delta_x * delta_x + delta_y * delta_y);
+	static float carry_x = 0.0f;
+	static float carry_y = 0.0f;
 
 	if (SPEED_CAP != 0) {
 		if (rate >= SPEED_CAP) {
@@ -141,6 +143,10 @@ static void usb_mouse_irq(struct urb *urb)
 	delta_y *= accel_sens;
 	delta_x *= POST_SCALE_X;
 	delta_y *= POST_SCALE_Y;
+	delta_x += carry_x;
+	delta_y += carry_y;
+	carry_x = delta_x - Leet_round(delta_x);
+	carry_y = delta_y - Leet_round(delta_y);
 
 	switch (urb->status) {
 	case 0:			/* success */
