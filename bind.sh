@@ -1,6 +1,7 @@
 #/bin/sh
 
-DEVICES=( "3-1.2:1.0" "3-1.2:1.1" )
+#"3-1.2:1.0" not working
+DEVICES=( "3-1.2:1.1" )
 
 # How to get the device id
 # Identify your mouse via 'lsusb'
