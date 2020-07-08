@@ -1,6 +1,6 @@
 #/bin/sh
 
-DEVICE=3-1.2:1.0
+DEVICES=( "3-1.2:1.0" "3-1.2:1.1" )
 
 # How to get the device id
 # Identify your mouse via 'lsusb'
@@ -23,6 +23,8 @@ DEVICE=3-1.2:1.0
 
 # -> Select the matching device with USB 1.0 speed. Here, it is 3-1.2:1.0 (Bus3-Port1.Port2:USBSpeed)
 
-su
-echo -n "$DEVICE" > /sys/bus/usb/drivers/usbhid/unbind
-echo -n "$DEVICE" > /sys/bus/usb/drivers/leetmouse/bind
+for DEVICE in "${DEVICES[@]}"; do
+    echo "Rebinding $DEVICE"
+    echo -n "$DEVICE" > /sys/bus/usb/drivers/usbhid/unbind
+    echo -n "$DEVICE" > /sys/bus/usb/drivers/leetmouse/bind
+done
