@@ -1,7 +1,10 @@
-#/bin/sh
+#!/bin/sh
 
 #"3-1.2:1.0" not working
-DEVICES=( "3-1.2:1.1" )
+# Office PC
+#DEVICES=( "3-1.2:1.1" )
+# Home PC
+DEVICES=( "1-7:1.1" )
 
 # How to get the device id
 # Identify your mouse via 'lsusb'

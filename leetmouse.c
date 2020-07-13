@@ -45,8 +45,15 @@
 #define SENSITIVITY 0.85f
 #define SENS_CAP 4.0f
 #define OFFSET 0.0f
-#define PRE_SCALE_X 0.0555555f
-#define PRE_SCALE_Y 0.0555555f
+
+// Steelseries Rival 110 @ 7200 DPI
+//#define PRE_SCALE_X 0.0555555f
+//#define PRE_SCALE_Y 0.0555555f
+
+// Steelseries Rival 600/610 @ 12000 DPI
+#define PRE_SCALE_X 0.0333333f
+#define PRE_SCALE_Y 0.0333333f
+
 #define POST_SCALE_X 0.4f
 #define POST_SCALE_Y 0.4f
 #define SPEED_CAP 0.0f
@@ -169,9 +176,14 @@ static void usb_mouse_irq(struct urb *urb)
 	input_report_key(dev, BTN_MIDDLE, data[0] & 0x04);
 	input_report_key(dev, BTN_SIDE,   data[0] & 0x08);
 	input_report_key(dev, BTN_EXTRA,  data[0] & 0x10);
-
-	input_report_rel(dev, REL_X,     Leet_round(delta_x));
-	input_report_rel(dev, REL_Y,     Leet_round(delta_y));
+	
+	// The mod
+	input_report_rel(dev, REL_X,     (signed char) Leet_round(delta_x));
+	input_report_rel(dev, REL_Y,     (signed char) Leet_round(delta_y));
+	
+	// Original linux code
+	//input_report_rel(dev, REL_X,     data[1]);
+	//input_report_rel(dev, REL_Y,     data[2]);
 	input_report_rel(dev, REL_WHEEL, data[3]);
 
 	input_sync(dev);
