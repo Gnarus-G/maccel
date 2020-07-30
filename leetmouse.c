@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  *  Copyright (c) 1999-2001 Vojtech Pavlik
  *
@@ -5,59 +6,14 @@
  */
 
 /*
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  *
  * Should you need to contact me, the author, you can do so either by
  * e-mail - mail your message to <vojtech@ucw.cz>, or by paper mail:
  * Vojtech Pavlik, Simunkova 1594, Prague 8, 182 00 Czech Republic
  */
 
-/*
- * Your mouse's polling rate.
- * If you don't know what yours is, follow this link:
- * https://wiki.archlinux.org/index.php/Mouse_polling_rate
- */
-//TODO: Actually derive "polling rate" live from mouse input events, as it is done in InterAcceel.
-#define POLLING_RATE 1000
-
-/*
- * This should be your desired acceleration. It needs to end with an f.
- * For example, setting this to "0.1f" should be equal to
- * cl_mouseaccel 0.1 in Quake.
- */
-
-// These settings basically emulate Windows' Enhanced Pointer Precision for my 7200 DPI mouse
-
-#define ACCELERATION 0.26f
-
-#define SENSITIVITY 0.85f
-#define SENS_CAP 4.0f
-#define OFFSET 0.0f
-
-// Steelseries Rival 110 @ 7200 DPI
-//#define PRE_SCALE_X 0.0555555f
-//#define PRE_SCALE_Y 0.0555555f
-
-// Steelseries Rival 600/610 @ 12000 DPI
-#define PRE_SCALE_X 0.0333333f
-#define PRE_SCALE_Y 0.0333333f
-
-#define POST_SCALE_X 0.4f
-#define POST_SCALE_Y 0.4f
-#define SPEED_CAP 0.0f
-
+// Config for acceleration in here
+#include "leetmouse.h"
 
 #include <linux/kernel.h>
 #include <linux/slab.h>
@@ -66,17 +22,22 @@
 #include <linux/usb/input.h>
 #include <linux/hid.h>
 
+/* for apple IDs */
+#ifdef CONFIG_USB_HID_MODULE
+//#include "../hid-ids.h"
+#include "hid-ids.h"
+#endif
+
 /*
  * Version Information
  */
-#define DRIVER_VERSION "v1.6a"
+#define DRIVER_VERSION "v1.6"
 #define DRIVER_AUTHOR "Vojtech Pavlik <vojtech@ucw.cz>"
 #define DRIVER_DESC "USB HID Boot Protocol mouse driver with acceleration"
-#define DRIVER_LICENSE "GPL"
 
 MODULE_AUTHOR(DRIVER_AUTHOR);
 MODULE_DESCRIPTION(DRIVER_DESC);
-MODULE_LICENSE(DRIVER_LICENSE);
+MODULE_LICENSE("GPL");
 
 struct usb_mouse {
 	char name[128];
@@ -91,11 +52,11 @@ struct usb_mouse {
 
 static inline int Leet_round(float x)
 {
-	if (x >= 0) {
-		return (int)(x + 0.5f);
-	} else {
-		return (int)(x - 0.5f);
-	}
+    if (x >= 0) {
+        return (int)(x + 0.5f);
+    } else {
+        return (int)(x - 0.5f);
+    }
 }
 
 // What do we have here? Code from Quake 3, which is also GPL.
@@ -103,19 +64,19 @@ static inline int Leet_round(float x)
 // Copyright (C) 1999-2005 Id Software, Inc.
 static inline float Q_sqrt(float number)
 {
-	long i;
-	float x2, y;
-	const float threehalfs = 1.5F;
-
-	x2 = number * 0.5F;
-	y  = number;
-	i  = * ( long * ) &y;                       // evil floating point bit level hacking
-	i  = 0x5f3759df - ( i >> 1 );               // what the fuck?
-	y  = * ( float * ) &i;
-	y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
-//	y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
-
-	return 1 / y;
+    long i;
+    float x2, y;
+    const float threehalfs = 1.5F;
+    
+    x2 = number * 0.5F;
+    y  = number;
+    i  = * ( long * ) &y;                       // evil floating point bit level hacking
+    i  = 0x5f3759df - ( i >> 1 );               // what the fuck?
+    y  = * ( float * ) &i;
+    y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
+    //	y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
+    
+    return 1 / y;
 }
 
 static void usb_mouse_irq(struct urb *urb)
@@ -124,40 +85,40 @@ static void usb_mouse_irq(struct urb *urb)
 	signed char *data = mouse->data;
 	struct input_dev *dev = mouse->dev;
 	int status;
-
-	// acceleration happens here
-	float delta_x = data[1] * PRE_SCALE_X;
-	float delta_y = data[2] * PRE_SCALE_Y;
-	float ms = 1000.0f / POLLING_RATE;
-	float accel_sens = SENSITIVITY;
-	float rate = Q_sqrt(delta_x * delta_x + delta_y * delta_y);
-	static float carry_x = 0.0f;
-	static float carry_y = 0.0f;
-
-	if (SPEED_CAP != 0) {
-		if (rate >= SPEED_CAP) {
-			delta_x *= SPEED_CAP / rate;
-			delta_y *= SPEED_CAP / rate;
-		}
-	}
-	rate /= ms;
-	rate -= OFFSET;
-	if (rate > 0) {
-		rate *= ACCELERATION;
-		accel_sens += rate;
-	}
-	if (SENS_CAP > 0 && accel_sens >= SENS_CAP) {
-		accel_sens = SENS_CAP;
-	}
-	accel_sens /= SENSITIVITY;
-	delta_x *= accel_sens;
-	delta_y *= accel_sens;
-	delta_x *= POST_SCALE_X;
-	delta_y *= POST_SCALE_Y;
-	delta_x += carry_x;
-	delta_y += carry_y;
-	carry_x = delta_x - Leet_round(delta_x);
-	carry_y = delta_y - Leet_round(delta_y);
+    
+    // acceleration happens here
+    float delta_x = data[1] * PRE_SCALE_X;
+    float delta_y = data[2] * PRE_SCALE_Y;
+    float ms = 1000.0f / POLLING_RATE;
+    float accel_sens = SENSITIVITY;
+    float rate = Q_sqrt(delta_x * delta_x + delta_y * delta_y);
+    static float carry_x = 0.0f;
+    static float carry_y = 0.0f;
+    
+    if (SPEED_CAP != 0) {
+        if (rate >= SPEED_CAP) {
+            delta_x *= SPEED_CAP / rate;
+            delta_y *= SPEED_CAP / rate;
+        }
+    }
+    rate /= ms;
+    rate -= OFFSET;
+    if (rate > 0) {
+        rate *= ACCELERATION;
+        accel_sens += rate;
+    }
+    if (SENS_CAP > 0 && accel_sens >= SENS_CAP) {
+        accel_sens = SENS_CAP;
+    }
+    accel_sens /= SENSITIVITY;
+    delta_x *= accel_sens;
+    delta_y *= accel_sens;
+    delta_x *= POST_SCALE_X;
+    delta_y *= POST_SCALE_Y;
+    delta_x += carry_x;
+    delta_y += carry_y;
+    carry_x = delta_x - Leet_round(delta_x);
+    carry_y = delta_y - Leet_round(delta_y);
 
 	switch (urb->status) {
 	case 0:			/* success */
@@ -176,12 +137,11 @@ static void usb_mouse_irq(struct urb *urb)
 	input_report_key(dev, BTN_MIDDLE, data[0] & 0x04);
 	input_report_key(dev, BTN_SIDE,   data[0] & 0x08);
 	input_report_key(dev, BTN_EXTRA,  data[0] & 0x10);
-	
-	// The mod
-	input_report_rel(dev, REL_X,     (signed char) Leet_round(delta_x));
-	input_report_rel(dev, REL_Y,     (signed char) Leet_round(delta_y));
-	
-	// Original linux code
+
+    // The mod
+    input_report_rel(dev, REL_X,      Leet_round(delta_x));
+    input_report_rel(dev, REL_Y,      Leet_round(delta_y));
+    // Original linux sourcecode
 	//input_report_rel(dev, REL_X,     data[1]);
 	//input_report_rel(dev, REL_Y,     data[2]);
 	input_report_rel(dev, REL_WHEEL, data[3]);
@@ -301,11 +261,11 @@ static int usb_mouse_probe(struct usb_interface *intf, const struct usb_device_i
 	usb_set_intfdata(intf, mouse);
 	return 0;
 
-fail3:
+fail3:	
 	usb_free_urb(mouse->irq);
-fail2:
+fail2:	
 	usb_free_coherent(dev, 8, mouse->data, mouse->data_dma);
-fail1:
+fail1:	
 	input_free_device(input_dev);
 	kfree(mouse);
 	return error;
@@ -325,7 +285,7 @@ static void usb_mouse_disconnect(struct usb_interface *intf)
 	}
 }
 
-static struct usb_device_id usb_mouse_id_table [] = {
+static const struct usb_device_id usb_mouse_id_table[] = {
 	{ USB_INTERFACE_INFO(USB_INTERFACE_CLASS_HID, USB_INTERFACE_SUBCLASS_BOOT,
 		USB_INTERFACE_PROTOCOL_MOUSE) },
 	{ }	/* Terminating entry */
