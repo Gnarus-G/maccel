@@ -15,6 +15,15 @@
 // Config for acceleration in here
 #include "leetmouse.h"
 
+//Needed for kernel_fpu_begin/end
+#include <linux/version.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,0,0)
+    //Pre Kernel 5.0.0
+    #include <asm/i387.h>
+#else
+    #include <asm/fpu/api.h>
+#endif
+
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/module.h>
@@ -86,6 +95,11 @@ static void usb_mouse_irq(struct urb *urb)
 	struct input_dev *dev = mouse->dev;
 	int status;
     
+    int dx_int, dy_int;
+    
+    //We are going to use the FPU within the kernel. So we need to safely switch context during all FPU processing in order to not corrupt the userspace FPU state
+    kernel_fpu_begin();
+    
     // acceleration happens here
     float delta_x = data[1] * PRE_SCALE_X;
     float delta_y = data[2] * PRE_SCALE_Y;
@@ -120,6 +134,13 @@ static void usb_mouse_irq(struct urb *urb)
     carry_x = delta_x - Leet_round(delta_x);
     carry_y = delta_y - Leet_round(delta_y);
 
+    //Cast back to ints
+    dx_int = Leet_round(delta_x);
+    dy_int = Leet_round(delta_y);
+    
+    //We stopped using the FPU: Switch back context again
+    kernel_fpu_end();
+    
 	switch (urb->status) {
 	case 0:			/* success */
 		break;
@@ -139,13 +160,14 @@ static void usb_mouse_irq(struct urb *urb)
 	input_report_key(dev, BTN_EXTRA,  data[0] & 0x10);
 
     // The mod
-    input_report_rel(dev, REL_X,      Leet_round(delta_x));
-    input_report_rel(dev, REL_Y,      Leet_round(delta_y));
+    input_report_rel(dev, REL_X,      dx_int);
+    input_report_rel(dev, REL_Y,      dy_int);
     // Original linux sourcecode
 	//input_report_rel(dev, REL_X,     data[1]);
 	//input_report_rel(dev, REL_Y,     data[2]);
+    
 	input_report_rel(dev, REL_WHEEL, data[3]);
-
+    
 	input_sync(dev);
 resubmit:
 	status = usb_submit_urb (urb, GFP_ATOMIC);
