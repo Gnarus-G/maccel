@@ -14,28 +14,20 @@
 
 // These settings basically emulate Windows' Enhanced Pointer Precision for my 7200 DPI mouse
 
-// ########################################
-// IMPORTANT:   All values below must be INTEGERS (we want to avoid floating point arithmetic in the kernel)
-//              In order to not give up precision, just multiply your InterAccell values by 1000
-//              E.g: If your InterAccell Acceleration value is 0.26, write ACCELERATION 260
-//
-//              I know that this is unconvenient. But this makes sure, that the kernel module works on all machines
-// ########################################
+#define ACCELERATION 0.27f
 
-#define ACCELERATION 260
-
-#define SENSITIVITY 850
-#define SENS_CAP 4000
-#define OFFSET 0
+#define SENSITIVITY 0.85f
+#define SENS_CAP 4.0f
+#define OFFSET 0.5f
 
 // Steelseries Rival 110 @ 7200 DPI
-#define PRE_SCALE_X 55
-#define PRE_SCALE_Y 55
+//#define PRE_SCALE_X 0.0555555f
+//define PRE_SCALE_Y 0.0555555f
 
 // Steelseries Rival 600/610 @ 12000 DPI
-//#define PRE_SCALE_X 33
-//#define PRE_SCALE_Y 33
+#define PRE_SCALE_X 0.0333333f
+#define PRE_SCALE_Y 0.0333333f
 
-#define POST_SCALE_X 400
-#define POST_SCALE_Y 400
-#define SPEED_CAP 0
+#define POST_SCALE_X 0.4f
+#define POST_SCALE_Y 0.4f
+#define SPEED_CAP 0.0f
