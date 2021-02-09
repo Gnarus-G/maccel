@@ -4,7 +4,7 @@ It is based on Povohat's mouse driver for Windows: http://accel.drok-radnik.com/
 
 ### Installation
 
-Step 1: Clone this repository and open leetmouse.c in your favorite text editor. Change the defines at the top of leetmouse.c to match your mouse's polling rate and your desired acceleration settings.
+Step 1: Clone this repository and open leetmouse.h in your favorite text editor. Change the defines at the top of leetmouse.h to match your mouse's polling rate and your desired acceleration settings.
 
 If you don't know what your mouse's polling rate is, you can follow this link:
 https://wiki.archlinux.org/index.php/Mouse_polling_rate
