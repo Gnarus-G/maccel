@@ -1,10 +1,13 @@
 #!/bin/sh
 
-# Office PC
-#DEVICES=( "3-1.2:1.1" )
+# TODO This proof-of-concept bind script will be replaced by a more mainstreamed udev rule in the near future.
+
 # Home PC
-#DEVICES=( "5-1.1:1.1" )
 DEVICES=( "5-1.1:1.1" )
+# Office PC
+#DEVICES=( "2-1.3.4:1.1" )
+# Lab PC
+#DEVICES=( "3-2.5.4:1.1" "3-1.1.3:1.1" )
 
 # How to get the device id
 # Identify your mouse via 'lsusb'
@@ -25,7 +28,7 @@ DEVICES=( "5-1.1:1.1" )
 #1-0:1.0  1-1.3      1-1.5      1-1.5:1.1  2-0:1.0  3-1    3-1.1:1.0  3-1.2      3-1.2:1.1  4-0:1.0  6-0:1.0  usb2  usb4  usb6
 #1-1      1-1.3:1.0  1-1.5:1.0  1-1:1.0    3-0:1.0  3-1.1  3-1.1:1.1  3-1.2:1.0  3-1:1.0    5-0:1.0  usb1     usb3  usb5
 
-# -> Select the matching device with USB 1.0 speed. Here, it is 3-1.2:1.0 (Bus3-Port1.Port2:USBSpeed)
+# -> Select the matching sub-device. This really much depends on your mouse. It can be the "1.0". For my SteelSeries mice, it was always "1.1". So here it is 3-1.2:1.1 (Bus3-Port1.Port2:SubDevice)
 
 for DEVICE in "${DEVICES[@]}"; do
     echo "Rebinding $DEVICE"

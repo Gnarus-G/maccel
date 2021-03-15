@@ -6,3 +6,4 @@
 Module.symvers
 modules.order
 .vscode
+config.h
