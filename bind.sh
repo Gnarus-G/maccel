@@ -3,8 +3,8 @@
 # Office PC
 #DEVICES=( "3-1.2:1.1" )
 # Home PC
+#DEVICES=( "5-1.1:1.1" )
 DEVICES=( "5-1.1:1.1" )
-
 
 # How to get the device id
 # Identify your mouse via 'lsusb'

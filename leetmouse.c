@@ -14,6 +14,8 @@
 
 // Config for acceleration in here
 #include "leetmouse.h"
+#include <linux/time.h>
+#define BUFFER_SIZE 16												// Maximum number of packets allowed to be sent from the mouse at once. Linux's default value is 8, which at least causes EOVERFLOW for my mouse (SteelSeries Rival 600). Increase this, if 'dmesg -w' tells you to!
 
 //Needed for kernel_fpu_begin/end
 #include <linux/version.h>
@@ -59,6 +61,14 @@ struct usb_mouse {
 	dma_addr_t data_dma;
 };
 
+//Hack. Is this true for all mice and all kernels? At least works for me!
+struct mouse_data {
+	signed char btn;
+	signed short rel_x;
+	signed short rel_y;
+	signed short rel_wheel;
+};
+
 static inline int Leet_round(float x)
 {
     if (x >= 0) {
@@ -88,42 +98,57 @@ static inline float Q_sqrt(float number)
     return 1 / y;
 }
 
-static void usb_mouse_irq(struct urb *urb)
-{
-	struct usb_mouse *mouse = urb->context;
-	signed char *data = mouse->data;
-	struct input_dev *dev = mouse->dev;
-	int status;
-    
-    int dx_int, dy_int;
-    
+// Acceleration happens here
+static void accelerate(int* x, int* y){    
+	float delta_x, delta_y, ms, rate;
+	float accel_sens = SENSITIVITY;
+	static float carry_x = 0.0f;
+    static float carry_y = 0.0f;
+	static float last_ms = 1.0f;
+	static ktime_t last;
+	ktime_t now;
+
     //We are going to use the FPU within the kernel. So we need to safely switch context during all FPU processing in order to not corrupt the userspace FPU state
     kernel_fpu_begin();
     
-    // acceleration happens here
-    float delta_x = data[1] * PRE_SCALE_X;
-    float delta_y = data[2] * PRE_SCALE_Y;
-    float ms = 1000.0f / POLLING_RATE;
-    float accel_sens = SENSITIVITY;
-    float rate = Q_sqrt(delta_x * delta_x + delta_y * delta_y);
-    static float carry_x = 0.0f;
-    static float carry_y = 0.0f;
-    
-    if (SPEED_CAP != 0) {
+	//PreScale raw data from mouse
+    delta_x = (*x) * PRE_SCALE_X;
+    delta_y = (*y) * PRE_SCALE_Y;
+
+	//Calculate frametime to derive mouse rate & speed
+	now = ktime_get();
+    ms = (now - last)/(1000*1000);
+	last = now;
+	if(ms < 1) ms = last_ms; //Sometimes, urbs appear bunched -> Beyond µs resolution so the timing reading is plain wrong. Fallback to last known valid frametime
+	if(ms > 200) ms = 200;
+	last_ms = ms;
+	
+	//printk("MOUSE: %ld", (long) (1000*ms));
+
+    rate = Q_sqrt(delta_x * delta_x + delta_y * delta_y);
+
+	//Apply speedcap (is actually a "distance"-cap)
+    if(SPEED_CAP != 0){
         if (rate >= SPEED_CAP) {
             delta_x *= SPEED_CAP / rate;
             delta_y *= SPEED_CAP / rate;
         }
     }
+
+	//Calculate rate from travelled overall distance and add possible rate offsets
     rate /= ms;
     rate -= OFFSET;
-    if (rate > 0) {
+
+	//Apply linear acceleration on the sensitivity if applicable and limit maximum value
+    if(rate > 0){
         rate *= ACCELERATION;
         accel_sens += rate;
     }
-    if (SENS_CAP > 0 && accel_sens >= SENS_CAP) {
+    if(SENS_CAP > 0 && accel_sens >= SENS_CAP){
         accel_sens = SENS_CAP;
     }
+
+	//Actually apply accelerated sensitivity, allow post-scaling and apply carry from previous round
     accel_sens /= SENSITIVITY;
     delta_x *= accel_sens;
     delta_y *= accel_sens;
@@ -131,16 +156,28 @@ static void usb_mouse_irq(struct urb *urb)
     delta_y *= POST_SCALE_Y;
     delta_x += carry_x;
     delta_y += carry_y;
-    carry_x = delta_x - Leet_round(delta_x);
-    carry_y = delta_y - Leet_round(delta_y);
 
     //Cast back to ints
-    dx_int = Leet_round(delta_x);
-    dy_int = Leet_round(delta_y);
+    *x = Leet_round(delta_x);
+    *y = Leet_round(delta_y);
+
+	//Save carry for next round
+	carry_x = delta_x - *x;
+    carry_y = delta_y - *y;
     
     //We stopped using the FPU: Switch back context again
     kernel_fpu_end();
-    
+}
+
+static void usb_mouse_irq(struct urb *urb)
+{
+	struct usb_mouse *mouse = urb->context;
+	signed char *raw = mouse->data;
+	struct mouse_data *data = (struct mouse_data*) raw;
+	struct input_dev *dev = mouse->dev;
+	signed int btn,x,y,wheel;
+	int status;
+
 	switch (urb->status) {
 	case 0:			/* success */
 		break;
@@ -148,29 +185,50 @@ static void usb_mouse_irq(struct urb *urb)
 	case -ENOENT:
 	case -ESHUTDOWN:
 		return;
+	case -EOVERFLOW:
+		printk("LEETMOUSE: EOVERFLOW. Try to increase BUFFER_SIZE from %d to %d in 'leetmouse.c'", BUFFER_SIZE, 2*BUFFER_SIZE);
+		goto resubmit;
 	/* -EPIPE:  should clear the halt */
 	default:		/* error */
 		goto resubmit;
 	}
 
-	input_report_key(dev, BTN_LEFT,   data[0] & 0x01);
-	input_report_key(dev, BTN_RIGHT,  data[0] & 0x02);
-	input_report_key(dev, BTN_MIDDLE, data[0] & 0x04);
-	input_report_key(dev, BTN_SIDE,   data[0] & 0x08);
-	input_report_key(dev, BTN_EXTRA,  data[0] & 0x10);
+	btn = data->btn;
+	x = le16_to_cpu(data->rel_x);
+	y = le16_to_cpu(data->rel_y);
+	wheel = data->rel_wheel;
 
-    // The mod
-    input_report_rel(dev, REL_X,      dx_int);
-    input_report_rel(dev, REL_Y,      dy_int);
-    // Original linux sourcecode
-	//input_report_rel(dev, REL_X,     data[1]);
-	//input_report_rel(dev, REL_Y,     data[2]);
+
+
+	//printk("MOUSE: %d",x);
+	x = raw[1];
+	y = raw[3];
+
+	accelerate(&x,&y);
+
+	
+
+	//printk("MOUSE: %d %d %d %d %d %d %d %d   %d %d %d %d %d %d %d %d", (raw[1] >> 0) & 1,(raw[1] >> 1) & 1,(raw[1] >> 2) & 1,(raw[1] >> 3) & 1,(raw[1] >> 4) & 1,(raw[1] >> 5) & 1,(raw[1] >> 6) & 1,(raw[1] >> 7),
+	//(raw[2] >> 0) & 1,(raw[2] >> 1) & 1,(raw[2] >> 2) & 1,(raw[2] >> 3) & 1,(raw[2] >> 4) & 1,(raw[2] >> 5) & 1,(raw[2] >> 6) & 1,(raw[2] >> 7));
+	
+	//printk("%d", urb-> transfer_flags);
+	//printk("MOUSE: %d %d %d", data[1], data[2], data[3]);
+
+	input_report_key(dev, BTN_LEFT,   raw[0] & 0x01);
+	input_report_key(dev, BTN_RIGHT,  raw[0] & 0x02);
+	input_report_key(dev, BTN_MIDDLE, raw[0] & 0x04);
+	input_report_key(dev, BTN_SIDE,   raw[0] & 0x08);
+	input_report_key(dev, BTN_EXTRA,  raw[0] & 0x10);
+
+	input_report_rel(dev, REL_X,     x);
+	input_report_rel(dev, REL_Y,     y);
     
-	input_report_rel(dev, REL_WHEEL, data[3]);
+	input_report_rel(dev, REL_WHEEL, raw[5]);
     
 	input_sync(dev);
 resubmit:
 	status = usb_submit_urb (urb, GFP_ATOMIC);
+	
 	if (status)
 		dev_err(&mouse->usbdev->dev,
 			"can't resubmit intr, %s-%s/input0, status %d\n",
@@ -223,7 +281,7 @@ static int usb_mouse_probe(struct usb_interface *intf, const struct usb_device_i
 	if (!mouse || !input_dev)
 		goto fail1;
 
-	mouse->data = usb_alloc_coherent(dev, 8, GFP_ATOMIC, &mouse->data_dma);
+	mouse->data = usb_alloc_coherent(dev, BUFFER_SIZE, GFP_ATOMIC, &mouse->data_dma);
 	if (!mouse->data)
 		goto fail1;
 
@@ -271,7 +329,7 @@ static int usb_mouse_probe(struct usb_interface *intf, const struct usb_device_i
 	input_dev->close = usb_mouse_close;
 
 	usb_fill_int_urb(mouse->irq, dev, pipe, mouse->data,
-			 (maxp > 8 ? 8 : maxp),
+			 (maxp > BUFFER_SIZE ? BUFFER_SIZE : maxp),
 			 usb_mouse_irq, mouse, endpoint->bInterval);
 	mouse->irq->transfer_dma = mouse->data_dma;
 	mouse->irq->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
@@ -286,7 +344,7 @@ static int usb_mouse_probe(struct usb_interface *intf, const struct usb_device_i
 fail3:	
 	usb_free_urb(mouse->irq);
 fail2:	
-	usb_free_coherent(dev, 8, mouse->data, mouse->data_dma);
+	usb_free_coherent(dev, BUFFER_SIZE, mouse->data, mouse->data_dma);
 fail1:	
 	input_free_device(input_dev);
 	kfree(mouse);
@@ -302,7 +360,7 @@ static void usb_mouse_disconnect(struct usb_interface *intf)
 		usb_kill_urb(mouse->irq);
 		input_unregister_device(mouse->dev);
 		usb_free_urb(mouse->irq);
-		usb_free_coherent(interface_to_usbdev(intf), 8, mouse->data, mouse->data_dma);
+		usb_free_coherent(interface_to_usbdev(intf), BUFFER_SIZE, mouse->data, mouse->data_dma);
 		kfree(mouse);
 	}
 }
