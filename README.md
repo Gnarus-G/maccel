@@ -32,7 +32,12 @@ License: GPL
 TODO:
 * External interface for pushing acceleration parameters
 * Easier installation & bind
+* DKMS support
+* PKGBUILD for Arch based systems
 * Feature parity with Povohat's mouse driver
+
+Known Bugs:
+* No input or vertical movement translates to scrolling: https://github.com/systemofapwne/mousedriver/issues/2
 
 Tested mice:
 * (EricSchles) Microsoft Intellimouse Explorer 3.0

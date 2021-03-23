@@ -1,7 +1,7 @@
 obj-m += leetmouse.o
-leetmouse-objs := usbmouse.o accel.o
+leetmouse-objs := usbmouse.o accel.o util.o
 
-ccflags-y += -msse -mpreferred-stack-boundary=4
+ccflags-y += -mhard-float -mpreferred-stack-boundary=4
 
 .PHONY: all clean
 

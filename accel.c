@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "accel.h"
+#include "util.h"
 #include "config.h"
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -15,34 +16,27 @@
     #include <asm/fpu/api.h>
 #endif
 
-static inline int Leet_round(float x)
-{
-    if (x >= 0) {
-        return (int)(x + 0.5f);
-    } else {
-        return (int)(x - 0.5f);
-    }
-}
+/*
+//Converts a preprocessor define's value in "config.h" to a string - Suspect to change in future version without a "config.h"
+#define _s(x) #x
+#define s(x) _s(x)
 
-// What do we have here? Code from Quake 3, which is also GPL.
-// https://en.wikipedia.org/wiki/Fast_inverse_square_root
-// Copyright (C) 1999-2005 Id Software, Inc.
-static inline float Q_sqrt(float number)
-{
-    long i;
-    float x2, y;
-    const float threehalfs = 1.5F;
-    
-    x2 = number * 0.5F;
-    y  = number;
-    i  = * ( long * ) &y;                       // evil floating point bit level hacking
-    i  = 0x5f3759df - ( i >> 1 );               // what the fuck?
-    y  = * ( float * ) &i;
-    y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
-    //	y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
-    
-    return 1 / y;
-}
+#define PARAM(param, default, desc)                             \
+    float g_#param = default;                                   \
+    static char* g_param_#param
+    module_param_named(#param, g_param_#param, charp, 0644);    \
+
+// ########## Kernel module parameters
+
+static float g_sensitivity = SENSITIVITY;
+static char* g_param_sensitivity = s(SENSITIVITY);
+module_param_named(sensitivity, g_param_sensitivity, charp, 0644);
+MODULE_PARM_DESC(sensitivity, "Mouse base sensitivity");
+
+PARAM(sensitivity, s(SENSITIVITY), "HEllo")
+*/
+
+// ########## Acceleration code
 
 // Acceleration happens here
 void accelerate(int* x, int* y){    
@@ -68,10 +62,9 @@ void accelerate(int* x, int* y){
 	if(ms < 1) ms = last_ms;    //Sometimes, urbs appear bunched -> Beyond µs resolution so the timing reading is plain wrong. Fallback to last known valid frametime
 	if(ms > 100) ms = 100;      //Original InterAccel has 200 here. RawAccel rounds to 100. So do we.
 	last_ms = ms;
-	
-	//printk("MOUSE: %ld", (long) (1000*ms));
 
-    rate = Q_sqrt(delta_x * delta_x + delta_y * delta_y);
+    rate = delta_x * delta_x + delta_y * delta_y;
+    Q_sqrt(&rate);
 
 	//Apply speedcap (is actually a "distance"-cap)
     if(SPEED_CAP != 0){
@@ -114,3 +107,12 @@ void accelerate(int* x, int* y){
     //We stopped using the FPU: Switch back context again
     kernel_fpu_end();
 }
+
+// Updates the acceleration parameters. This is purposely done with a delay!
+// First, to not hammer too much the logic in "accelerate()", which is called VERY OFTEN!
+// Second, to fight possible cheating. However, this can be OFC changed, since we are OSS...
+/*
+static void updata_params(){
+    return;
+}
+*/
