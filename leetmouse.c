@@ -71,21 +71,21 @@ static inline int Leet_round(float x)
 // What do we have here? Code from Quake 3, which is also GPL.
 // https://en.wikipedia.org/wiki/Fast_inverse_square_root
 // Copyright (C) 1999-2005 Id Software, Inc.
-static inline float Q_sqrt(float number)
+static inline void Q_sqrt(float* number)
 {
     long i;
     float x2, y;
     const float threehalfs = 1.5F;
-    
-    x2 = number * 0.5F;
-    y  = number;
+
+    x2 = (*number) * 0.5F;
+    y  = (*number);
     i  = * ( long * ) &y;                       // evil floating point bit level hacking
     i  = 0x5f3759df - ( i >> 1 );               // what the fuck?
     y  = * ( float * ) &i;
     y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
     //	y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
-    
-    return 1 / y;
+
+    *number = 1 / y;
 }
 
 static void usb_mouse_irq(struct urb *urb)
@@ -102,10 +102,11 @@ static void usb_mouse_irq(struct urb *urb)
     
     // acceleration happens here
     float delta_x = data[1] * PRE_SCALE_X;
-    float delta_y = data[2] * PRE_SCALE_Y;
+    float delta_y = data[3] * PRE_SCALE_Y;
     float ms = 1000.0f / POLLING_RATE;
     float accel_sens = SENSITIVITY;
-    float rate = Q_sqrt(delta_x * delta_x + delta_y * delta_y);
+    float rate = delta_x * delta_x + delta_y * delta_y;
+    Q_sqrt(&rate);
     static float carry_x = 0.0f;
     static float carry_y = 0.0f;
     
@@ -166,7 +167,7 @@ static void usb_mouse_irq(struct urb *urb)
 	//input_report_rel(dev, REL_X,     data[1]);
 	//input_report_rel(dev, REL_Y,     data[2]);
     
-	input_report_rel(dev, REL_WHEEL, data[3]);
+	input_report_rel(dev, REL_WHEEL, data[5]);
     
 	input_sync(dev);
 resubmit:
@@ -223,7 +224,7 @@ static int usb_mouse_probe(struct usb_interface *intf, const struct usb_device_i
 	if (!mouse || !input_dev)
 		goto fail1;
 
-	mouse->data = usb_alloc_coherent(dev, 8, GFP_ATOMIC, &mouse->data_dma);
+	mouse->data = usb_alloc_coherent(dev, 16, GFP_ATOMIC, &mouse->data_dma);
 	if (!mouse->data)
 		goto fail1;
 
@@ -271,7 +272,7 @@ static int usb_mouse_probe(struct usb_interface *intf, const struct usb_device_i
 	input_dev->close = usb_mouse_close;
 
 	usb_fill_int_urb(mouse->irq, dev, pipe, mouse->data,
-			 (maxp > 8 ? 8 : maxp),
+			 (maxp > 16 ? 16 : maxp),
 			 usb_mouse_irq, mouse, endpoint->bInterval);
 	mouse->irq->transfer_dma = mouse->data_dma;
 	mouse->irq->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
@@ -286,7 +287,7 @@ static int usb_mouse_probe(struct usb_interface *intf, const struct usb_device_i
 fail3:	
 	usb_free_urb(mouse->irq);
 fail2:	
-	usb_free_coherent(dev, 8, mouse->data, mouse->data_dma);
+	usb_free_coherent(dev, 16, mouse->data, mouse->data_dma);
 fail1:	
 	input_free_device(input_dev);
 	kfree(mouse);
@@ -302,7 +303,7 @@ static void usb_mouse_disconnect(struct usb_interface *intf)
 		usb_kill_urb(mouse->irq);
 		input_unregister_device(mouse->dev);
 		usb_free_urb(mouse->irq);
-		usb_free_coherent(interface_to_usbdev(intf), 8, mouse->data, mouse->data_dma);
+		usb_free_coherent(interface_to_usbdev(intf), 16, mouse->data, mouse->data_dma);
 		kfree(mouse);
 	}
 }
