@@ -96,9 +96,15 @@ static void usb_mouse_irq(struct urb *urb)
 	int status;
     
     int dx_int, dy_int;
-    
-    //We are going to use the FPU within the kernel. So we need to safely switch context during all FPU processing in order to not corrupt the userspace FPU state
-    kernel_fpu_begin();
+
+    // We can only safely use the FPU in an IRQ event when this returns 1.
+    // This is especially important, when compiling this module with msse (triggered it a lot) instead of mhard-float (never triggered it for me)
+    // Not taking care for this lead to data-corruption of my BTRFS volumes. And I guess, the same would be true for raid6 (both use kernel_fpu_begin/kernel_fpu_end).
+    if(!irq_fpu_usable())
+        goto fpu_end;
+
+//We are going to use the FPU within the kernel. So we need to safely switch context during all FPU processing in order to not corrupt the userspace FPU state
+kernel_fpu_begin();
     
     // acceleration happens here
     float delta_x = data[1] * PRE_SCALE_X;
@@ -139,8 +145,9 @@ static void usb_mouse_irq(struct urb *urb)
     dx_int = Leet_round(delta_x);
     dy_int = Leet_round(delta_y);
     
-    //We stopped using the FPU: Switch back context again
-    kernel_fpu_end();
+//We stopped using the FPU: Switch back context again
+kernel_fpu_end();
+fpu_end:
     
 	switch (urb->status) {
 	case 0:			/* success */
