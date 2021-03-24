@@ -39,13 +39,15 @@ PARAM(sensitivity, s(SENSITIVITY), "HEllo")
 // ########## Acceleration code
 
 // Acceleration happens here
-int accelerate(int* x, int* y){
-	float delta_x, delta_y, ms, rate;
+int accelerate(int* x, int* y, int* wheel){
+	float delta_x, delta_y, delta_whl, ms, rate;
 	float accel_sens = SENSITIVITY;
-    static long x_buffer = 0;
-    static long y_buffer = 0;
+    static long buffer_x = 0;
+    static long buffer_y = 0;
+    static long buffer_whl = 0;
 	static float carry_x = 0.0f;
     static float carry_y = 0.0f;
+    static float carry_whl = 0.0f;
 	static float last_ms = 1.0f;
 	static ktime_t last;
 	ktime_t now;
@@ -56,8 +58,9 @@ int accelerate(int* x, int* y){
     // Not taking care for this lead to data-corruption of my BTRFS volumes. And I guess, the same would be true for raid6 (both use kernel_fpu_begin/kernel_fpu_end).
     if(!irq_fpu_usable()){
         // Buffer mouse deltas for next (valid) IRQ
-        x_buffer += *x;
-        y_buffer += *y;
+        buffer_x += *x;
+        buffer_y += *y;
+        buffer_whl += *wheel;
         return 1;
     }
 
@@ -66,22 +69,25 @@ kernel_fpu_begin();
 
     delta_x = (float) (*x);
     delta_y = (float) (*y);
+    delta_whl = (float) (*wheel);
 
     // When compiled with mhard-float, I noticed that casting to float sometimes returns invalid values, especially when playing this video in brave/chrome/chromium
     // https://sps-tutorial.com/was-ist-eine-sps/
     // Here we check, if the casting did work out.
-    if(!((int) delta_x == *x || (int) delta_y == *y)){
+    if(!((int) delta_x == *x || (int) delta_y == *y || (int) delta_whl == *wheel)){
         // Buffer mouse deltas for next (valid) IRQ
-        x_buffer += *x;
-        y_buffer += *y;
+        buffer_x += *x;
+        buffer_y += *y;
+        buffer_whl += *wheel;
         // Jump out of kernel_fpu_begin
         status = 1;
         goto exit;
     }
 
     //Add buffer values, if present, and reset buffer
-    delta_x += (float) x_buffer; x_buffer = 0;
-    delta_y += (float) y_buffer; y_buffer = 0;
+    delta_x += (float) buffer_x; buffer_x = 0;
+    delta_y += (float) buffer_y; buffer_y = 0;
+    delta_whl += (float) buffer_whl; buffer_whl = 0;
 
     //Prescale
     delta_x *= PRE_SCALE_X;
@@ -125,16 +131,20 @@ kernel_fpu_begin();
     delta_y *= accel_sens;
     delta_x *= POST_SCALE_X;
     delta_y *= POST_SCALE_Y;
+    delta_whl *= SCROLLS_PER_TICK/3.0f;
     delta_x += carry_x;
     delta_y += carry_y;
+    delta_whl += carry_whl;
 
     //Cast back to int
     *x = Leet_round(delta_x);
     *y = Leet_round(delta_y);
+    *wheel = Leet_round(delta_whl);
 
     //Save carry for next round
     carry_x = delta_x - *x;
     carry_y = delta_y - *y;
+    carry_whl = delta_whl - *wheel;
     
 exit:
 //We stopped using the FPU: Switch back context again

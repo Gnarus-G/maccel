@@ -58,7 +58,7 @@ static void usb_mouse_irq(struct urb *urb)
 	struct usb_mouse *mouse = urb->context;
 	signed char *data = mouse->data;
 	struct input_dev *dev = mouse->dev;
-    signed int x,y;                                         //Leetmouse Mod
+    signed int x, y, wheel;                                //Leetmouse Mod
 	int status;
 
 	switch (urb->status) {
@@ -86,11 +86,12 @@ static void usb_mouse_irq(struct urb *urb)
                                                             //Leetmouse Mod BEGIN
     x = data[1];
 	y = data[3];
-    if(!accelerate(&x,&y)){
+    wheel = data[5];
+    if(!accelerate(&x,&y,&wheel)){
         input_report_rel(dev, REL_X,     x);
         input_report_rel(dev, REL_Y,     y);
+        input_report_rel(dev, REL_WHEEL, wheel);
     }
-	input_report_rel(dev, REL_WHEEL, data[5]);
                                                             //Leetmouse Mod END
 
 	input_sync(dev);
