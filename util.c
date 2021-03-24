@@ -2,7 +2,7 @@
 #include <stdbool.h>
 
 //Converts string into float.
-void atof(const char* str, int len, float* result){
+inline void atof(const char* str, int len, float* result){
     float tmp = 0.0f;
     unsigned int i, j, pos = 0;
     signed char sign = 0;
@@ -22,7 +22,7 @@ void atof(const char* str, int len, float* result){
         if(c == '.'){                       //Switch from whole to decimal
             is_whole = true;
             //... We hit the decimal point. Rescale the float to the whole number part
-            for(j = 1; j < pos; j++) *result *= 10;
+            for(j = 1; j < pos; j++) *result *= 10.0f;
             pos = 1;
             continue;
         }
@@ -32,13 +32,13 @@ void atof(const char* str, int len, float* result){
         
         //Shift digit to the right... (see above, what we do, when we hit the decimal point)
         tmp = 1;
-        for(j = 0; j < pos; j++) tmp /= 10;
+        for(j = 0; j < pos; j++) tmp /= 10.0f;
         *result += tmp*(c-48);
         pos++;
     }
     //We never hit the decimal point: Rescale here, as we do up in the if(c == '.') statement
     if(is_whole)
-        for(j = 1; j < pos; j++) *result *= 10;
+        for(j = 1; j < pos; j++) *result *= 10.0f;
     *result *= sign;
 }
 
@@ -55,7 +55,7 @@ inline int Leet_round(float x)
 // What do we have here? Code from Quake 3, which is also GPL.
 // https://en.wikipedia.org/wiki/Fast_inverse_square_root
 // Copyright (C) 1999-2005 Id Software, Inc.
-void Q_sqrt(float* number)
+inline void Q_sqrt(float* number)
 {
     long i;
     float x2, y;

@@ -77,11 +77,6 @@ static void usb_mouse_irq(struct urb *urb)
 	default:		/* error */
 		goto resubmit;
 	}
-                                                            //Leetmouse Mod BEGIN
-	x = data[1];
-	y = data[3];
-	accelerate(&x,&y);
-                                                            //Leetmouse Mod END
 
 	input_report_key(dev, BTN_LEFT,   data[0] & 0x01);
 	input_report_key(dev, BTN_RIGHT,  data[0] & 0x02);
@@ -89,8 +84,12 @@ static void usb_mouse_irq(struct urb *urb)
 	input_report_key(dev, BTN_SIDE,   data[0] & 0x08);
 	input_report_key(dev, BTN_EXTRA,  data[0] & 0x10);
                                                             //Leetmouse Mod BEGIN
-	input_report_rel(dev, REL_X,     x);
-	input_report_rel(dev, REL_Y,     y);
+    x = data[1];
+	y = data[3];
+    if(!accelerate(&x,&y)){
+        input_report_rel(dev, REL_X,     x);
+        input_report_rel(dev, REL_Y,     y);
+    }
 	input_report_rel(dev, REL_WHEEL, data[5]);
                                                             //Leetmouse Mod END
 

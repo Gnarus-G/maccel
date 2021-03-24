@@ -39,34 +39,66 @@ PARAM(sensitivity, s(SENSITIVITY), "HEllo")
 // ########## Acceleration code
 
 // Acceleration happens here
-void accelerate(int* x, int* y){    
+int accelerate(int* x, int* y){
 	float delta_x, delta_y, ms, rate;
 	float accel_sens = SENSITIVITY;
+    static long x_buffer = 0;
+    static long y_buffer = 0;
 	static float carry_x = 0.0f;
     static float carry_y = 0.0f;
 	static float last_ms = 1.0f;
 	static ktime_t last;
 	ktime_t now;
+    int status = 0;
 
-    //We are going to use the FPU within the kernel. So we need to safely switch context during all FPU processing in order to not corrupt the userspace FPU state
-    kernel_fpu_begin();
-    
-	//PreScale raw data from mouse
-    delta_x = (*x) * PRE_SCALE_X;
-    delta_y = (*y) * PRE_SCALE_Y;
+    // We can only safely use the FPU in an IRQ event when this returns 1.
+    // This is especially important, when compiling this module with msse (triggered it a lot) instead of mhard-float (never triggered it for me)
+    // Not taking care for this lead to data-corruption of my BTRFS volumes. And I guess, the same would be true for raid6 (both use kernel_fpu_begin/kernel_fpu_end).
+    if(!irq_fpu_usable()){
+        // Buffer mouse deltas for next (valid) IRQ
+        x_buffer += *x;
+        y_buffer += *y;
+        return 1;
+    }
 
-	//Calculate frametime to derive mouse rate & speed
-	now = ktime_get();
+//We are going to use the FPU within the kernel. So we need to safely switch context during all FPU processing in order to not corrupt the userspace FPU state
+kernel_fpu_begin();
+
+    delta_x = (float) (*x);
+    delta_y = (float) (*y);
+
+    // When compiled with mhard-float, I noticed that casting to float sometimes returns invalid values, especially when playing this video in brave/chrome/chromium
+    // https://sps-tutorial.com/was-ist-eine-sps/
+    // Here we check, if the casting did work out.
+    if(!((int) delta_x == *x || (int) delta_y == *y)){
+        // Buffer mouse deltas for next (valid) IRQ
+        x_buffer += *x;
+        y_buffer += *y;
+        // Jump out of kernel_fpu_begin
+        status = 1;
+        goto exit;
+    }
+
+    //Add buffer values, if present, and reset buffer
+    delta_x += (float) x_buffer; x_buffer = 0;
+    delta_y += (float) y_buffer; y_buffer = 0;
+
+    //Prescale
+    delta_x *= PRE_SCALE_X;
+    delta_y *= PRE_SCALE_Y;
+
+    //Calculate frametime to derive mouse rate & speed
+    now = ktime_get();
     ms = (now - last)/(1000*1000);
-	last = now;
-	if(ms < 1) ms = last_ms;    //Sometimes, urbs appear bunched -> Beyond µs resolution so the timing reading is plain wrong. Fallback to last known valid frametime
-	if(ms > 100) ms = 100;      //Original InterAccel has 200 here. RawAccel rounds to 100. So do we.
-	last_ms = ms;
+    last = now;
+    if(ms < 1) ms = last_ms;    //Sometimes, urbs appear bunched -> Beyond µs resolution so the timing reading is plain wrong. Fallback to last known valid frametime
+    if(ms > 100) ms = 100;      //Original InterAccel has 200 here. RawAccel rounds to 100. So do we.
+    last_ms = ms;
 
     rate = delta_x * delta_x + delta_y * delta_y;
     Q_sqrt(&rate);
 
-	//Apply speedcap (is actually a "distance"-cap)
+    //Apply speedcap (is actually a "distance"-cap)
     if(SPEED_CAP != 0){
         if (rate >= SPEED_CAP) {
             delta_x *= SPEED_CAP / rate;
@@ -74,11 +106,11 @@ void accelerate(int* x, int* y){
         }
     }
 
-	//Calculate rate from travelled overall distance and add possible rate offsets
+    //Calculate rate from travelled overall distance and add possible rate offsets
     rate /= ms;
     rate -= OFFSET;
 
-	//Apply linear acceleration on the sensitivity if applicable and limit maximum value
+    //Apply linear acceleration on the sensitivity if applicable and limit maximum value
     if(rate > 0){
         rate *= ACCELERATION;
         accel_sens += rate;
@@ -87,7 +119,7 @@ void accelerate(int* x, int* y){
         accel_sens = SENS_CAP;
     }
 
-	//Actually apply accelerated sensitivity, allow post-scaling and apply carry from previous round
+    //Actually apply accelerated sensitivity, allow post-scaling and apply carry from previous round
     accel_sens /= SENSITIVITY;
     delta_x *= accel_sens;
     delta_y *= accel_sens;
@@ -96,16 +128,19 @@ void accelerate(int* x, int* y){
     delta_x += carry_x;
     delta_y += carry_y;
 
-    //Cast back to ints
+    //Cast back to int
     *x = Leet_round(delta_x);
     *y = Leet_round(delta_y);
 
-	//Save carry for next round
-	carry_x = delta_x - *x;
+    //Save carry for next round
+    carry_x = delta_x - *x;
     carry_y = delta_y - *y;
     
-    //We stopped using the FPU: Switch back context again
-    kernel_fpu_end();
+exit:
+//We stopped using the FPU: Switch back context again
+kernel_fpu_end();
+
+    return status;
 }
 
 // Updates the acceleration parameters. This is purposely done with a delay!
