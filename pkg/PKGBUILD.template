@@ -1,0 +1,24 @@
+# Maintainer: Klaus Zipfel <klaus (at) zipfel (dot) family>
+# Contributor: Christopher Williams <chilliams (at) gmail (dot) com>
+
+pkgbase=leetmouse
+pkgname=('leetmouse-driver-dkms')
+pkgver=__VERSION__
+pkgrel=1
+pkgdesc="USB HID Boot Protocol mouse driver with acceleration."
+arch=('i686' 'x86_64')
+url="https://github.com/systemofapwne/leetmouse"
+license=('GPL2')
+#makedepends=('python-setuptools')
+source=("__SRC__")
+sha256sums=('__HASH__')
+
+# Currently we only supply the driver
+package_leetmouse-driver-dkms() {
+  pkgdesc="Kernel driver for LEETMOUSE (DKMS-variant)"
+  depends=('dkms' 'udev')
+
+  cd "$pkgbase-$pkgver"
+  echo $pkgbase-$pkgver
+  make DESTDIR="$pkgdir" setup_dkms udev_install
+}
