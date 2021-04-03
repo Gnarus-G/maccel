@@ -1,5 +1,5 @@
 * What?
-  We store some information about certain mice in here for debuggging purpose
+  We store some information about certain mice in here for debuggging purpose.
 ** Get debugging data from your mouse
    *Identify your mouse*
    
@@ -198,3 +198,25 @@ Device Descriptor:
    sudo usbhid-dump -d 1038:1724 -i2 | grep -v : | xxd -r -p | hidrd-convert -o spec >> steelseries_rival600_descriptor.txt
    #+end_src
    
+* Why?
+  USB is a pretty interesting protocol. According to the [[https://www.usb.org/document-library/device-class-definition-hid-111][specifications]] a device can host several distinct =interfaces=.
+  And theses interfaces can be of different (predefined) subclass type (See pp.8 of the pdf).
+  Particularily, there are generic HID devices like Keyboards and Mice, which are most interesting here for now.
+  However, since there are a ton of different HID devices around the world, which would like to implement special features (more mouse buttons, RGB, media keys - you name it)
+  the USB consortium implemented a way to implement these features
+  + By default, the devices will enter the so called =Boot protocol= mode for e.g. the BIOS/EFI etc, which dictates the explicit type of data, the device is supposed to send.
+    For a mouse it looks like this (see p. 61 of the pdf)
+    |   Byte | Bits   | Description                |
+    |      0 | 0      | Button 1                   |
+    |        | 1      | Button 2                   |
+    |        | 2      | Button3                    |
+    |        | 4 to 7 | Device-specific            |
+    |      1 | 0 to 7 | X displacement             |
+    |      2 | 0 to 7 | Y displacement             |
+    | 3 to n |        | Device specific (optional) |
+  + Since this is very limited in functionality, the USB consortium allows a device to declare =USB Descriptors= of the data it will send, when switching modes away from =Boot protocol=.
+  + This is now, where it gets interesting: The corresponding USB/HID driver of the OS will tell the device to switch the mode from =Boot Mode= to =Descriptor Mode= when getting bound by usb-hid.
+    - Ignoring this fact particularily messed up the data getting parsed by this driver. See the corresponding [[https://github.com/systemofapwne/leetmouse/issues/2][bugreport]].
+  + The device stays in this mode, even when we bind to =LEETMOUSE=.
+    - This can cause unforseen consequences to the inputs send from the mouse to the host, since =LEETMOUSE= interprets them (right now) in a static/fixed way.
+    - This is about to change however... Hence this documentation
