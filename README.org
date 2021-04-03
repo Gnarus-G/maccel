@@ -6,8 +6,9 @@
 * Installation & Uninstallation
 ** Preparation & Configuration
    + Clone this repository, copy =driver/config.sample.h= to =/driver/config.h= and edit it in your favorite text editor. Change the defines at the top of config.h to match your desired acceleration settings.
-   + Make sure, you have the required toolchains (e.g. =base-devel= on Arch or =build-essentials=) installed as well as the =linux-headers= for your installed kernel.
-** Arch based
+   + Make sure, you have the required toolchains (e.g. =base-devel= on Arch or =build-essentials= on Debian)  installed as well as the =linux-headers= for your installed kernel.
+** Arch/Manjaro
+   Since the maintainer of =LEETMOUSE= is an Arch and Manjaro user, a =PKGBUILD= has been written for seamless integration into pacman.
    *Installation*
    #+begin_src sh
    ./scripts/build_arch.sh
@@ -21,24 +22,31 @@
    sudo pacman -R leetmouse-driver-dkms
    #+end_src
 ** Other distros
+   Other distributions' package-managers are not yet supported and thus need a manual installation.
+   The installation is not yet very polished but eventually will become soon.
+   
    *Installation*
+
    Determine the current version of this module by examining the variable =DKMS_VER= in the =Makefile=. It can be e.g. 0.9.0
    Run the following commands to build and install the kernel module
    #+begin_src sh
    sudo make setup_dkms && sudo make udev_install
    sudo dkms install -m leetmouse-driver -v 0.9.0 # Enter the version you determined from the Makefile earlier in here
+   udevadm control --reload-rules
    #+end_src
    Unplug and replug your mouse - Or reboot. From now on, your mouse will automatically bind to this driver.
 
    *Uninstallation*
+   
    Your again need to know then =version= as described above for the installation
    #+begin_src sh
    sudo dkms remove -m leetmouse-driver -v 0.9.0
    sudo make remove_dkms && sudo make udev_uninstall
    #+end_src
 * Manual compile, insmod, bind
-  If you want to compile this module only for testing purposes or development, you do not need to install the whole package.
-  Just do a
+  If you want to compile this module only for testing purposes or development, you do not need to install the whole package to your system
+
+  Compile the module, remove previously loaded modules and insert it.
   #+begin_src sh
   make clean && make
   sudo rmmod leetmouse
