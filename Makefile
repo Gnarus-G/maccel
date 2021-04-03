@@ -8,7 +8,7 @@ KERNELDIR?=/lib/modules/$(shell uname -r)/build
 DRIVERDIR?=$(shell pwd)/driver
 
 # Where kernel drivers are going to be installed
-MODULEDIR?=/lib/modules/$(shell uname -r)/kernel/drivers/hid
+MODULEDIR?=/lib/modules/$(shell uname -r)/kernel/drivers/usb
 
 DKMS_NAME?=leetmouse-driver
 DKMS_VER?=0.9.0

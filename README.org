@@ -48,11 +48,11 @@
   You can take a look at =/scripts/bind.sh= for an example on how to determine your mouse's USB address for that
 
 * TODOS
-  | Easier installation & binding                                      | currently the focus     |
   | External interface for dynamically pushing acceleration parameters | Next priority           |
   | Fixing the only [[https://github.com/systemofapwne/mousedriver/issues/2][vertical srolling bug]]                              | Next priority           |
   | GUI to configure the parameters                                    | Next next priority      |
   | Feature parity with Povohats driver and later even RawAccel        | Next next next priority |
+  | Easier installation & binding                                      | Done                    |
   | DKMS support                                                       | Done                    |
   | PKGBUILD for Arch based systems                                    | Done                    |
   | AUR package release                                                | TBD                     |

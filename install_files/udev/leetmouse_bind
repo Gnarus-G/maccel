@@ -42,19 +42,12 @@ if [ ! -d /sys/bus/usb/drivers/"$DRIVER" ] ; then
 	mesg "Modprobed $DRIVER"
 fi
 
-if [ -d /sys/bus/hid/drivers/hid-generic/"$DEVICE_ID" ] ; then
+if [ -d /sys/bus/usb/drivers/usbhid/"$DEVICE_ID" ] ; then
 	# Unbind from hid
 	mesg "Unbinding $DEVICE_ID from hid-generic"
-	printf '%s' "$DEVICE_ID" > /sys/bus/hid/drivers/hid-generic/unbind
+	printf '%s' "$DEVICE_ID" > /sys/bus/usb/drivers/usbhid/unbind
 	mesg "Binding $DEVICE_ID to $DRIVER"
-	printf '%s' "$DEVICE_ID" > /sys/bus/hid/drivers/"$DRIVER"/bind
+	printf '%s' "$DEVICE_ID" > /sys/bus/usb/drivers/"$DRIVER"/bind
 	sleep 0.1
 	mesg "Finished binding $DEVICE_ID"
 fi
-
-if [ -d /sys/bus/hid/drivers/"$DRIVER"/"$DEVICE_ID" ] ; then
-	mesg "Changing group /sys/bus/hid/drivers/$DRIVER/$DEVICE_ID/"
-	chgrp -R plugdev /sys/bus/hid/drivers/"$DRIVER"/"$DEVICE_ID"/
-	mesg "Changed group /sys/bus/hid/drivers/$DRIVER/$DEVICE_ID/"
-fi
-
