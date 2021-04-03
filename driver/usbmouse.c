@@ -12,17 +12,10 @@
  * Vojtech Pavlik, Simunkova 1594, Prague 8, 182 00 Czech Republic
  */
 
-// Config for acceleration in here
-#include "leetmouse.h"
-
-//Needed for kernel_fpu_begin/end
-#include <linux/version.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5,0,0)
-    //Pre Kernel 5.0.0
-    #include <asm/i387.h>
-#else
-    #include <asm/fpu/api.h>
-#endif
+                                                            //Leetmouse Mod BEGIN
+#include "accel.h"
+#include "config.h"
+                                                            //Leetmouse Mod END
 
 #include <linux/kernel.h>
 #include <linux/slab.h>
@@ -32,17 +25,18 @@
 #include <linux/hid.h>
 
 /* for apple IDs */
+/*                                                          //Leetmouse Mod BEGIN
 #ifdef CONFIG_USB_HID_MODULE
-//#include "../hid-ids.h"
-#include "hid-ids.h"
+#include "../hid-ids.h"
 #endif
+*/                                                          //Leetmouse Mod END
 
 /*
  * Version Information
  */
 #define DRIVER_VERSION "v1.6"
 #define DRIVER_AUTHOR "Vojtech Pavlik <vojtech@ucw.cz>"
-#define DRIVER_DESC "USB HID Boot Protocol mouse driver with acceleration"
+#define DRIVER_DESC "USB HID Boot Protocol mouse driver with acceleration (LEETMOUSE)"   //Leetmouse Mod
 
 MODULE_AUTHOR(DRIVER_AUTHOR);
 MODULE_DESCRIPTION(DRIVER_DESC);
@@ -59,96 +53,14 @@ struct usb_mouse {
 	dma_addr_t data_dma;
 };
 
-static inline int Leet_round(float x)
-{
-    if (x >= 0) {
-        return (int)(x + 0.5f);
-    } else {
-        return (int)(x - 0.5f);
-    }
-}
-
-// What do we have here? Code from Quake 3, which is also GPL.
-// https://en.wikipedia.org/wiki/Fast_inverse_square_root
-// Copyright (C) 1999-2005 Id Software, Inc.
-static inline void Q_sqrt(float* number)
-{
-    long i;
-    float x2, y;
-    const float threehalfs = 1.5F;
-
-    x2 = (*number) * 0.5F;
-    y  = (*number);
-    i  = * ( long * ) &y;                       // evil floating point bit level hacking
-    i  = 0x5f3759df - ( i >> 1 );               // what the fuck?
-    y  = * ( float * ) &i;
-    y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
-    //	y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
-
-    *number = 1 / y;
-}
-
 static void usb_mouse_irq(struct urb *urb)
 {
 	struct usb_mouse *mouse = urb->context;
 	signed char *data = mouse->data;
 	struct input_dev *dev = mouse->dev;
+    signed int x, y, wheel;                                //Leetmouse Mod
 	int status;
-    
-    int dx_int, dy_int;
 
-    // We can only safely use the FPU in an IRQ event when this returns 1.
-    // This is especially important, when compiling this module with msse (triggered it a lot) instead of mhard-float (never triggered it for me)
-    // Not taking care for this lead to data-corruption of my BTRFS volumes. And I guess, the same would be true for raid6 (both use kernel_fpu_begin/kernel_fpu_end).
-    if(!irq_fpu_usable())
-        goto fpu_end;
-
-//We are going to use the FPU within the kernel. So we need to safely switch context during all FPU processing in order to not corrupt the userspace FPU state
-kernel_fpu_begin();
-    
-    // acceleration happens here
-    float delta_x = data[1] * PRE_SCALE_X;
-    float delta_y = data[3] * PRE_SCALE_Y;
-    float ms = 1000.0f / POLLING_RATE;
-    float accel_sens = SENSITIVITY;
-    float rate = delta_x * delta_x + delta_y * delta_y;
-    Q_sqrt(&rate);
-    static float carry_x = 0.0f;
-    static float carry_y = 0.0f;
-    
-    if (SPEED_CAP != 0) {
-        if (rate >= SPEED_CAP) {
-            delta_x *= SPEED_CAP / rate;
-            delta_y *= SPEED_CAP / rate;
-        }
-    }
-    rate /= ms;
-    rate -= OFFSET;
-    if (rate > 0) {
-        rate *= ACCELERATION;
-        accel_sens += rate;
-    }
-    if (SENS_CAP > 0 && accel_sens >= SENS_CAP) {
-        accel_sens = SENS_CAP;
-    }
-    accel_sens /= SENSITIVITY;
-    delta_x *= accel_sens;
-    delta_y *= accel_sens;
-    delta_x *= POST_SCALE_X;
-    delta_y *= POST_SCALE_Y;
-    delta_x += carry_x;
-    delta_y += carry_y;
-    carry_x = delta_x - Leet_round(delta_x);
-    carry_y = delta_y - Leet_round(delta_y);
-
-    //Cast back to ints
-    dx_int = Leet_round(delta_x);
-    dy_int = Leet_round(delta_y);
-    
-//We stopped using the FPU: Switch back context again
-kernel_fpu_end();
-fpu_end:
-    
 	switch (urb->status) {
 	case 0:			/* success */
 		break;
@@ -156,6 +68,11 @@ fpu_end:
 	case -ENOENT:
 	case -ESHUTDOWN:
 		return;
+                                                            //Leetmouse Mod BEGIN
+	case -EOVERFLOW:
+		printk("LEETMOUSE: EOVERFLOW. Try to increase BUFFER_SIZE from %d to %d in 'config.h'", BUFFER_SIZE, 2*BUFFER_SIZE);
+		goto resubmit;
+                                                            //Leetmouse Mod END
 	/* -EPIPE:  should clear the halt */
 	default:		/* error */
 		goto resubmit;
@@ -166,16 +83,17 @@ fpu_end:
 	input_report_key(dev, BTN_MIDDLE, data[0] & 0x04);
 	input_report_key(dev, BTN_SIDE,   data[0] & 0x08);
 	input_report_key(dev, BTN_EXTRA,  data[0] & 0x10);
+                                                            //Leetmouse Mod BEGIN
+    x = data[1];
+	y = data[3];
+    wheel = data[5];
+    if(!accelerate(&x,&y,&wheel)){
+        input_report_rel(dev, REL_X,     x);
+        input_report_rel(dev, REL_Y,     y);
+        input_report_rel(dev, REL_WHEEL, wheel);
+    }
+                                                            //Leetmouse Mod END
 
-    // The mod
-    input_report_rel(dev, REL_X,      dx_int);
-    input_report_rel(dev, REL_Y,      dy_int);
-    // Original linux sourcecode
-	//input_report_rel(dev, REL_X,     data[1]);
-	//input_report_rel(dev, REL_Y,     data[2]);
-    
-	input_report_rel(dev, REL_WHEEL, data[5]);
-    
 	input_sync(dev);
 resubmit:
 	status = usb_submit_urb (urb, GFP_ATOMIC);
@@ -231,7 +149,7 @@ static int usb_mouse_probe(struct usb_interface *intf, const struct usb_device_i
 	if (!mouse || !input_dev)
 		goto fail1;
 
-	mouse->data = usb_alloc_coherent(dev, 16, GFP_ATOMIC, &mouse->data_dma);
+	mouse->data = usb_alloc_coherent(dev, BUFFER_SIZE, GFP_ATOMIC, &mouse->data_dma); //Leetmouse Mod
 	if (!mouse->data)
 		goto fail1;
 
@@ -279,7 +197,7 @@ static int usb_mouse_probe(struct usb_interface *intf, const struct usb_device_i
 	input_dev->close = usb_mouse_close;
 
 	usb_fill_int_urb(mouse->irq, dev, pipe, mouse->data,
-			 (maxp > 16 ? 16 : maxp),
+			 (maxp > BUFFER_SIZE ? BUFFER_SIZE : maxp),		//Leetmouse Mod
 			 usb_mouse_irq, mouse, endpoint->bInterval);
 	mouse->irq->transfer_dma = mouse->data_dma;
 	mouse->irq->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
@@ -294,7 +212,7 @@ static int usb_mouse_probe(struct usb_interface *intf, const struct usb_device_i
 fail3:	
 	usb_free_urb(mouse->irq);
 fail2:	
-	usb_free_coherent(dev, 16, mouse->data, mouse->data_dma);
+	usb_free_coherent(dev, BUFFER_SIZE, mouse->data, mouse->data_dma); //Leetmouse Mod
 fail1:	
 	input_free_device(input_dev);
 	kfree(mouse);
@@ -310,7 +228,7 @@ static void usb_mouse_disconnect(struct usb_interface *intf)
 		usb_kill_urb(mouse->irq);
 		input_unregister_device(mouse->dev);
 		usb_free_urb(mouse->irq);
-		usb_free_coherent(interface_to_usbdev(intf), 16, mouse->data, mouse->data_dma);
+		usb_free_coherent(interface_to_usbdev(intf), BUFFER_SIZE, mouse->data, mouse->data_dma);  //Leetmouse Mod
 		kfree(mouse);
 	}
 }
@@ -324,7 +242,7 @@ static const struct usb_device_id usb_mouse_id_table[] = {
 MODULE_DEVICE_TABLE (usb, usb_mouse_id_table);
 
 static struct usb_driver usb_mouse_driver = {
-	.name		= "leetmouse",
+	.name		= "leetmouse",                              //Leetmouse Mod
 	.probe		= usb_mouse_probe,
 	.disconnect	= usb_mouse_disconnect,
 	.id_table	= usb_mouse_id_table,

@@ -1,0 +1,60 @@
+* Description
+  The =LEETMOUSE= kernelmodule enables quake-live like acceleration for your mouse on Linux and is heavily inspired by previous works from [[http://accel.drok-radnik.com/old.html][Povohat's mouse driver for Windows.]]
+  =LEETMOUSE= basically fuses the original [[https://github.com/torvalds/linux/blob/master/drivers/hid/usbhid/usbmouse.c][Linux USB mouse driver]] code with the acceleration code-base and has been initially developed by [[https://github.com/chilliams][Christopher Williams]].
+  Since the [[https://github.com/chilliams/mousedriver][original work]] was in a rough state and seem to have been abandonned, this fork has been started.
+
+* Installation & Uninstallation
+** Preparation & Configuration
+   + Clone this repository, copy =driver/config.sample.h= to =/driver/config.h= and edit it in your favorite text editor. Change the defines at the top of config.h to match your desired acceleration settings.
+   + Make sure, you have the required toolchains (e.g. =base-devel= on Arch or =build-essentials=) installed as well as the =linux-headers= for your installed kernel.
+** Arch based
+   *Installation*
+   #+begin_src sh
+   ./scripts/build_arch.sh
+   cd pkg/build
+   makepkg -f
+   sudo pacman -U leetmouse*.zst
+   #+end_src
+   
+   *Uninstallation*
+   #+begin_src sh
+   sudo pacman -R leetmouse-driver-dkms
+   #+end_src
+** Other distros
+   *Installation*
+   Determine the current version of this module by examining the variable =DKMS_VER= in the =Makefile=. It can be e.g. 0.9.0
+   Run the following commands to build and install the kernel module
+   #+begin_src sh
+   sudo make setup_dkms && sudo make udev_install
+   sudo dkms install -m leetmouse-driver -v 0.9.0 # Enter the version you determined from the Makefile earlier in here
+   #+end_src
+   Unplug and replug your mouse - Or reboot. From now on, your mouse will automatically bind to this driver.
+
+   *Uninstallation*
+   Your again need to know then =version= as described above for the installation
+   #+begin_src sh
+   sudo dkms remove -m leetmouse-driver -v 0.9.0
+   sudo make remove_dkms && sudo make udev_uninstall
+   #+end_src
+* Manual compile, insmod, bind
+  If you want to compile this module only for testing purposes or development, you do not need to install the whole package.
+  Just do a
+  #+begin_src sh
+  make clean && make
+  sudo rmmod leetmouse
+  sudo insmod ./driver/leetmouse.ko
+  #+end_src
+  If you did not install the udev rules before via =make udev_install= you need to manually bind your mouse to this driver.
+  You can take a look at =/scripts/bind.sh= for an example on how to determine your mouse's USB address for that
+
+* TODOS
+  | External interface for dynamically pushing acceleration parameters | Next priority           |
+  | Fixing the only [[https://github.com/systemofapwne/mousedriver/issues/2][vertical srolling bug]]                              | Next priority           |
+  | GUI to configure the parameters                                    | Next next priority      |
+  | Feature parity with Povohats driver and later even RawAccel        | Next next next priority |
+  | Easier installation & binding                                      | Done                    |
+  | DKMS support                                                       | Done                    |
+  | PKGBUILD for Arch based systems                                    | Done                    |
+  | AUR package release                                                | TBD                     |
+  | Debian (based systems) package                                     | TBD                     |
+  

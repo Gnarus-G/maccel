@@ -1,7 +1,12 @@
 *.cmd
 *.ko
+*.mod
 *.mod.c
 *.mod.o
 *.o
+*.kate-swp
 Module.symvers
 modules.order
+.vscode
+config.h
+pkg/build
