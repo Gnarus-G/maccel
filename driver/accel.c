@@ -134,7 +134,8 @@ kernel_fpu_begin();
     delta_whl *= SCROLLS_PER_TICK/3.0f;
     delta_x += carry_x;
     delta_y += carry_y;
-    delta_whl += carry_whl;
+    if((delta_whl < 0 && carry_whl < 0) || (delta_whl > 0 && carry_whl > 0)) //Only apply carry to the wheel, if it shares the same sign
+        delta_whl += carry_whl;
 
     //Cast back to int
     *x = Leet_round(delta_x);
