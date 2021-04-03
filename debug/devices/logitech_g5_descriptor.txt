@@ -1,0 +1,73 @@
+ 
+Usage Page (Desktop),               ; Generic desktop controls (01h)
+Usage (Mouse),                      ; Mouse (02h, application collection)
+Collection (Application),
+    Usage (Pointer),                ; Pointer (01h, physical collection)
+    Collection (Physical),
+        Usage Page (Button),        ; Button (09h)
+        Usage Minimum (01h),
+        Usage Maximum (08h),
+        Logical Minimum (0),
+        Logical Maximum (1),
+        Report Count (8),
+        Report Size (1),
+        Input (Variable),
+        Usage Page (FF00h),         ; FF00h, vendor-defined
+        Usage (40h),
+        Logical Minimum (-127),
+        Logical Maximum (127),
+        Report Size (8),
+        Report Count (2),
+        Input (Variable),
+        Usage Page (Desktop),       ; Generic desktop controls (01h)
+        Usage (Wheel),              ; Wheel (38h, dynamic value)
+        Report Count (1),
+        Input (Variable, Relative),
+        Usage Page (Consumer),      ; Consumer (0Ch)
+        Usage (AC Pan),             ; AC pan (0238h, linear control)
+        Report Count (1),
+        Input (Variable, Relative),
+        Usage Page (Desktop),       ; Generic desktop controls (01h)
+        Logical Minimum (-32767),
+        Logical Maximum (32767),
+        Report Size (16),
+        Report Count (2),
+        Usage (X),                  ; X (30h, dynamic value)
+        Usage (Y),                  ; Y (31h, dynamic value)
+        Input (Variable, Relative),
+        Usage Page (Button),        ; Button (09h)
+        Usage Minimum (09h),
+        Usage Maximum (10h),
+        Logical Minimum (0),
+        Logical Maximum (1),
+        Report Count (8),
+        Report Size (1),
+        Input (Variable),
+    End Collection,
+End Collection
+Usage Page (FF00h),         ; FF00h, vendor-defined
+Usage (01h),
+Collection (Application),
+    Report ID (16),
+    Report Size (8),
+    Report Count (6),
+    Logical Minimum (0),
+    Logical Maximum (255),
+    Usage (01h),
+    Input,
+    Usage (01h),
+    Output,
+End Collection,
+Usage Page (FF00h),         ; FF00h, vendor-defined
+Usage (02h),
+Collection (Application),
+    Report ID (17),
+    Report Size (8),
+    Report Count (19),
+    Logical Minimum (0),
+    Logical Maximum (255),
+    Usage (02h),
+    Input,
+    Usage (02h),
+    Output,
+End Collection

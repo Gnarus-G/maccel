@@ -1,0 +1,103 @@
+Usage Page (FFC0h),         ; FFC0h, vendor-defined
+Usage (01h),
+Collection (Application),
+    Usage Page (FFC1h),     ; FFC1h, vendor-defined
+    Logical Minimum (0),
+    Logical Maximum (255),
+    Report Size (8),
+    Usage (F0h),
+    Report Count (32),
+    Input (Variable),
+    Usage (F1h),
+    Report Count (32),
+    Output (Variable),
+    Usage (F2h),
+    Report Count (578),
+    Feature (Variable),
+End Collection
+Usage Page (Desktop),                   ; Generic desktop controls (01h)
+Usage (Mouse),                          ; Mouse (02h, application collection)
+Collection (Application),
+    Usage (Pointer),                    ; Pointer (01h, physical collection)
+    Collection (Physical),
+        Collection (Logical),
+            Usage Page (Button),        ; Button (09h)
+            Usage Minimum (01h),
+            Usage Maximum (08h),
+            Logical Minimum (0),
+            Logical Maximum (1),
+            Report Count (8),
+            Report Size (1),
+            Input (Variable),
+            Usage Page (Desktop),       ; Generic desktop controls (01h)
+            Usage (X),                  ; X (30h, dynamic value)
+            Usage (Y),                  ; Y (31h, dynamic value)
+            Logical Minimum (-32767),
+            Logical Maximum (32767),
+            Report Size (16),
+            Report Count (2),
+            Input (Variable, Relative),
+            Usage (Wheel),              ; Wheel (38h, dynamic value)
+            Logical Minimum (-127),
+            Logical Maximum (127),
+            Report Size (8),
+            Report Count (1),
+            Input (Variable, Relative),
+        End Collection,
+        Collection (Logical),
+            Usage Page (Consumer),      ; Consumer (0Ch)
+            Usage (AC Pan),             ; AC pan (0238h, linear control)
+            Logical Minimum (-127),
+            Logical Maximum (127),
+            Report Size (8),
+            Report Count (1),
+            Input (Variable, Relative),
+        End Collection,
+        Collection (Logical),
+            Usage Page (FFC1h),         ; FFC1h, vendor-defined
+            Logical Minimum (0),
+            Logical Maximum (255),
+            Report Size (8),
+            Usage (F0h),
+            Report Count (2),
+            Input (Variable),
+        End Collection,
+    End Collection,
+End Collection
+Usage Page (Desktop),               ; Generic desktop controls (01h)
+Usage (Keyboard),                   ; Keyboard (06h, application collection)
+Collection (Application),
+    Report ID (1),
+    Usage Page (Keyboard),          ; Keyboard/keypad (07h)
+    Usage Minimum (KB Leftcontrol), ; Keyboard left control (E0h, dynamic value)
+    Usage Maximum (KB Right GUI),   ; Keyboard right GUI (E7h, dynamic value)
+    Logical Minimum (0),
+    Logical Maximum (1),
+    Report Size (1),
+    Report Count (8),
+    Input (Variable),
+    Report Size (8),
+    Report Count (1),
+    Input (Constant),
+    Usage Page (Keyboard),          ; Keyboard/keypad (07h)
+    Usage Minimum (None),           ; No event (00h, selector)
+    Usage Maximum (FFh),
+    Logical Minimum (0),
+    Logical Maximum (255),
+    Report Size (8),
+    Report Count (6),
+    Input,
+End Collection,
+Usage Page (Consumer),              ; Consumer (0Ch)
+Usage (Consumer Control),           ; Consumer control (01h, application collection)
+Collection (Application),
+    Report ID (2),
+    Usage Page (Consumer),          ; Consumer (0Ch)
+    Usage Minimum (00h),
+    Usage Maximum (0FFFh),
+    Logical Minimum (0),
+    Logical Maximum (4095),
+    Report Size (16),
+    Report Count (2),
+    Input,
+End Collection
