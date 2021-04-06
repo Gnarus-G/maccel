@@ -188,19 +188,24 @@ static int usb_mouse_probe(struct usb_interface *intf, const struct usb_device_i
 	dbg_hid("HID probe called for ifnum %d\n",
 			intf->altsetting->desc.bInterfaceNumber);
 
-	if (interface->desc.bNumEndpoints != 1)
-		return -ENODEV;
+	if (interface->desc.bNumEndpoints != 1){
+		ret = -ENODEV;
+		goto fail1;
+	}
+		
 
 	if (usb_get_extra_descriptor(interface, HID_DT_HID, &hdesc) &&
 	    (!interface->desc.bNumEndpoints ||
 	     usb_get_extra_descriptor(&interface->endpoint[0], HID_DT_HID, &hdesc))) {
 		dbg_hid("class descriptor not present\n");
-		return -ENODEV;
+		ret = -ENODEV;
+		goto fail1;
 	}
 
 	if (hdesc->bLength < sizeof(struct hid_descriptor)) {
 		dbg_hid("hid descriptor is too short\n");
-		return -EINVAL;
+		ret = -EINVAL;
+		goto fail1;
 	}
 
 	num_descriptors = min_t(int, hdesc->bNumDescriptors,
@@ -212,12 +217,13 @@ static int usb_mouse_probe(struct usb_interface *intf, const struct usb_device_i
 
 	if (!rsize || rsize > HID_MAX_DESCRIPTOR_SIZE) {
 		dbg_hid("weird size of report descriptor (%u)\n", rsize);
-		return -EINVAL;
+		ret = -EINVAL;
+		goto fail1;
 	}
 
 	rdesc = kmalloc(rsize, GFP_KERNEL);
 	if (!rdesc)
-		return -ENOMEM;
+		goto fail1;
 
 	//hid_set_idle(dev, interface->desc.bInterfaceNumber, 0, 0);
 
@@ -231,12 +237,15 @@ static int usb_mouse_probe(struct usb_interface *intf, const struct usb_device_i
 
 	rstruct = kmalloc(sizeof(struct report_structure), GFP_KERNEL);
 	if (!rstruct)
-		return -ENOMEM;
+		goto fail1;
 	mouse->report_struct = rstruct;
 
 	//Parse the descriptor and delete it
-	parse_report_desc(rdesc, rsize, rstruct);
+	ret = parse_report_desc(rdesc, rsize, rstruct);
 	kfree(rdesc);
+	if (ret < 0) {
+		goto fail1;
+	}
 
 	printk("Button: Offset %u Size %u", (unsigned int) rstruct->button.offset, rstruct->button.size);
 	printk("X: Offset %u Size %u", (unsigned int) rstruct->x.offset, rstruct->x.size);
