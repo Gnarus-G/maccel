@@ -5,6 +5,8 @@
 *.mod.o
 *.o
 *.kate-swp
+*.out
+.directory
 Module.symvers
 modules.order
 .vscode
