@@ -1,6 +1,8 @@
 #include <iostream>
 using namespace std;
 
+//#include "linux/string.h" //Necessary for memcpy to work inside kernel module
+#include <cstring>           //memcpy
 #include "hid_parser.h"
 
 // From the steelseries mouse
@@ -47,18 +49,18 @@ unsigned char desc[] =  {
     */
 };
 
-//Stores the bit offset and byte size in the raw reported data structure of usb_mouse::data
-struct report_data {
+//Stores the bit offset and bit size in the raw reported data structure of usb_mouse::data
+struct report_entry {
 	unsigned char offset;	// In bits
 	unsigned char size;		// In bits
 };
 
 //Stores a collection of important offsets & sizes for report data in usb_mouse::data
-struct report_structure {
-	struct report_data button;
-	struct report_data x;
-	struct report_data y;
-	struct report_data wheel;
+struct report_positions {
+	struct report_entry button;
+	struct report_entry x;
+	struct report_entry y;
+	struct report_entry wheel;
 };
 
 //Length of "ctl word + data"
@@ -78,9 +80,10 @@ inline int c_len(const unsigned char c){
 //We will skip most control words until we found an interesting one
 //We also assume, that the first button-definition we will find is the most important one,
 //so we will ignore any further button definitions
-int parse_report_desc(unsigned char* data, size_t data_len, report_structure* data_struct){
-    int r_count, r_size, r_usage_a = 0, r_usage_b = 0;
-    unsigned char c, d, button;
+int parse_report_desc(unsigned char *data, int data_len, struct report_positions *data_pos)
+{
+    int r_count = 0, r_size = 0, r_usage_a = 0, r_usage_b = 0;
+    unsigned char c, d, button = 0;
 
     unsigned int offset = 0;    //Offset in bits
 
@@ -111,33 +114,33 @@ int parse_report_desc(unsigned char* data, size_t data_len, report_structure* da
 
         //Check, if we reached the end of this input data type
         if(c == D_INPUT || c == D_FEATURE){
-            //Assign usage to data_struct
+            //Assign usage to data_pos
             if(!button && r_usage_a == D_USAGE_BUTTON){
-                data_struct->button.offset = offset;
-                data_struct->button.size = r_size*r_count;
+                data_pos->button.offset = offset;
+                data_pos->button.size = r_size*r_count;
                 button = 1;
             }
             switch(r_usage_a){
                 case D_USAGE_X:
-                    data_struct->x.offset = offset;
-                    data_struct->x.size = r_size;
+                    data_pos->x.offset = offset;
+                    data_pos->x.size = r_size;
                 case D_USAGE_Y:
-                    data_struct->x.offset = offset;
-                    data_struct->x.size = r_size;
+                    data_pos->x.offset = offset;
+                    data_pos->x.size = r_size;
             }
              switch(r_usage_b){
                 case D_USAGE_X:
-                    data_struct->y.offset = offset + r_size;
-                    data_struct->y.size = r_size;
+                    data_pos->y.offset = offset + r_size;
+                    data_pos->y.size = r_size;
                 case D_USAGE_Y:
-                    data_struct->y.offset = offset + r_size;
-                    data_struct->y.size = r_size;
+                    data_pos->y.offset = offset + r_size;
+                    data_pos->y.size = r_size;
             }
             if(r_usage_a == D_USAGE_WHEEL){
-                data_struct->wheel.offset = offset;
-                data_struct->wheel.size = r_size*r_count;
+                data_pos->wheel.offset = offset;
+                data_pos->wheel.size = r_size*r_count;
             }
-            
+
             r_usage_a = 0;
             r_usage_b = 0;
             offset += r_size*r_count;
@@ -148,13 +151,81 @@ int parse_report_desc(unsigned char* data, size_t data_len, report_structure* da
     return 0;
 }
 
+inline int extract_at(unsigned char *data, int data_len, int bit_pos, int bit_size)
+{
+    int size = bit_size/8;          //Size of our data in bytes
+    int i = bit_pos/8;              //Starting index of data[] to access in byte-aligned size
+    char shift = bit_pos % 8;       //Remaining bits to shift until we reach our target data
+    union {
+        unsigned char raw[4];
+        unsigned char b1;
+        unsigned short b2;
+        int i;
+    } buffer;
+
+    buffer.i = 0; //Initialized buffer to zero
+
+    //Avoid access violation when using memcpy.
+    if(i + size > data_len || (shift && (i + size + 1) > data_len))
+        return 0;
+
+    //TODO: Endianess!
+    //Right now, we only support 1 byte and 2 byte long data - We explicitly check against the supplied bit-length
+    switch(bit_size){
+    case 8:
+        //Create a local copy, that we can modify. If 'shift' ('pos % 8') was not zero, the buffer must be bigger. 
+        //So we extract one more byte. QUESTION: Is this safe? Imagine, the data is 10 bits long and we want to extract bit 2 to 10. We would copy 2 bytes (16 bit),
+        //so that we can shift << by 2 bits. What about the remaining 6 bits? Can we even access them? I assume: YES. On this specific architecture x86/x86_64,
+        //the shortes data-type is a char of 1 byte (8 bits). And we allocated a buffer for that for DMA access via the usbmouse driver, which itself
+        //is then aligned to this minimal size of 1 byte.
+        cout << "IN" << endl;
+        cout << i << endl;
+        memcpy(buffer.raw, data + i, (shift == 0) ? 1 : 2);
+        if(shift){
+            buffer.i <<= shift;
+        }
+        return buffer.i;
+    }
+
+    return 0; //All other lengths are not supported.
+}
+
+// Extracts the interesting mouse data from the raw USB data, according to the layout delcared in the report descriptor
+int extract_mouse_events(unsigned char *data, int data_len, struct report_positions *data_pos, int *btn, int *x, int *y, int *wheel)
+{
+    cout << extract_at(data,data_len,data_pos->wheel.offset, data_pos->wheel.size) << endl;
+}
+
+struct steelseries_600_data{
+    unsigned char btn;
+    signed short x;
+    signed short y;
+    signed char wheel;
+};
 
 int main(){
-    report_structure data_struct;
+    //Test parsing of report descriptor
+    struct report_positions data_struct;
     parse_report_desc(desc, sizeof(desc)/sizeof(char), &data_struct);
     cout << "Button: Offset " << (unsigned int) data_struct.button.offset << " Size " << (unsigned int) data_struct.button.size << endl;
     cout << "X: Offset " << (unsigned int) data_struct.x.offset << " Size " << (unsigned int) data_struct.x.size << endl;
     cout << "Y: Offset " << (unsigned int) data_struct.y.offset << " Size " << (unsigned int) data_struct.y.size << endl;
     cout << "Wheel: Offset " << (unsigned int) data_struct.wheel.offset << " Size " << (unsigned int) data_struct.wheel.size << endl;
+
+    //Test extraction from a reported data. Here, the "test" data is for a steelseries Rival 600 mouse
+    union test_data{
+        steelseries_600_data data;
+        unsigned char raw[32];          //Big enough buffer
+    } test;
+
+    test.data.btn = 19;
+    test.data.x = -7;
+    test.data.y = 120;
+    test.data.wheel = 15;
+
+    int btn, x, y, wheel;
+
+    extract_mouse_events(test.raw, sizeof(test), &data_struct, &btn, &x, &y, &wheel);
+
     return 0;
 }

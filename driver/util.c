@@ -2,7 +2,8 @@
 #include <stdbool.h>
 
 //Converts string into float.
-inline void atof(const char* str, int len, float* result){
+inline void atof(const char *str, int len, float *result)
+{
     float tmp = 0.0f;
     unsigned int i, j, pos = 0;
     signed char sign = 0;
@@ -55,7 +56,7 @@ inline int Leet_round(float x)
 // What do we have here? Code from Quake 3, which is also GPL.
 // https://en.wikipedia.org/wiki/Fast_inverse_square_root
 // Copyright (C) 1999-2005 Id Software, Inc.
-inline void Q_sqrt(float* number)
+inline void Q_sqrt(float *number)
 {
     long i;
     float x2, y;
@@ -72,9 +73,9 @@ inline void Q_sqrt(float* number)
     *number = 1 / y;
 }
 
-
-//Length of "ctl word + data"
-inline int c_len(const unsigned char c){
+//Length of "ctl word + data" for parsing a report descriptor
+inline int c_len(const unsigned char c)
+{
     switch(c){
         case D_END_COLLECTION: return 1;
         case D_USAGE_MB: return 3;
@@ -90,9 +91,10 @@ inline int c_len(const unsigned char c){
 //We will skip most control words until we found an interesting one
 //We also assume, that the first button-definition we will find is the most important one,
 //so we will ignore any further button definitions
-int parse_report_desc(unsigned char* data, int data_len, struct report_structure* data_struct){
-    int r_count, r_size, r_usage_a = 0, r_usage_b = 0;
-    unsigned char c, d, button;
+int parse_report_desc(unsigned char *data, int data_len, struct report_positions *data_pos)
+{
+    int r_count = 0, r_size = 0, r_usage_a = 0, r_usage_b = 0;
+    unsigned char c, d, button = 0;
 
     unsigned int offset = 0;    //Offset in bits
 
@@ -123,31 +125,31 @@ int parse_report_desc(unsigned char* data, int data_len, struct report_structure
 
         //Check, if we reached the end of this input data type
         if(c == D_INPUT || c == D_FEATURE){
-            //Assign usage to data_struct
+            //Assign usage to data_pos
             if(!button && r_usage_a == D_USAGE_BUTTON){
-                data_struct->button.offset = offset;
-                data_struct->button.size = r_size*r_count;
+                data_pos->button.offset = offset;
+                data_pos->button.size = r_size*r_count;
                 button = 1;
             }
             switch(r_usage_a){
                 case D_USAGE_X:
-                    data_struct->x.offset = offset;
-                    data_struct->x.size = r_size;
+                    data_pos->x.offset = offset;
+                    data_pos->x.size = r_size;
                 case D_USAGE_Y:
-                    data_struct->x.offset = offset;
-                    data_struct->x.size = r_size;
+                    data_pos->x.offset = offset;
+                    data_pos->x.size = r_size;
             }
              switch(r_usage_b){
                 case D_USAGE_X:
-                    data_struct->y.offset = offset + r_size;
-                    data_struct->y.size = r_size;
+                    data_pos->y.offset = offset + r_size;
+                    data_pos->y.size = r_size;
                 case D_USAGE_Y:
-                    data_struct->y.offset = offset + r_size;
-                    data_struct->y.size = r_size;
+                    data_pos->y.offset = offset + r_size;
+                    data_pos->y.size = r_size;
             }
             if(r_usage_a == D_USAGE_WHEEL){
-                data_struct->wheel.offset = offset;
-                data_struct->wheel.size = r_size*r_count;
+                data_pos->wheel.offset = offset;
+                data_pos->wheel.size = r_size*r_count;
             }
             
             r_usage_a = 0;
@@ -158,4 +160,10 @@ int parse_report_desc(unsigned char* data, int data_len, struct report_structure
     }
 
     return 0;
+}
+
+// Extracts the interesting mouse data from the raw USB data, according to the layout delcared in the report descriptor
+int extract_mouse_events(unsigned char *data, struct report_positions *data_pos, int button, int x, int y, int wheel)
+{
+
 }

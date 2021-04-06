@@ -31,23 +31,23 @@ enum hid_data{
     D_USAGE_Y = 0x31
 };
 
-//Stores the bit offset and byte size in the raw reported data structure of usb_mouse::data
-struct report_data {
+//Stores the bit offset and bit size in the raw reported data structure of usb_mouse::data
+struct report_entry {
 	unsigned char offset;	// In bits
 	unsigned char size;		// In bits
 };
 
 //Stores a collection of important offsets & sizes for report data in usb_mouse::data
-struct report_structure {
-	struct report_data button;
-	struct report_data x;
-	struct report_data y;
-	struct report_data wheel;
+struct report_positions {
+	struct report_entry button;
+	struct report_entry x;
+	struct report_entry y;
+	struct report_entry wheel;
 };
 
-void atof(const char* str, int len, float* result);
+void atof(const char *str, int len, float *result);
 int Leet_round(float x);
-void Q_sqrt(float* number);
-int parse_report_desc(unsigned char* data, int data_len, struct report_structure* data_struct);
+void Q_sqrt(float *number);
+int parse_report_desc(unsigned char *data, int data_len, struct report_positions *data_pos);
 
 #endif  //_UTIL_H

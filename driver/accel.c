@@ -39,7 +39,8 @@ PARAM(sensitivity, s(SENSITIVITY), "HEllo")
 // ########## Acceleration code
 
 // Acceleration happens here
-int accelerate(int* x, int* y, int* wheel){
+int accelerate(int *x, int *y, int *wheel)
+{
 	float delta_x, delta_y, delta_whl, ms, rate;
 	float accel_sens = SENSITIVITY;
     static long buffer_x = 0;
@@ -158,7 +159,8 @@ kernel_fpu_end();
 // First, to not hammer too much the logic in "accelerate()", which is called VERY OFTEN!
 // Second, to fight possible cheating. However, this can be OFC changed, since we are OSS...
 /*
-static void updata_params(){
+static void updata_params()
+{
     return;
 }
 */
