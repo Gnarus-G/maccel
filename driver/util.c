@@ -71,3 +71,91 @@ inline void Q_sqrt(float* number)
 
     *number = 1 / y;
 }
+
+
+//Length of "ctl word + data"
+inline int c_len(const unsigned char c){
+    switch(c){
+        case D_END_COLLECTION: return 1;
+        case D_USAGE_MB: return 3;
+        case D_USAGE_PAGE_MB: return 3;
+        case D_LOGICAL_MAXIMUM_MB: return 3;
+        case D_LOGICAL_MINIMUM_MB: return 3;
+    }
+    
+    return 2;
+}
+
+//This is the most crudest HID descriptor parser EVER.
+//We will skip most control words until we found an interesting one
+//We also assume, that the first button-definition we will find is the most important one,
+//so we will ignore any further button definitions
+int parse_report_desc(unsigned char* data, int data_len, struct report_structure* data_struct){
+    int r_count, r_size, r_usage_a = 0, r_usage_b = 0;
+    unsigned char c, d, button;
+
+    unsigned int offset = 0;    //Offset in bits
+
+    unsigned int i = 0;
+    while(i < data_len){
+        c = data[i];                // Control word
+        if(i < data_len) d = data[i+1];  // Data after control word
+
+        //Determine the size
+        if(c == D_REPORT_SIZE)  r_size = (int) d;
+        if(c == D_REPORT_COUNT) r_count = (int) d;
+
+        //Determine the usage
+        if(c == D_USAGE_PAGE || c == D_USAGE){
+            if(
+                d == D_USAGE_BUTTON ||
+                d == D_USAGE_WHEEL ||
+                d == D_USAGE_X ||
+                d == D_USAGE_Y
+            ) {
+                if(!r_usage_a){
+                    r_usage_a = (int) d;
+                } else {
+                    r_usage_b = (int) d;
+                }
+            }
+        }
+
+        //Check, if we reached the end of this input data type
+        if(c == D_INPUT || c == D_FEATURE){
+            //Assign usage to data_struct
+            if(!button && r_usage_a == D_USAGE_BUTTON){
+                data_struct->button.offset = offset;
+                data_struct->button.size = r_size*r_count;
+                button = 1;
+            }
+            switch(r_usage_a){
+                case D_USAGE_X:
+                    data_struct->x.offset = offset;
+                    data_struct->x.size = r_size;
+                case D_USAGE_Y:
+                    data_struct->x.offset = offset;
+                    data_struct->x.size = r_size;
+            }
+             switch(r_usage_b){
+                case D_USAGE_X:
+                    data_struct->y.offset = offset + r_size;
+                    data_struct->y.size = r_size;
+                case D_USAGE_Y:
+                    data_struct->y.offset = offset + r_size;
+                    data_struct->y.size = r_size;
+            }
+            if(r_usage_a == D_USAGE_WHEEL){
+                data_struct->wheel.offset = offset;
+                data_struct->wheel.size = r_size*r_count;
+            }
+            
+            r_usage_a = 0;
+            r_usage_b = 0;
+            offset += r_size*r_count;
+        }
+        i += c_len(c);
+    }
+
+    return 0;
+}

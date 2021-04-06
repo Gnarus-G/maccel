@@ -20,7 +20,7 @@
 
     From that you can extract important information for the next steps: The =idVendor= and =idProduct=
 *** Grab the device information
-    With aboves instruction, you need to run the following command with passing =idVendor:idProduct= to =lsubs=
+    With aboves instruction, you need to run the following command with passing =idVendor:idProduct= to =lsusb=
     #+begin_src sh
     # Replace 1038:1724 with idVendor:idProduct and steelseries_rival600.txt with <Vendor Name>_<Product Name>.txt
     lsusb -vd 1038:1724 > steelseries_rival600.txt
@@ -278,7 +278,7 @@
     |      1 | 0 to 7 | X displacement             |
     |      2 | 0 to 7 | Y displacement             |
     | 3 to n |        | Device specific (optional) |
-  + Since this is presents a limited functionality, the USB consortium allows a device to declare =USB Descriptors= of the data it will send, when switching modes away from =Boot protocol=.
+  + Since this presents a limited functionality, the USB consortium allows a device to declare =Interface Descriptors= of the data it will send, when switching modes away from =Boot protocol=.
   + This is now, where it gets interesting: The corresponding USB/HID driver of the OS will tell the device to switch the mode from =Boot Mode= to =Descriptor Mode= when getting bound by usb-hid.
     - Ignoring this fact particularily messed up the data getting parsed by this driver. See the corresponding [[https://github.com/systemofapwne/leetmouse/issues/2][bugreport]].
   + The device stays in this mode, even when we bind to =LEETMOUSE=.

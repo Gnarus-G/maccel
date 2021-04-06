@@ -15,6 +15,7 @@
                                                             //Leetmouse Mod BEGIN
 #include "accel.h"
 #include "config.h"
+#include "util.h"
                                                             //Leetmouse Mod END
 
 #include <linux/kernel.h>
@@ -51,6 +52,8 @@ struct usb_mouse {
 
 	signed char *data;
 	dma_addr_t data_dma;
+
+	struct report_structure *report_struct;
 };
 
 static void usb_mouse_irq(struct urb *urb)
@@ -122,6 +125,23 @@ static void usb_mouse_close(struct input_dev *dev)
 	usb_kill_urb(mouse->irq);
 }
 
+static int hid_get_class_descriptor(struct usb_device *dev, int ifnum,
+		unsigned char type, void *buf, int size)
+{
+	int result, retries = 4;
+
+	memset(buf, 0, size);
+
+	do {
+		result = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0),
+				USB_REQ_GET_DESCRIPTOR, USB_RECIP_INTERFACE | USB_DIR_IN,
+				(type << 8), ifnum, buf, size, USB_CTRL_GET_TIMEOUT);
+		retries--;
+	} while (result < size && retries);
+	return result;
+}
+
+
 static int usb_mouse_probe(struct usb_interface *intf, const struct usb_device_id *id)
 {
 	struct usb_device *dev = interface_to_usbdev(intf);
@@ -130,13 +150,28 @@ static int usb_mouse_probe(struct usb_interface *intf, const struct usb_device_i
 	struct usb_mouse *mouse;
 	struct input_dev *input_dev;
 	int pipe, maxp;
-	int error = -ENOMEM;
+	int ret = -ENOMEM;
+                                                            //Leetmouse Mod BEGIN
+	// Taken from drivers/hid/usbhid/hid-core.c (usbhid_probe, usbhid_parse, usbhid_start)
+	// ##########################################################################
+	// This code extracts the report descriptor from the mouse. Might not be safe though...
+	// I know, this is a total hack! The cleanest way would be to write a real HID
+	// driver, with the HID subsystem taking care for probing the device.
+	// This is definitely planned. Due to my limited knowledge about the HID 
+	// subsystem, I have chosen to go this hacky route of merging usbmouse.c and hid-core.c
+	// code for now.
+	// Expect this to change in the future!
+	// ##########################################################################
+	struct hid_descriptor *hdesc;
+	struct report_structure* rstruct;
+	unsigned int rsize = 0;
+	int num_descriptors;
+	char *rdesc;
+	unsigned int n = 0;
+	size_t offset = offsetof(struct hid_descriptor, desc);
 
+                                                            //Leetmouse Mod END
 	interface = intf->cur_altsetting;
-
-	if (interface->desc.bNumEndpoints != 1)
-		return -ENODEV;
-
 	endpoint = &interface->endpoint[0].desc;
 	if (!usb_endpoint_is_int_in(endpoint))
 		return -ENODEV;
@@ -148,6 +183,70 @@ static int usb_mouse_probe(struct usb_interface *intf, const struct usb_device_i
 	input_dev = input_allocate_device();
 	if (!mouse || !input_dev)
 		goto fail1;
+                                                            //Leetmouse Mod BEGIN
+	
+	dbg_hid("HID probe called for ifnum %d\n",
+			intf->altsetting->desc.bInterfaceNumber);
+
+	if (interface->desc.bNumEndpoints != 1)
+		return -ENODEV;
+
+	if (usb_get_extra_descriptor(interface, HID_DT_HID, &hdesc) &&
+	    (!interface->desc.bNumEndpoints ||
+	     usb_get_extra_descriptor(&interface->endpoint[0], HID_DT_HID, &hdesc))) {
+		dbg_hid("class descriptor not present\n");
+		return -ENODEV;
+	}
+
+	if (hdesc->bLength < sizeof(struct hid_descriptor)) {
+		dbg_hid("hid descriptor is too short\n");
+		return -EINVAL;
+	}
+
+	num_descriptors = min_t(int, hdesc->bNumDescriptors,
+	       (hdesc->bLength - offset) / sizeof(struct hid_class_descriptor));
+
+	for (n = 0; n < num_descriptors; n++)
+		if (hdesc->desc[n].bDescriptorType == HID_DT_REPORT)
+			rsize = le16_to_cpu(hdesc->desc[n].wDescriptorLength);
+
+	if (!rsize || rsize > HID_MAX_DESCRIPTOR_SIZE) {
+		dbg_hid("weird size of report descriptor (%u)\n", rsize);
+		return -EINVAL;
+	}
+
+	rdesc = kmalloc(rsize, GFP_KERNEL);
+	if (!rdesc)
+		return -ENOMEM;
+
+	//hid_set_idle(dev, interface->desc.bInterfaceNumber, 0, 0);
+
+	ret = hid_get_class_descriptor(dev, interface->desc.bInterfaceNumber,
+			HID_DT_REPORT, rdesc, rsize);
+	if (ret < 0) {
+		dbg_hid("reading report descriptor failed\n");
+		kfree(rdesc);
+		goto fail1;
+	}
+
+	rstruct = kmalloc(sizeof(struct report_structure), GFP_KERNEL);
+	if (!rstruct)
+		return -ENOMEM;
+	mouse->report_struct = rstruct;
+
+	//Parse the descriptor and delete it
+	parse_report_desc(rdesc, rsize, rstruct);
+	kfree(rdesc);
+
+	printk("Button: Offset %u Size %u", (unsigned int) rstruct->button.offset, rstruct->button.size);
+	printk("X: Offset %u Size %u", (unsigned int) rstruct->x.offset, rstruct->x.size);
+	printk("Y: Offset %u Size %u", (unsigned int) rstruct->y.offset, rstruct->y.size);
+	printk("Wheel: Offset %u Size %u", (unsigned int) rstruct->wheel.offset, rstruct->wheel.size);
+
+	// TODO Allocate memory for the report_structure in usb_mouse::data_struct.
+	// On fail, goto fail1_5.
+	                                                            //Leetmouse Mod END
+
 
 	mouse->data = usb_alloc_coherent(dev, BUFFER_SIZE, GFP_ATOMIC, &mouse->data_dma); //Leetmouse Mod
 	if (!mouse->data)
@@ -202,8 +301,8 @@ static int usb_mouse_probe(struct usb_interface *intf, const struct usb_device_i
 	mouse->irq->transfer_dma = mouse->data_dma;
 	mouse->irq->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
 
-	error = input_register_device(mouse->dev);
-	if (error)
+	ret = input_register_device(mouse->dev);				//Leetmouse Mod
+	if (ret)												//Leetmouse Mod
 		goto fail3;
 
 	usb_set_intfdata(intf, mouse);
@@ -216,7 +315,7 @@ fail2:
 fail1:	
 	input_free_device(input_dev);
 	kfree(mouse);
-	return error;
+	return ret;												//Leetmouse Mod
 }
 
 static void usb_mouse_disconnect(struct usb_interface *intf)

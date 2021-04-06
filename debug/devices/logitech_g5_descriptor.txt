@@ -20,6 +20,7 @@
 0x75, 0x08,        //     Report Size (8)
 0x95, 0x02,        //     Report Count (2)
 0x81, 0x02,        //     Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+
 0x05, 0x01,        //     Usage Page (Generic Desktop Ctrls)
 0x09, 0x38,        //     Usage (Wheel)
 0x95, 0x01,        //     Report Count (1)
@@ -29,6 +30,7 @@
 0x0A, 0x38, 0x02,  //     Usage (AC Pan)
 0x95, 0x01,        //     Report Count (1)
 0x81, 0x06,        //     Input (Data,Var,Rel,No Wrap,Linear,Preferred State,No Null Position)
+
 0x05, 0x01,        //     Usage Page (Generic Desktop Ctrls)
 0x16, 0x01, 0x80,  //     Logical Minimum (-32767)
 0x26, 0xFF, 0x7F,  //     Logical Maximum (32767)
