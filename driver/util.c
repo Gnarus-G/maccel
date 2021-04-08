@@ -1,5 +1,6 @@
-#include "util.h" 
-#include <stdbool.h>
+#include "util.h"
+#include <linux/kernel.h>   //fixed-len datatypes
+#include <linux/string.h>   //memcpy
 
 //Converts string into float.
 inline void atof(const char *str, int len, float *result)
@@ -73,7 +74,7 @@ inline void Q_sqrt(float *number)
     *number = 1 / y;
 }
 
-//Length of "ctl word + data" for parsing a report descriptor
+//Length of "ctl word + data"
 inline int c_len(const unsigned char c)
 {
     switch(c){
@@ -83,7 +84,7 @@ inline int c_len(const unsigned char c)
         case D_LOGICAL_MAXIMUM_MB: return 3;
         case D_LOGICAL_MINIMUM_MB: return 3;
     }
-    
+
     return 2;
 }
 
@@ -132,26 +133,30 @@ int parse_report_desc(unsigned char *data, int data_len, struct report_positions
                 button = 1;
             }
             switch(r_usage_a){
-                case D_USAGE_X:
-                    data_pos->x.offset = offset;
-                    data_pos->x.size = r_size;
-                case D_USAGE_Y:
-                    data_pos->x.offset = offset;
-                    data_pos->x.size = r_size;
+            case D_USAGE_X:
+                data_pos->x.offset = offset;
+                data_pos->x.size = r_size;
+                break;
+            case D_USAGE_Y:
+                data_pos->x.offset = offset;
+                data_pos->x.size = r_size;
+                break;
             }
-             switch(r_usage_b){
-                case D_USAGE_X:
-                    data_pos->y.offset = offset + r_size;
-                    data_pos->y.size = r_size;
-                case D_USAGE_Y:
-                    data_pos->y.offset = offset + r_size;
-                    data_pos->y.size = r_size;
+            switch(r_usage_b){
+            case D_USAGE_X:
+                data_pos->y.offset = offset + r_size;
+                data_pos->y.size = r_size;
+                break;
+            case D_USAGE_Y:
+                data_pos->y.offset = offset + r_size;
+                data_pos->y.size = r_size;
+                break;
             }
             if(r_usage_a == D_USAGE_WHEEL){
                 data_pos->wheel.offset = offset;
                 data_pos->wheel.size = r_size*r_count;
             }
-            
+
             r_usage_a = 0;
             r_usage_b = 0;
             offset += r_size*r_count;
@@ -162,8 +167,60 @@ int parse_report_desc(unsigned char *data, int data_len, struct report_positions
     return 0;
 }
 
-// Extracts the interesting mouse data from the raw USB data, according to the layout delcared in the report descriptor
-int extract_mouse_events(unsigned char *data, struct report_positions *data_pos, int button, int x, int y, int wheel)
+//Extracts a number from a raw USB stream, according to its bit_pos and bit_size
+inline int extract_at(unsigned char *data, int data_len, int bit_pos, int bit_size)
 {
+    int size = bit_size/8;          //Size of our data in bytes
+    int i = bit_pos/8;              //Starting index of data[] to access in byte-aligned size
+    char shift = bit_pos % 8;       //Remaining bits to shift until we reach our target data
+    union {
+        __u8 raw[4];    //Raw buffer of individual bytes. Must be of same length as "con" and at least 1 byte bigger than the biggest datatype you want to handle in here
+        __u32 con;      //Continous buffer of aboves bytes (used for bitshiftig)
+        __s8 b1;        //Return value
+        __s16 b2;       //Return value
+    } buffer;
 
+    if(size > sizeof(buffer.con)) return 0;
+
+    buffer.con = 0; //Initialized buffer to zero
+
+    //Avoid access violation when using memcpy.
+    if(i + size > data_len || (shift && (i + size + 1) > data_len))
+        return 0;
+
+    //Create a local copy, that we can modify. If 'shift' ('pos % 8') was not zero, copy an additional byte.
+    memcpy(buffer.raw, data + i, (shift == 0) ? size : size + 1);
+
+    // Respect byte-order
+    // A BIG TODO/Questions: If we need to shift bits from the raw Little-Endian USB datastream on a Big-Endian system, do we first need to convert the
+    // byte-order and THEN shift bits, or do we need to first shift the bits and then arrange the byte-order? I assume the first: We copy the raw
+    // LE data-stream from the USB device in a __u8 buffer array. Via the union, this is now overlayed on a ´multi-byte machine´ datatype. Since this
+    // ´machine´ applies bit-shifts on multi-byte values as "its architecture dictates", we first need to convert LE -> machine-type and then bitshift.
+
+    //TODO: Find out...
+    //buffer.con = le32_to_cpu(buffer.con);
+
+    if(shift) buffer.con <<= shift;
+
+    //TODO: Endianess!
+    //Right now, we only support 1 byte and 2 byte long data - We explicitly check against the supplied bit-length
+    switch(bit_size){
+    case 8:
+        return (int) buffer.b1;
+    case 16:
+        return (int) buffer.b2;
+    }
+
+    return 0; //All other lengths are not supported.
+}
+
+// Extracts the interesting mouse data from the raw USB data, according to the layout delcared in the report descriptor
+int extract_mouse_events(unsigned char *data, int data_len, struct report_positions *data_pos, int *btn, int *x, int *y, int *wheel)
+{
+    *btn =      extract_at(data, data_len, data_pos->button.offset, data_pos->button.size);
+    *x =        extract_at(data, data_len, data_pos->x.offset,      data_pos->x.size);
+    *y =        extract_at(data, data_len, data_pos->y.offset,      data_pos->y.size);
+    *wheel =    extract_at(data, data_len, data_pos->wheel.offset,  data_pos->wheel.size);
+
+    return 0;
 }

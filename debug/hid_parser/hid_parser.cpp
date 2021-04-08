@@ -2,7 +2,9 @@
 using namespace std;
 
 //#include "linux/string.h" //Necessary for memcpy to work inside kernel module
-#include <cstring>           //memcpy
+#include <cstring>          //memcpy
+#include <bitset>
+#include <linux/kernel.h>
 #include "hid_parser.h"
 
 // From the steelseries mouse
@@ -64,7 +66,8 @@ struct report_positions {
 };
 
 //Length of "ctl word + data"
-inline int c_len(const unsigned char c){
+inline int c_len(const unsigned char c)
+{
     switch(c){
         case D_END_COLLECTION: return 1;
         case D_USAGE_MB: return 3;
@@ -121,20 +124,24 @@ int parse_report_desc(unsigned char *data, int data_len, struct report_positions
                 button = 1;
             }
             switch(r_usage_a){
-                case D_USAGE_X:
-                    data_pos->x.offset = offset;
-                    data_pos->x.size = r_size;
-                case D_USAGE_Y:
-                    data_pos->x.offset = offset;
-                    data_pos->x.size = r_size;
+            case D_USAGE_X:
+                data_pos->x.offset = offset;
+                data_pos->x.size = r_size;
+                break;
+            case D_USAGE_Y:
+                data_pos->x.offset = offset;
+                data_pos->x.size = r_size;
+                break;
             }
-             switch(r_usage_b){
-                case D_USAGE_X:
-                    data_pos->y.offset = offset + r_size;
-                    data_pos->y.size = r_size;
-                case D_USAGE_Y:
-                    data_pos->y.offset = offset + r_size;
-                    data_pos->y.size = r_size;
+            switch(r_usage_b){
+            case D_USAGE_X:
+                data_pos->y.offset = offset + r_size;
+                data_pos->y.size = r_size;
+                break;
+            case D_USAGE_Y:
+                data_pos->y.offset = offset + r_size;
+                data_pos->y.size = r_size;
+                break;
             }
             if(r_usage_a == D_USAGE_WHEEL){
                 data_pos->wheel.offset = offset;
@@ -151,40 +158,48 @@ int parse_report_desc(unsigned char *data, int data_len, struct report_positions
     return 0;
 }
 
+//Extracts a number from a raw USB stream, according to its bit_pos and bit_size
 inline int extract_at(unsigned char *data, int data_len, int bit_pos, int bit_size)
 {
     int size = bit_size/8;          //Size of our data in bytes
     int i = bit_pos/8;              //Starting index of data[] to access in byte-aligned size
     char shift = bit_pos % 8;       //Remaining bits to shift until we reach our target data
     union {
-        unsigned char raw[4];
-        unsigned char b1;
-        unsigned short b2;
-        int i;
+        __u8 raw[4];    //Raw buffer of individual bytes. Must be of same length as "con" and at least 1 byte bigger than the biggest datatype you want to handle in here
+        __u32 con;      //Continous buffer of aboves bytes (used for bitshiftig)
+        __s8 b1;        //Return value
+        __s16 b2;       //Return value
     } buffer;
 
-    buffer.i = 0; //Initialized buffer to zero
+    if(size > sizeof(buffer.con)) return 0;
+
+    buffer.con = 0; //Initialized buffer to zero
 
     //Avoid access violation when using memcpy.
     if(i + size > data_len || (shift && (i + size + 1) > data_len))
         return 0;
+    
+    //Create a local copy, that we can modify. If 'shift' ('pos % 8') was not zero, copy an additional byte.
+    memcpy(buffer.raw, data + i, (shift == 0) ? size : size + 1);
+
+    // Respect byte-order
+    // A BIG TODO/Questions: If we need to shift bits from the raw Little-Endian USB datastream on a Big-Endian system, do we first need to convert the 
+    // byte-order and THEN shift bits, or do we need to first shift the bits and then arrange the byte-order? I assume the first: We copy the raw 
+    // LE data-stream from the USB device in a __u8 buffer array. Via the union, this is now overlayed on a ´multi-byte machine´ datatype. Since this 
+    // ´machine´ applies bit-shifts on multi-byte values as "its architecture dictates", we first need to convert LE -> machine-type and then bitshift.
+    
+    //TODO: Find out...
+    //buffer.con = le32_to_cpu(buffer.con);
+
+    if(shift) buffer.con <<= shift;
 
     //TODO: Endianess!
     //Right now, we only support 1 byte and 2 byte long data - We explicitly check against the supplied bit-length
     switch(bit_size){
     case 8:
-        //Create a local copy, that we can modify. If 'shift' ('pos % 8') was not zero, the buffer must be bigger. 
-        //So we extract one more byte. QUESTION: Is this safe? Imagine, the data is 10 bits long and we want to extract bit 2 to 10. We would copy 2 bytes (16 bit),
-        //so that we can shift << by 2 bits. What about the remaining 6 bits? Can we even access them? I assume: YES. On this specific architecture x86/x86_64,
-        //the shortes data-type is a char of 1 byte (8 bits). And we allocated a buffer for that for DMA access via the usbmouse driver, which itself
-        //is then aligned to this minimal size of 1 byte.
-        cout << "IN" << endl;
-        cout << i << endl;
-        memcpy(buffer.raw, data + i, (shift == 0) ? 1 : 2);
-        if(shift){
-            buffer.i <<= shift;
-        }
-        return buffer.i;
+        return (int) buffer.b1;
+    case 16:
+        return (int) buffer.b2;
     }
 
     return 0; //All other lengths are not supported.
@@ -193,7 +208,10 @@ inline int extract_at(unsigned char *data, int data_len, int bit_pos, int bit_si
 // Extracts the interesting mouse data from the raw USB data, according to the layout delcared in the report descriptor
 int extract_mouse_events(unsigned char *data, int data_len, struct report_positions *data_pos, int *btn, int *x, int *y, int *wheel)
 {
-    cout << extract_at(data,data_len,data_pos->wheel.offset, data_pos->wheel.size) << endl;
+    *btn =      extract_at(data, data_len, data_pos->button.offset, data_pos->button.size);
+    *x =        extract_at(data, data_len, data_pos->x.offset,      data_pos->x.size);
+    *y =        extract_at(data, data_len, data_pos->y.offset,      data_pos->y.size);
+    *wheel =    extract_at(data, data_len, data_pos->wheel.offset,  data_pos->wheel.size);
 }
 
 struct steelseries_600_data{
@@ -201,7 +219,7 @@ struct steelseries_600_data{
     signed short x;
     signed short y;
     signed char wheel;
-};
+} __attribute__((packed));
 
 int main(){
     //Test parsing of report descriptor
@@ -214,10 +232,11 @@ int main(){
 
     //Test extraction from a reported data. Here, the "test" data is for a steelseries Rival 600 mouse
     union test_data{
-        steelseries_600_data data;
+        struct steelseries_600_data data;
         unsigned char raw[32];          //Big enough buffer
     } test;
 
+    //Apply some test-data to be extracted by extract_mouse_events
     test.data.btn = 19;
     test.data.x = -7;
     test.data.y = 120;
@@ -226,6 +245,11 @@ int main(){
     int btn, x, y, wheel;
 
     extract_mouse_events(test.raw, sizeof(test), &data_struct, &btn, &x, &y, &wheel);
+
+    cout << "Button: " << btn << endl;
+    cout << "X: " << x << endl;
+    cout << "Y: " << y << endl;
+    cout << "Wheel: " << wheel << endl;
 
     return 0;
 }

@@ -62,6 +62,7 @@ static void usb_mouse_irq(struct urb *urb)
     signed char *data = mouse->data;
     struct input_dev *dev = mouse->dev;
     signed int btn, x, y, wheel;                                 //Leetmouse Mod
+    signed int btn2, x2, y2, wheel2;                                 //Leetmouse Mod
     int status;
 
     switch (urb->status) {
@@ -87,6 +88,11 @@ static void usb_mouse_irq(struct urb *urb)
     input_report_key(dev, BTN_SIDE,   data[0] & 0x08);
     input_report_key(dev, BTN_EXTRA,  data[0] & 0x10);
                                                                 //Leetmouse Mod BEGIN
+
+    extract_mouse_events(data, BUFFER_SIZE, mouse->data_pos, btn2, x2, y2, wheel2);
+
+    printk("B: %n X: %n : Y: %n : W: %n", btn2, x2, y2, wheel2);
+
     x = data[1];
     y = data[3];
     wheel = data[5];

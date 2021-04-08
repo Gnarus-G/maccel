@@ -49,5 +49,6 @@ void atof(const char *str, int len, float *result);
 int Leet_round(float x);
 void Q_sqrt(float *number);
 int parse_report_desc(unsigned char *data, int data_len, struct report_positions *data_pos);
+int extract_mouse_events(unsigned char *data, int data_len, struct report_positions *data_pos, int *btn, int *x, int *y, int *wheel);
 
 #endif  //_UTIL_H
