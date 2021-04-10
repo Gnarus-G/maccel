@@ -234,8 +234,10 @@ static int usb_mouse_probe(struct usb_interface *intf, const struct usb_device_i
     }
 
     rpos = kmalloc(sizeof(struct report_positions), GFP_KERNEL);
-    if (!rpos)
+    if (!rpos){
+        kfree(rdesc);
         goto fail1;
+    }
     mouse->data_pos = rpos;
 
     //Parse the descriptor and delete it

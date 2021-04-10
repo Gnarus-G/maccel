@@ -6,63 +6,72 @@
 * Installation & Uninstallation
 ** Preparation & Configuration
    + Clone this repository, copy =driver/config.sample.h= to =/driver/config.h= and edit it in your favorite text editor. Change the defines at the top of config.h to match your desired acceleration settings.
-   + Make sure, you have the required toolchains (e.g. =base-devel= on Arch or =build-essentials= on Debian)  installed as well as the =linux-headers= for your installed kernel.
+   + Make sure, you have the required toolchains (e.g. =base-devel= on Arch or =build-essentials= on Debian) installed as well as the =linux-headers= for your installed kernel.
 ** Arch/Manjaro
    Since the maintainer of =LEETMOUSE= is an Arch and Manjaro user, a =PKGBUILD= has been written for seamless integration into pacman.
+
    *Installation*
    #+begin_src sh
+   # Create the PKGBUILD, copy associated files and run makepkg
    ./scripts/build_arch.sh
-   cd pkg/build
-   makepkg -f
-   sudo pacman -U leetmouse*.zst
+   # Run pacman on the created package
+   sudo pacman -U pkg/build/leetmouse*.zst
    #+end_src
+   All your mice should now be bound to this driver. They will also automatically bind to it after a reboot. If this did not work, run =sudo /usr/lib/udev/leetmouse_manage bind_all=
    
    *Uninstallation*
    #+begin_src sh
    sudo pacman -R leetmouse-driver-dkms
    #+end_src
+   All your mice should now be bound to the generic usbhid driver again.
+   
 ** Other distros
-   Other distributions' package-managers are not yet supported and thus need a manual installation.
-   The installation is not yet very polished but eventually will become soon.
+   Other distributions' package-managers are not yet supported and thus need a manual installation. However Debian based systems are planned.
+   The installation is not yet very polished but eventually will become so.
    
    *Installation*
 
    Determine the current version of this module by examining the variable =DKMS_VER= in the =Makefile=. It can be e.g. 0.9.0
    Run the following commands to build and install the kernel module
    #+begin_src sh
+   # Install the driver and activate the dkms module
    sudo make setup_dkms && sudo make udev_install
    sudo dkms install -m leetmouse-driver -v 0.9.0 # Enter the version you determined from the Makefile earlier in here
-   udevadm control --reload-rules
    #+end_src
-   Unplug and replug your mouse - Or reboot. From now on, your mouse will automatically bind to this driver.
-
+   All your mice should now be bound to this driver. They will also automatically bind to it after a reboot. If this did not work, run =sudo /usr/lib/udev/leetmouse_manage bind_all=
+   If this still does not work, there is a major problem
+   
    *Uninstallation*
    
-   Your again need to know then =version= as described above for the installation
+   You again need to know then =version= as described above for the installation
    #+begin_src sh
+   # Unbind all mice from the driver
+   sudo /usr/lib/udev/leetmouse_manage unbind_all
+   # Uninstall the driver
    sudo dkms remove -m leetmouse-driver -v 0.9.0
    sudo make remove_dkms && sudo make udev_uninstall
    #+end_src
+   Unplug and replug your mouse or reboot to have your mice bound back to the generic usbhid.
 * Manual compile, insmod, bind
-  If you want to compile this module only for testing purposes or development, you do not need to install the whole package to your system
+   If you want to compile this module only for testing purposes or development, you do not need to install the whole package to your system
 
-  Compile the module, remove previously loaded modules and insert it.
-  #+begin_src sh
-  make clean && make
-  sudo rmmod leetmouse
-  sudo insmod ./driver/leetmouse.ko
-  #+end_src
-  If you did not install the udev rules before via =make udev_install= you need to manually bind your mouse to this driver.
-  You can take a look at =/scripts/bind.sh= for an example on how to determine your mouse's USB address for that
+   Compile the module, remove previously loaded modules and insert it.
+   #+begin_src sh
+   make clean && make
+   sudo rmmod leetmouse
+   sudo insmod ./driver/leetmouse.ko
+   #+end_src
+   If you did not install the udev rules before via =sudo make udev_install= you need to manually bind your mouse to this driver.
+   You can take a look at =/scripts/bind.sh= for an example on how to determine your mouse's USB address for that. However using the udev rules for development is advised.
 
 * TODOS
-  | External interface for dynamically pushing acceleration parameters | Next priority           |
   | Fixing the only [[https://github.com/systemofapwne/mousedriver/issues/2][vertical srolling bug]]                              | Next priority           |
+  | External interface for dynamically pushing acceleration parameters | Next priority           |
   | GUI to configure the parameters                                    | Next next priority      |
   | Feature parity with Povohats driver and later even RawAccel        | Next next next priority |
   | Easier installation & binding                                      | Done                    |
   | DKMS support                                                       | Done                    |
   | PKGBUILD for Arch based systems                                    | Done                    |
   | AUR package release                                                | TBD                     |
-  | Debian (based systems) package                                     | TBD                     |
+  | dpkg package for Debian based systems                              | TBD                     |
   

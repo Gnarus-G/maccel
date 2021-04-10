@@ -16,25 +16,29 @@
     #include <asm/fpu/api.h>
 #endif
 
-/*
-//Converts a preprocessor define's value in "config.h" to a string - Suspect to change in future version without a "config.h"
+
+//Converts a preprocessor define's value in "config.h" to a string - Suspect this to change in future version without a "config.h"
 #define _s(x) #x
 #define s(x) _s(x)
 
 #define PARAM(param, default, desc)                             \
-    float g_#param = default;                                   \
-    static char* g_param_#param
-    module_param_named(#param, g_param_#param, charp, 0644);    \
+    float g_##param = default;                                  \
+    static char* g_param_##param = s(default);                  \
+    module_param_named(param, g_param_##param, charp, 0644);    \
+    MODULE_PARM_DESC(param, desc);
 
 // ########## Kernel module parameters
+PARAM(no_bind, 0, "This will disable binding to this driver via 'leetmouse_bind' by udev.")
 
-static float g_sensitivity = SENSITIVITY;
-static char* g_param_sensitivity = s(SENSITIVITY);
-module_param_named(sensitivity, g_param_sensitivity, charp, 0644);
-MODULE_PARM_DESC(sensitivity, "Mouse base sensitivity");
+PARAM(sensitivity, SENSITIVITY, "Mouse base sensitivity")
 
-PARAM(sensitivity, s(SENSITIVITY), "HEllo")
-*/
+// Updates the acceleration parameters. This is purposely done with a delay!
+// First, to not hammer too much the logic in "accelerate()", which is called VERY OFTEN!
+// Second, to fight possible cheating. However, this can be OFC changed, since we are OSS...
+static void updata_params(void)
+{
+    return;
+}
 
 // ########## Acceleration code
 
@@ -89,6 +93,9 @@ kernel_fpu_begin();
     delta_x += (float) buffer_x; buffer_x = 0;
     delta_y += (float) buffer_y; buffer_y = 0;
     delta_whl += (float) buffer_whl; buffer_whl = 0;
+
+    //Update acceleration parameters periodically
+    updata_params();
 
     //Prescale
     delta_x *= PRE_SCALE_X;
@@ -154,13 +161,3 @@ kernel_fpu_end();
 
     return status;
 }
-
-// Updates the acceleration parameters. This is purposely done with a delay!
-// First, to not hammer too much the logic in "accelerate()", which is called VERY OFTEN!
-// Second, to fight possible cheating. However, this can be OFC changed, since we are OSS...
-/*
-static void updata_params()
-{
-    return;
-}
-*/
