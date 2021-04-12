@@ -7,6 +7,9 @@ using namespace std;
 #include <linux/kernel.h>
 #include "hid_parser.h"
 
+//Dummy
+#define le16_to_cpu(x) x
+
 // From the steelseries mouse
 unsigned char desc[] =  {
     //Steelseries Rival 600
@@ -17,7 +20,7 @@ unsigned char desc[] =  {
     0x38, 0x02, 0x15, 0x81, 0x25, 0x7F, 0x75, 0x08, 0x95, 0x01, 0x81, 0x06, 0xC0, 0xA1, 0x02, 0x06,
     0xC1, 0xFF, 0x15, 0x00, 0x26, 0xFF, 0x00, 0x75, 0x08, 0x09, 0xF0, 0x95, 0x02, 0x81, 0x02, 0xC0,
     0xC0, 0xC0
-    
+
     /*
     // Logitech G5
     0x05, 0x01, 0x09, 0x02, 0xA1, 0x01, 0x09, 0x01, 0xA1, 0x00, 0x05, 0x09, 0x19, 0x01, 0x29, 0x08,
@@ -51,111 +54,158 @@ unsigned char desc[] =  {
     */
 };
 
-//Stores the bit offset and bit size in the raw reported data structure of usb_mouse::data
-struct report_entry {
-	unsigned char offset;	// In bits
-	unsigned char size;		// In bits
-};
-
-//Stores a collection of important offsets & sizes for report data in usb_mouse::data
-struct report_positions {
-	struct report_entry button;
-	struct report_entry x;
-	struct report_entry y;
-	struct report_entry wheel;
-};
-
-//Length of "ctl word + data"
-inline int c_len(const unsigned char c)
-{
-    switch(c){
-        case D_END_COLLECTION: return 1;
-        case D_USAGE_MB: return 3;
-        case D_USAGE_PAGE_MB: return 3;
-        case D_LOGICAL_MAXIMUM_MB: return 3;
-        case D_LOGICAL_MINIMUM_MB: return 3;
-    }
-    
-    return 2;
-}
 
 //This is the most crudest HID descriptor parser EVER.
 //We will skip most control words until we found an interesting one
 //We also assume, that the first button-definition we will find is the most important one,
 //so we will ignore any further button definitions
-int parse_report_desc(unsigned char *data, int data_len, struct report_positions *data_pos)
+
+struct parser_context {
+    unsigned char id;                           // Report ID
+    unsigned int offset;                        // Local offset in this report ID context
+};
+
+#define NUM_CONTEXTS 32                             // This should be more than enough for a HID mouse. If we exceed this number, the parser below will eventually fail
+int parse_report_desc(unsigned char *buffer, int buffer_len, struct report_positions *pos)
 {
-    int r_count = 0, r_size = 0, r_usage_a = 0, r_usage_b = 0;
-    unsigned char c, d, button = 0;
+    int r_count = 0, r_size = 0, len = 0;
+    int r_usage[2];
+    unsigned char ctl, data, button = 0;
 
-    unsigned int offset = 0;    //Offset in bits
+    unsigned int n, i = 0;
 
-    unsigned int i = 0;
-    while(i < data_len){
-        c = data[i];                // Control word
-        if(i < data_len) d = data[i+1];  // Data after control word
+    //Parsing contexts are linked to the Report ID (if declared) in the report descriptor
+    int context_found;
+    struct parser_context contexts[NUM_CONTEXTS];    // We allow up to NUM_CONTEXTS different parsing contexts. Any further will be ignored.
+    struct parser_context *c = contexts;             // The current context
 
+    r_usage[0] = 0;
+    r_usage[1] = 0;
+    pos->report_id_tagged = 0;
+
+    //Initialize contexts to zero
+    for(n = 0; n < NUM_CONTEXTS; n++){
+        contexts[n].id = 0;
+        contexts[n].offset = 0;
+    }
+
+    while(i < buffer_len){
+        ctl = buffer[i] & 0xFC;                     // Control word with the length-bits stripped
+        len = buffer[i] & 0x03;                     // Length of the the proceeding data, following the control word (in bytes)
+        if(i < buffer_len) data = buffer[i+1];      // Beginning of data after the control word
+
+        // ######## Global items
         //Determine the size
-        if(c == D_REPORT_SIZE)  r_size = (int) d;
-        if(c == D_REPORT_COUNT) r_count = (int) d;
+        if(ctl == D_REPORT_SIZE)  r_size = (int) data;
+        if(ctl == D_REPORT_COUNT) r_count = (int) data;
 
-        //Determine the usage
-        if(c == D_USAGE_PAGE || c == D_USAGE){
-            if(
-                d == D_USAGE_BUTTON ||
-                d == D_USAGE_WHEEL ||
-                d == D_USAGE_X ||
-                d == D_USAGE_Y
-            ) {
-                if(!r_usage_a){
-                    r_usage_a = (int) d;
-                } else {
-                    r_usage_b = (int) d;
+        //Switch context, if a "Report ID" control word has been found.
+        if(ctl == D_REPORT_ID){
+            pos->report_id_tagged = 1;
+            // Search all available contexts for a match...
+            context_found = 0;
+            for(n = 0; n < NUM_CONTEXTS; n++){
+                if(contexts[n].id == data){
+                    c = contexts + n;
+                    c->id = data;
+                    context_found = 1;
+                    break;
+                }
+            }
+            // No existing parsing context matching the Report ID found. Create a new one!
+            if(!context_found){
+                for(n = 0; n < NUM_CONTEXTS; n++){
+                    if(contexts[n].id == 0){
+                        c = contexts + n;
+                        c->id = data;
+                        c->offset = 8;              // Since we use a Report ID , which preceeds the actual report (1 byte), all offsets are shifted
+                        break;
+                    }
                 }
             }
         }
 
+        // ######## Local items
+        //Determine standard usage
+        if((ctl == D_USAGE_PAGE || ctl == D_USAGE) && len == 1){
+            if(
+                data == D_USAGE_BUTTON ||
+                data == D_USAGE_WHEEL ||
+                data == D_USAGE_X ||
+                data == D_USAGE_Y
+            ) {
+                if(!r_usage[0]){
+                    r_usage[0] = (int) data;
+                } else {
+                    r_usage[1] = (int) data;
+                }
+            }
+        }
+
+        // ######## Main items
         //Check, if we reached the end of this input data type
-        if(c == D_INPUT || c == D_FEATURE){
-            //Assign usage to data_pos
-            if(!button && r_usage_a == D_USAGE_BUTTON){
-                data_pos->button.offset = offset;
-                data_pos->button.size = r_size*r_count;
+        if(ctl == D_INPUT || ctl == D_FEATURE){
+            //Assign usage to pos
+            if(!button && r_usage[0] == D_USAGE_BUTTON){
+                pos->button.id = c->id;
+                pos->button.offset = c->offset;
+                pos->button.size = r_size*r_count;
                 button = 1;
             }
-            switch(r_usage_a){
-            case D_USAGE_X:
-                data_pos->x.offset = offset;
-                data_pos->x.size = r_size;
-                break;
-            case D_USAGE_Y:
-                data_pos->x.offset = offset;
-                data_pos->x.size = r_size;
-                break;
-            }
-            switch(r_usage_b){
-            case D_USAGE_X:
-                data_pos->y.offset = offset + r_size;
-                data_pos->y.size = r_size;
-                break;
-            case D_USAGE_Y:
-                data_pos->y.offset = offset + r_size;
-                data_pos->y.size = r_size;
-                break;
-            }
-            if(r_usage_a == D_USAGE_WHEEL){
-                data_pos->wheel.offset = offset;
-                data_pos->wheel.size = r_size*r_count;
-            }
+            for(n = 0; n < 2; n++){
+                switch(r_usage[n]){
+                case D_USAGE_X:
+                    pos->x.id = c->id;
+                    pos->x.offset = c->offset + r_size*n;
+                    pos->x.size = r_size;
+                    break;
+                case D_USAGE_Y:
+                    pos->y.id = c->id;
+                    pos->y.offset = c->offset + r_size*n;
+                    pos->y.size = r_size;
+                    break;
+                }
 
-            r_usage_a = 0;
-            r_usage_b = 0;
-            offset += r_size*r_count;
+            }
+            if(r_usage[0] == D_USAGE_WHEEL){
+                pos->wheel.id = c->id;
+                pos->wheel.offset = c->offset;
+                pos->wheel.size = r_size*r_count;
+            }
+            //Reset local tags
+            r_usage[0] = 0;
+            r_usage[1] = 0;
+            //Increment offset
+            c->offset += r_size*r_count;
         }
-        i += c_len(c);
+        i += len + 1;
     }
 
     return 0;
+}
+
+//Shifts an array *data of byte-length data_len by amounts of +/- num bits to the right/left (limited to num = +/-8 max).
+//Most certainly not the most elegant way to do this. However, it works.
+inline void array_shift(unsigned char *data, int data_len, int num){
+    int i;
+    if(num == 0) return;
+
+    if(num < 0){
+        num *= -1;
+        for(i = 0; i < data_len; i++){
+            data[i] <<= num;
+            if(i + 1 < data_len){
+                data[i] |= data[i+1] >> (8 - num);
+            }
+        }
+    } else {
+        for(i = data_len - 1; i >= 0; i--){
+            data[i] >>= num;
+            if(i){
+                data[i] |= data[i-1] << (8 - num);
+            }
+        }
+    }
 }
 
 //Extracts a number from a raw USB stream, according to its bit_pos and bit_size
@@ -163,42 +213,38 @@ inline int extract_at(unsigned char *data, int data_len, int bit_pos, int bit_si
 {
     int size = bit_size/8;          //Size of our data in bytes
     int i = bit_pos/8;              //Starting index of data[] to access in byte-aligned size
-    char shift = bit_pos % 8;       //Remaining bits to shift until we reach our target data
+    char shift = bit_pos % 8;       //Remaining bits to shift left, until we reach our target data
     union {
         __u8 raw[4];    //Raw buffer of individual bytes. Must be of same length as "con" and at least 1 byte bigger than the biggest datatype you want to handle in here
-        __u32 con;      //Continous buffer of aboves bytes (used for bitshiftig)
+        __u32 init;     //Continous buffer of aboves bytes (used for initialization)
         __s8 b1;        //Return value
         __s16 b2;       //Return value
     } buffer;
 
-    if(size > sizeof(buffer.con)) return 0;
+    //Data structure to read is bigger than a clear multiple of 8 bits. Read one more byte.
+    if(bit_size % 8) size += 1;
+    //Data structure to read is bigger than we can handle. Abort
+    if(size > sizeof(buffer.init)) return 0;
 
-    buffer.con = 0; //Initialized buffer to zero
+    buffer.init = 0; //Initialized buffer to zero
 
     //Avoid access violation when using memcpy.
-    if(i + size > data_len || (shift && (i + size + 1) > data_len))
-        return 0;
-    
-    //Create a local copy, that we can modify. If 'shift' ('pos % 8') was not zero, copy an additional byte.
-    memcpy(buffer.raw, data + i, (shift == 0) ? size : size + 1);
+    if(i + size > data_len) return 0;
 
-    // Respect byte-order
-    // A BIG TODO/Questions: If we need to shift bits from the raw Little-Endian USB datastream on a Big-Endian system, do we first need to convert the 
-    // byte-order and THEN shift bits, or do we need to first shift the bits and then arrange the byte-order? I assume the first: We copy the raw 
-    // LE data-stream from the USB device in a __u8 buffer array. Via the union, this is now overlayed on a ´multi-byte machine´ datatype. Since this 
-    // ´machine´ applies bit-shifts on multi-byte values as "its architecture dictates", we first need to convert LE -> machine-type and then bitshift.
-    
-    //TODO: Find out...
-    //buffer.con = le32_to_cpu(buffer.con);
+    //Create a local copy, that we can modify.
+    memcpy(buffer.raw, data + i, size);
 
-    if(shift) buffer.con <<= shift;
+    if(shift)
+        array_shift(buffer.raw,size,-1*shift);              //Truncate bits, that we copied over too much on the right
 
-    //TODO: Endianess!
-    //Right now, we only support 1 byte and 2 byte long data - We explicitly check against the supplied bit-length
-    switch(bit_size){
-    case 8:
+    if(bit_size <= 8){
+        if(shift)
+            buffer.raw[0] &= (0xFF << shift);               //Mask bits, which do not belong here
         return (int) buffer.b1;
-    case 16:
+    }
+    if(bit_size <= 16){
+        if(shift)
+            buffer.raw[1] &= (0xFF << shift);               //Mask bits, which do not belong here
         return (int) buffer.b2;
     }
 
@@ -206,13 +252,33 @@ inline int extract_at(unsigned char *data, int data_len, int bit_pos, int bit_si
 }
 
 // Extracts the interesting mouse data from the raw USB data, according to the layout delcared in the report descriptor
-int extract_mouse_events(unsigned char *data, int data_len, struct report_positions *data_pos, int *btn, int *x, int *y, int *wheel)
+int extract_mouse_events(unsigned char *buffer, int buffer_len, struct report_positions *pos, int *btn, int *x, int *y, int *wheel)
 {
-    *btn =      extract_at(data, data_len, data_pos->button.offset, data_pos->button.size);
-    *x =        extract_at(data, data_len, data_pos->x.offset,      data_pos->x.size);
-    *y =        extract_at(data, data_len, data_pos->y.offset,      data_pos->y.size);
-    *wheel =    extract_at(data, data_len, data_pos->wheel.offset,  data_pos->wheel.size);
-}
+    unsigned char id = 0;
+    if(pos->report_id_tagged)
+        id = buffer[0];
+
+    /*
+    int i;
+    printk(KERN_CONT "Raw: ");
+    for(i = 0; i<buffer_len;i++){
+        printk(KERN_CONT "%x ", (int) buffer[i]);
+    }
+    printk(KERN_CONT "\n");
+    */
+
+    *btn = 0; *x = 0; *y = 0; *wheel = 0;
+    if(pos->button.id == id)
+        *btn =      extract_at(buffer, buffer_len, pos->button.offset, pos->button.size);
+    if(pos->x.id == id)
+        *x =        extract_at(buffer, buffer_len, pos->x.offset,      pos->x.size);
+    if(pos->y.id == id)
+        *y =        extract_at(buffer, buffer_len, pos->y.offset,      pos->y.size);
+    if(pos->wheel.id == id)
+        *wheel =    extract_at(buffer, buffer_len, pos->wheel.offset,  pos->wheel.size);
+
+    return 0;
+// }
 
 struct steelseries_600_data{
     unsigned char btn;
@@ -225,10 +291,13 @@ int main(){
     //Test parsing of report descriptor
     struct report_positions data_struct;
     parse_report_desc(desc, sizeof(desc)/sizeof(char), &data_struct);
-    cout << "Button: Offset " << (unsigned int) data_struct.button.offset << " Size " << (unsigned int) data_struct.button.size << endl;
-    cout << "X: Offset " << (unsigned int) data_struct.x.offset << " Size " << (unsigned int) data_struct.x.size << endl;
-    cout << "Y: Offset " << (unsigned int) data_struct.y.offset << " Size " << (unsigned int) data_struct.y.size << endl;
-    cout << "Wheel: Offset " << (unsigned int) data_struct.wheel.offset << " Size " << (unsigned int) data_struct.wheel.size << endl;
+
+    cout << "Is tagged with report ID: " << data_struct.report_id_tagged << endl;
+
+    cout << "Button ("<< (unsigned int) data_struct.button.id << "): Offset " << (unsigned int) data_struct.button.offset << " Size " << (unsigned int) data_struct.button.size << endl;
+    cout << "X: Offset ("<< (unsigned int) data_struct.x.id << ") " << (unsigned int) data_struct.x.offset << " Size " << (unsigned int) data_struct.x.size << endl;
+    cout << "Y: Offset ("<< (unsigned int) data_struct.y.id << ") " << (unsigned int) data_struct.y.offset << " Size " << (unsigned int) data_struct.y.size << endl;
+    cout << "Wheel: Offset ("<< (unsigned int) data_struct.wheel.id << ") " << (unsigned int) data_struct.wheel.offset << " Size " << (unsigned int) data_struct.wheel.size << endl;
 
     //Test extraction from a reported data. Here, the "test" data is for a steelseries Rival 600 mouse
     union test_data{
@@ -250,6 +319,8 @@ int main(){
     cout << "X: " << x << endl;
     cout << "Y: " << y << endl;
     cout << "Wheel: " << wheel << endl;
+
+    cout << (0x80 & 0x03) << endl;
 
     return 0;
 }

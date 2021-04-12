@@ -33,6 +33,7 @@ mesg "Device_ID (Driver) - $DEVICE_ID ($DRIVER)"
 
 # Tries to modprobe the driver up to 120 seconds long. This is a "feature" for right after the installation, where DKMS needs some time to compile the driver
 # In most cases, this only takes a few seconds. However on a slow machine, this can take some time. 2 min should be plenty however.
+sleep 0.05                                          # Allows rmmod leetmouse && insmouse leetmouse.ko for local developtment. Sometimes, udev is too fast and modprobes the driver instead of the one we are currently insmodding during development.
 if [ ! -d /sys/bus/usb/drivers/"$DRIVER" ] ; then
     mesg "Modprobing $DRIVER"
     i=0

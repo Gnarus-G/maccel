@@ -28,8 +28,13 @@
     MODULE_PARM_DESC(param, desc);
 
 // ########## Kernel module parameters
-PARAM(no_bind, 0, "This will disable binding to this driver via 'leetmouse_bind' by udev.")
 
+// Debug parameters
+static char g_no_bind = 0;
+module_param_named(no_bind, g_no_bind, byte, 0644);
+MODULE_PARM_DESC(no_bind, "This will disable binding to this driver via 'leetmouse_bind' by udev.");
+
+// Configutation of acceleration
 PARAM(sensitivity, SENSITIVITY, "Mouse base sensitivity")
 
 // Updates the acceleration parameters. This is purposely done with a delay!

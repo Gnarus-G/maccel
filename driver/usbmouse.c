@@ -246,10 +246,10 @@ static int usb_mouse_probe(struct usb_interface *intf, const struct usb_device_i
     if (ret < 0)
         goto fail1_5;
 
-    printk("Button: Offset %u Size %u", (unsigned int) rpos->button.offset, rpos->button.size);
-    printk("X: Offset %u Size %u", (unsigned int) rpos->x.offset, rpos->x.size);
-    printk("Y: Offset %u Size %u", (unsigned int) rpos->y.offset, rpos->y.size);
-    printk("Wheel: Offset %u Size %u", (unsigned int) rpos->wheel.offset, rpos->wheel.size);
+    printk("Button (%d): Offset %u Size %u", rpos->button.id ,(unsigned int) rpos->button.offset, rpos->button.size);
+    printk("X (%d): Offset %u Size %u", rpos->x.id, (unsigned int) rpos->x.offset, rpos->x.size);
+    printk("Y (%d): Offset %u Size %u", rpos->x.id, (unsigned int) rpos->y.offset, rpos->y.size);
+    printk("Wheel (%d): Offset %u Size %u", rpos->wheel.id, (unsigned int) rpos->wheel.offset, rpos->wheel.size);
 
                                                                 //Leetmouse Mod END
 
