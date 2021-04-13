@@ -30,6 +30,7 @@ struct report_entry {
     unsigned char id;       // Report ID
 	unsigned char offset;	// In bits
 	unsigned char size;		// In bits
+    unsigned char sgn;      // Is this value signed (1) or unsigned (0)?
 };
 
 //Stores a collection of important offsets & sizes for report data in usb_mouse::data

@@ -8,7 +8,7 @@ inline void atof(const char *str, int len, float *result)
     float tmp = 0.0f;
     unsigned int i, j, pos = 0;
     signed char sign = 0;
-    bool is_whole = 0;
+    int is_whole = 0;
     char c;
 
     *result = 0.0f;
@@ -22,7 +22,7 @@ inline void atof(const char *str, int len, float *result)
             continue;
         }
         if(c == '.'){                       //Switch from whole to decimal
-            is_whole = true;
+            is_whole = 1;
             //... We hit the decimal point. Rescale the float to the whole number part
             for(j = 1; j < pos; j++) *result *= 10.0f;
             pos = 1;
@@ -86,15 +86,22 @@ struct parser_context {
 };
 
 #define NUM_CONTEXTS 32                             // This should be more than enough for a HID mouse. If we exceed this number, the parser below will eventually fail
+#define SET_ENTRY(entry, _id, _offset, _size, _sign) \
+    entry.id = _id;                                 \
+    entry.offset = _offset;                         \
+    entry.size = _size;                             \
+    entry.sgn = _sign;
+
 int parse_report_desc(unsigned char *buffer, int buffer_len, struct report_positions *pos)
 {
-    int r_count = 0, r_size = 0, len = 0;
+    int r_count = 0, r_size = 0, r_sgn = 0, len = 0;
     int r_usage[2];
-    unsigned char ctl, data, button = 0;
+    unsigned char ctl, button = 0;
+    unsigned char *data;
 
     unsigned int n, i = 0;
 
-    //Parsing contexts are linked to the Report ID (if declared) in the report descriptor
+    //Parsing contexts are activated by the  "Report ID" tag. The parser will switch between contexts, when it sees this keyword.
     int context_found;
     struct parser_context contexts[NUM_CONTEXTS];    // We allow up to NUM_CONTEXTS different parsing contexts. Any further will be ignored.
     struct parser_context *c = contexts;             // The current context
@@ -112,12 +119,12 @@ int parse_report_desc(unsigned char *buffer, int buffer_len, struct report_posit
     while(i < buffer_len){
         ctl = buffer[i] & 0xFC;                     // Control word with the length-bits stripped
         len = buffer[i] & 0x03;                     // Length of the the proceeding data, following the control word (in bytes)
-        if(i < buffer_len) data = buffer[i+1];      // Beginning of data after the control word
+        if(i < buffer_len) data = buffer + i + 1;   // Beginning of data after the control word
 
         // ######## Global items
         //Determine the size
-        if(ctl == D_REPORT_SIZE)  r_size = (int) data;
-        if(ctl == D_REPORT_COUNT) r_count = (int) data;
+        if(ctl == D_REPORT_SIZE)  r_size = (int) data[0];
+        if(ctl == D_REPORT_COUNT) r_count = (int) data[0];
 
         //Switch context, if a "Report ID" control word has been found.
         if(ctl == D_REPORT_ID){
@@ -125,9 +132,9 @@ int parse_report_desc(unsigned char *buffer, int buffer_len, struct report_posit
             // Search all available contexts for a match...
             context_found = 0;
             for(n = 0; n < NUM_CONTEXTS; n++){
-                if(contexts[n].id == data){
+                if(contexts[n].id == data[0]){
                     c = contexts + n;
-                    c->id = data;
+                    c->id = data[0];
                     context_found = 1;
                     break;
                 }
@@ -137,7 +144,7 @@ int parse_report_desc(unsigned char *buffer, int buffer_len, struct report_posit
                 for(n = 0; n < NUM_CONTEXTS; n++){
                     if(contexts[n].id == 0){
                         c = contexts + n;
-                        c->id = data;
+                        c->id = data[0];
                         c->offset = 8;              // Since we use a Report ID , which preceeds the actual report (1 byte), all offsets are shifted
                         break;
                     }
@@ -145,19 +152,34 @@ int parse_report_desc(unsigned char *buffer, int buffer_len, struct report_posit
             }
         }
 
-        // ######## Local items
+        //Determine sign.
+        if(ctl == D_LOGICAL_MINIMUM){
+            switch(len){
+            case 1:
+                r_sgn = ((int) *((__s8*) data)) < 0;
+                break;
+            case 2:
+                r_sgn = (__s16) le16_to_cpu(*((__s16*) data)) < 0;
+                break;
+            //case 4:
+            //Sure, we could also now check 4 bytes, as it is written down in the HID specs...
+            //However, my extract_at function does not support 4-byte numbers and I don't see, why I should implement it. A mouse should never need to send 4-bytes long messages IMHO.
+            }
+        }
+
+        // ######## Local items (sort of...) - While a button is described via a global Usage Page (Button), other controls like the Wheel or Pointer Axis are described via local 'Usage' tags.
         //Determine standard usage
         if((ctl == D_USAGE_PAGE || ctl == D_USAGE) && len == 1){
             if(
-                data == D_USAGE_BUTTON ||
-                data == D_USAGE_WHEEL ||
-                data == D_USAGE_X ||
-                data == D_USAGE_Y
+                data[0] == D_USAGE_BUTTON ||
+                data[0] == D_USAGE_WHEEL ||
+                data[0] == D_USAGE_X ||
+                data[0] == D_USAGE_Y
             ) {
                 if(!r_usage[0]){
-                    r_usage[0] = (int) data;
+                    r_usage[0] = (int) data[0];
                 } else {
-                    r_usage[1] = (int) data;
+                    r_usage[1] = (int) data[0];
                 }
             }
         }
@@ -167,32 +189,24 @@ int parse_report_desc(unsigned char *buffer, int buffer_len, struct report_posit
         if(ctl == D_INPUT || ctl == D_FEATURE){
             //Assign usage to pos
             if(!button && r_usage[0] == D_USAGE_BUTTON){
-                pos->button.id = c->id;
-                pos->button.offset = c->offset;
-                pos->button.size = r_size*r_count;
+                SET_ENTRY(pos->button, c->id, c->offset, r_size*r_count, r_sgn);
                 button = 1;
             }
             for(n = 0; n < 2; n++){
                 switch(r_usage[n]){
                 case D_USAGE_X:
-                    pos->x.id = c->id;
-                    pos->x.offset = c->offset + r_size*n;
-                    pos->x.size = r_size;
+                    SET_ENTRY(pos->x, c->id, c->offset + r_size*n, r_size, r_sgn);
                     break;
                 case D_USAGE_Y:
-                    pos->y.id = c->id;
-                    pos->y.offset = c->offset + r_size*n;
-                    pos->y.size = r_size;
+                    SET_ENTRY(pos->y, c->id, c->offset + r_size*n, r_size, r_sgn);
                     break;
                 }
 
             }
             if(r_usage[0] == D_USAGE_WHEEL){
-                pos->wheel.id = c->id;
-                pos->wheel.offset = c->offset;
-                pos->wheel.size = r_size*r_count;
+                SET_ENTRY(pos->wheel, c->id, c->offset, r_size*r_count, r_sgn);
             }
-            //Reset local tags
+            //Reset (some) local tags
             r_usage[0] = 0;
             r_usage[1] = 0;
             //Increment offset
@@ -200,6 +214,11 @@ int parse_report_desc(unsigned char *buffer, int buffer_len, struct report_posit
         }
         i += len + 1;
     }
+
+    printk("BTN\t(%d): Offset %u\tSize %u\t Sign %u",   pos->button.id ,    (unsigned int) pos->button.offset,  pos->button.size,   pos->button.sgn);
+    printk("X\t(%d): Offset %u\tSize %u\t Sign %u",     pos->x.id,          (unsigned int) pos->x.offset,       pos->x.size,        pos->x.sgn);
+    printk("Y\t(%d): Offset %u\tSize %u\t Sign %u",     pos->x.id,          (unsigned int) pos->y.offset,       pos->y.size,        pos->x.sgn);
+    printk("WHL\t(%d): Offset %u\tSize %u\t Sign %u",   pos->wheel.id,      (unsigned int) pos->wheel.offset,   pos->wheel.size,    pos->wheel.sgn);
 
     return 0;
 }
@@ -228,21 +247,23 @@ inline void array_shift(unsigned char *data, int data_len, int num){
     }
 }
 
-//Extracts a number from a raw USB stream, according to its bit_pos and bit_size
-inline int extract_at(unsigned char *data, int data_len, int bit_pos, int bit_size)
+//Extracts a number from a raw USB stream, according to its position and size as stated in the report_entry
+inline int extract_at(unsigned char *data, int data_len, struct report_entry *entry)
 {
-    int size = bit_size/8;          //Size of our data in bytes
-    int i = bit_pos/8;              //Starting index of data[] to access in byte-aligned size
-    char shift = bit_pos % 8;       //Remaining bits to shift left, until we reach our target data
+    int size = entry->size/8;           //Size of our data in bytes
+    int i = entry->offset/8;            //Starting index of data[] to access in byte-aligned size
+    char shift = entry->offset % 8;     //Remaining bits to shift left, until we reach our target data
     union {
         __u8 raw[4];    //Raw buffer of individual bytes. Must be of same length as "con" and at least 1 byte bigger than the biggest datatype you want to handle in here
         __u32 init;     //Continous buffer of aboves bytes (used for initialization)
-        __s8 b1;        //Return value
-        __s16 b2;       //Return value
+        __s8 s8;        //Return value
+        __s16 s16;      //Return value
+        __u8 u8;        //Return value
+        __u16 u16;      //Return value
     } buffer;
 
     //Data structure to read is bigger than a clear multiple of 8 bits. Read one more byte.
-    if(bit_size % 8) size += 1;
+    if(entry->size % 8) size += 1;
     //Data structure to read is bigger than we can handle. Abort
     if(size > sizeof(buffer.init)) return 0;
 
@@ -256,16 +277,21 @@ inline int extract_at(unsigned char *data, int data_len, int bit_pos, int bit_si
 
     if(shift)
         array_shift(buffer.raw,size,-1*shift);              //Truncate bits, that we copied over too much on the right
-
-    if(bit_size <= 8){
+    
+    if(entry->size <= 8){
         if(shift)
             buffer.raw[0] &= (0xFF << shift);               //Mask bits, which do not belong here
-        return (int) buffer.b1;
+        if(entry->sgn)                                      //If the initial value was signed and if it was not exactly of size 16, we need to add the missing bits, which had been masked above with zeros.
+            return (int) (buffer.u8 >> (entry->size - 1)) == 0 ? buffer.u8 : (-1 ^ (0xFF >> (8 - entry->size))) | buffer.s8;
+        return (int) buffer.u8;
     }
-    if(bit_size <= 16){
+    if(entry->size <= 16){
         if(shift)
             buffer.raw[1] &= (0xFF << shift);               //Mask bits, which do not belong here
-        return (int) buffer.b2;
+        buffer.u16 = le16_to_cpu(buffer.u16);               //Convert to machine units (must be done on the unsigned bytes)
+        if(entry->sgn)                                      //If the initial value was signed and if it was not exactly of size 16, we need to add the missing bits, which had been masked above with zeros.
+            return (int) (buffer.s16 >> (entry->size - 1)) == 0 ? buffer.s16 : (-1 ^ (0xFFFF >> (16 - entry->size))) | buffer.s16;
+        return (int) buffer.u16;
     }
 
     return 0; //All other lengths are not supported.
@@ -282,20 +308,20 @@ int extract_mouse_events(unsigned char *buffer, int buffer_len, struct report_po
     int i;
     printk(KERN_CONT "Raw: ");
     for(i = 0; i<buffer_len;i++){
-        printk(KERN_CONT "%x ", (int) buffer[i]);
+        printk(KERN_CONT "0x%02x ", (int) buffer[i]);
     }
     printk(KERN_CONT "\n");
     */
 
     *btn = 0; *x = 0; *y = 0; *wheel = 0;
     if(pos->button.id == id)
-        *btn =      extract_at(buffer, buffer_len, pos->button.offset, pos->button.size);
+        *btn =      extract_at(buffer, buffer_len, &pos->button);
     if(pos->x.id == id)
-        *x =        extract_at(buffer, buffer_len, pos->x.offset,      pos->x.size);
+        *x =        extract_at(buffer, buffer_len, &pos->x);
     if(pos->y.id == id)
-        *y =        extract_at(buffer, buffer_len, pos->y.offset,      pos->y.size);
+        *y =        extract_at(buffer, buffer_len, &pos->y);
     if(pos->wheel.id == id)
-        *wheel =    extract_at(buffer, buffer_len, pos->wheel.offset,  pos->wheel.size);
+        *wheel =    extract_at(buffer, buffer_len, &pos->wheel);
 
     return 0;
 }
