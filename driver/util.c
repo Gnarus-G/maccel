@@ -2,6 +2,12 @@
 #include <linux/kernel.h>   //fixed-len datatypes
 #include <linux/string.h>   //memcpy
 
+// ########## Kernel module parameters
+// Debug parameters
+#include <linux/module.h>
+static char g_debug = 0;
+module_param_named(debug, g_debug, byte, 0644);
+
 //Converts string into float.
 inline void atof(const char *str, int len, float *result)
 {
@@ -215,12 +221,12 @@ int parse_report_desc(unsigned char *buffer, int buffer_len, struct report_posit
         i += len + 1;
     }
 
-    /*
-    printk("BTN\t(%d): Offset %u\tSize %u\t Sign %u",   pos->button.id ,    (unsigned int) pos->button.offset,  pos->button.size,   pos->button.sgn);
-    printk("X\t(%d): Offset %u\tSize %u\t Sign %u",     pos->x.id,          (unsigned int) pos->x.offset,       pos->x.size,        pos->x.sgn);
-    printk("Y\t(%d): Offset %u\tSize %u\t Sign %u",     pos->x.id,          (unsigned int) pos->y.offset,       pos->y.size,        pos->x.sgn);
-    printk("WHL\t(%d): Offset %u\tSize %u\t Sign %u",   pos->wheel.id,      (unsigned int) pos->wheel.offset,   pos->wheel.size,    pos->wheel.sgn);
-    */
+    if(g_debug){
+        printk("BTN\t(%d): Offset %u\tSize %u\t Sign %u",   pos->button.id ,    (unsigned int) pos->button.offset,  pos->button.size,   pos->button.sgn);
+        printk("X\t(%d): Offset %u\tSize %u\t Sign %u",     pos->x.id,          (unsigned int) pos->x.offset,       pos->x.size,        pos->x.sgn);
+        printk("Y\t(%d): Offset %u\tSize %u\t Sign %u",     pos->x.id,          (unsigned int) pos->y.offset,       pos->y.size,        pos->x.sgn);
+        printk("WHL\t(%d): Offset %u\tSize %u\t Sign %u",   pos->wheel.id,      (unsigned int) pos->wheel.offset,   pos->wheel.size,    pos->wheel.sgn);
+    }
 
     return 0;
 }
@@ -309,17 +315,18 @@ inline int extract_at(unsigned char *data, int data_len, struct report_entry *en
 int extract_mouse_events(unsigned char *buffer, int buffer_len, struct report_positions *pos, int *btn, int *x, int *y, int *wheel)
 {
     unsigned char id = 0;
+
+    if(g_debug){
+        int i;
+        printk(KERN_CONT "Raw: ");
+        for(i = 0; i<buffer_len;i++){
+            printk(KERN_CONT "0x%02x ", (int) buffer[i]);
+        }
+        printk(KERN_CONT "\n");
+    }
+
     if(pos->report_id_tagged)
         id = buffer[0];
-
-    /*
-    int i;
-    printk(KERN_CONT "Raw: ");
-    for(i = 0; i<buffer_len;i++){
-        printk(KERN_CONT "0x%02x ", (int) buffer[i]);
-    }
-    printk(KERN_CONT "\n");
-    */
 
     *btn = 0; *x = 0; *y = 0; *wheel = 0;
     if(pos->button.id == id)
