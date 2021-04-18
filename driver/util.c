@@ -98,10 +98,17 @@ struct parser_context {
     entry.size = _size;                             \
     entry.sgn = _sign;
 
+#define NUM_CONTEXTS 32                             // This should be more than enough for a HID mouse. If we exceed this number, the parser below will eventually fail
+#define SET_ENTRY(entry, _id, _offset, _size, _sign) \
+    entry.id = _id;                                 \
+    entry.offset = _offset;                         \
+    entry.size = _size;                             \
+    entry.sgn = _sign;
+
 int parse_report_desc(unsigned char *buffer, int buffer_len, struct report_positions *pos)
 {
     int r_count = 0, r_size = 0, r_sgn = 0, len = 0;
-    int r_usage[2];
+    int r_usage[16];
     unsigned char ctl, button = 0;
     unsigned char *data;
 
@@ -112,8 +119,10 @@ int parse_report_desc(unsigned char *buffer, int buffer_len, struct report_posit
     struct parser_context contexts[NUM_CONTEXTS];    // We allow up to NUM_CONTEXTS different parsing contexts. Any further will be ignored.
     struct parser_context *c = contexts;             // The current context
 
-    r_usage[0] = 0;
-    r_usage[1] = 0;
+    for(n = 0; n < ARRAY_SIZE(r_usage); n++){
+        r_usage[n] = 0;
+    }
+    
     pos->report_id_tagged = 0;
 
     //Initialize contexts to zero
@@ -182,10 +191,11 @@ int parse_report_desc(unsigned char *buffer, int buffer_len, struct report_posit
                 data[0] == D_USAGE_X ||
                 data[0] == D_USAGE_Y
             ) {
-                if(!r_usage[0]){
-                    r_usage[0] = (int) data[0];
-                } else {
-                    r_usage[1] = (int) data[0];
+                for(n = 0; n < ARRAY_SIZE(r_usage); n++){
+                    if(!r_usage[n]){
+                        r_usage[n] = (int) data[0];
+                        break;
+                    }
                 }
             }
         }
@@ -193,34 +203,37 @@ int parse_report_desc(unsigned char *buffer, int buffer_len, struct report_posit
         // ######## Main items
         //Check, if we reached the end of this input data type
         if(ctl == D_INPUT || ctl == D_FEATURE){
-            //Assign usage to pos
+            //Buttons are handled separately
             if(!button && r_usage[0] == D_USAGE_BUTTON){
                 SET_ENTRY(pos->button, c->id, c->offset, r_size*r_count, r_sgn);
                 button = 1;
-            }
-            for(n = 0; n < 2; n++){
-                switch(r_usage[n]){
-                case D_USAGE_X:
-                    SET_ENTRY(pos->x, c->id, c->offset + r_size*n, r_size, r_sgn);
-                    break;
-                case D_USAGE_Y:
-                    SET_ENTRY(pos->y, c->id, c->offset + r_size*n, r_size, r_sgn);
-                    break;
-                }
+            } else {
+            //X,Y and WHEEL
+                for(n = 0; n < r_count; n++){
+                    switch(r_usage[n]){
+                    case D_USAGE_X:
+                        SET_ENTRY(pos->x, c->id, c->offset + r_size*n, r_size, r_sgn);
+                        break;
+                    case D_USAGE_Y:
+                        SET_ENTRY(pos->y, c->id, c->offset + r_size*n, r_size, r_sgn);
+                        break;
+                    case D_USAGE_WHEEL:
+                        SET_ENTRY(pos->wheel, c->id, c->offset + r_size*n, r_size, r_sgn);
+                        break;
+                    }
 
+                }
             }
-            if(r_usage[0] == D_USAGE_WHEEL){
-                SET_ENTRY(pos->wheel, c->id, c->offset, r_size*r_count, r_sgn);
+            //Reset usages
+            for(n = 0; n < ARRAY_SIZE(r_usage); n++){
+                r_usage[n] = 0;
             }
-            //Reset (some) local tags
-            r_usage[0] = 0;
-            r_usage[1] = 0;
             //Increment offset
             c->offset += r_size*r_count;
         }
         i += len + 1;
     }
-
+    
     if(g_debug){
         printk("BTN\t(%d): Offset %u\tSize %u\t Sign %u",   pos->button.id ,    (unsigned int) pos->button.offset,  pos->button.size,   pos->button.sgn);
         printk("X\t(%d): Offset %u\tSize %u\t Sign %u",     pos->x.id,          (unsigned int) pos->x.offset,       pos->x.size,        pos->x.sgn);
