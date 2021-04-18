@@ -215,46 +215,51 @@ int parse_report_desc(unsigned char *buffer, int buffer_len, struct report_posit
         i += len + 1;
     }
 
+    /*
     printk("BTN\t(%d): Offset %u\tSize %u\t Sign %u",   pos->button.id ,    (unsigned int) pos->button.offset,  pos->button.size,   pos->button.sgn);
     printk("X\t(%d): Offset %u\tSize %u\t Sign %u",     pos->x.id,          (unsigned int) pos->x.offset,       pos->x.size,        pos->x.sgn);
     printk("Y\t(%d): Offset %u\tSize %u\t Sign %u",     pos->x.id,          (unsigned int) pos->y.offset,       pos->y.size,        pos->x.sgn);
     printk("WHL\t(%d): Offset %u\tSize %u\t Sign %u",   pos->wheel.id,      (unsigned int) pos->wheel.offset,   pos->wheel.size,    pos->wheel.sgn);
+    */
 
     return 0;
 }
 
-//Shifts an array *data of byte-length data_len by amounts of +/- num bits to the right/left (limited to num = +/-8 max).
-//Most certainly not the most elegant way to do this. However, it works.
-inline void array_shift(unsigned char *data, int data_len, int num){
+//Shifts an array *data of length data_len (in bytes) by amounts of num in bits to the right/left, depending on right = 1/0 (maximum bits to shift: 8)
+//This shift method is assuming little-endian data, as it is dictated by the HID standard.
+//So taking a byte as [MSB, ..., LSB], then e.g. a 2 byte long array "[7,8,6,5,4,3,2,1,0], [15,14,13,12,11,10,9] << 2" (left = 1, num = 2) becomes "[5,4,3,2,1,0,_,_], [13,12,11,10,9,8,7,6]"
+//Most certainly not the most elegant and fastest way to do this. However, it works. (Limiting this to only 4-byte long data, one could use a preprocessor define, which is way faster but bound to that type).
+inline void array_shift_le(unsigned char *data, int data_len, bool right, int num){
     int i;
     if(num == 0) return;
 
-    if(num < 0){
-        num *= -1;
+    //Right shift
+    if(right){
         for(i = 0; i < data_len; i++){
-            data[i] <<= num;
+            data[i] >>= num;
             if(i + 1 < data_len){
-                data[i] |= data[i+1] >> (8 - num);
+                data[i] |= data[i+1] << (8 - num);
             }
         }
+    //Left shift
     } else {
         for(i = data_len - 1; i >= 0; i--){
-            data[i] >>= num;
+            data[i] <<= num;
             if(i){
-                data[i] |= data[i-1] << (8 - num);
+                data[i] |= data[i-1] >> (8 - num);
             }
         }
     }
 }
 
-//Extracts a number from a raw USB stream, according to its position and size as stated in the report_entry
+//Extracts a number from a raw USB stream, according to its bit-position and bit-size as stated in the report_entry
 inline int extract_at(unsigned char *data, int data_len, struct report_entry *entry)
 {
     int size = entry->size/8;           //Size of our data in bytes
     int i = entry->offset/8;            //Starting index of data[] to access in byte-aligned size
     char shift = entry->offset % 8;     //Remaining bits to shift left, until we reach our target data
     union {
-        __u8 raw[4];    //Raw buffer of individual bytes. Must be of same length as "con" and at least 1 byte bigger than the biggest datatype you want to handle in here
+        __u8 raw[4];    //Raw buffer of individual bytes. Must be of same length as "init" and at least 2 bytes bigger than the biggest datatype you want to handle in here
         __u32 init;     //Continous buffer of aboves bytes (used for initialization)
         __s8 s8;        //Return value
         __s16 s16;      //Return value
@@ -264,6 +269,8 @@ inline int extract_at(unsigned char *data, int data_len, struct report_entry *en
 
     //Data structure to read is bigger than a clear multiple of 8 bits. Read one more byte.
     if(entry->size % 8) size += 1;
+    //The bit position is not aligned with byte-size. Read one more byte to make sure, we catch all necessary bits
+    if(shift) size += 1;
     //Data structure to read is bigger than we can handle. Abort
     if(size > sizeof(buffer.init)) return 0;
 
@@ -275,23 +282,24 @@ inline int extract_at(unsigned char *data, int data_len, struct report_entry *en
     //Create a local copy, that we can modify.
     memcpy(buffer.raw, data + i, size);
 
+    //NOTE: All data manipulation below is only valid for little-endian data. The HID standard however dictates little-endian, so this is fine. However, we need to transform to machine data in the end for multi-byte types
     if(shift)
-        array_shift(buffer.raw,size,-1*shift);              //Truncate bits, that we copied over too much on the right
-    
+        array_shift_le(buffer.raw,size,true,shift);         //Align bits to memory
+
     if(entry->size <= 8){
-        if(shift)
-            buffer.raw[0] &= (0xFF << shift);               //Mask bits, which do not belong here
-        if(entry->sgn)                                      //If the initial value was signed and if it was not exactly of size 16, we need to add the missing bits, which had been masked above with zeros.
-            return (int) (buffer.u8 >> (entry->size - 1)) == 0 ? buffer.u8 : (-1 ^ (0xFF >> (8 - entry->size))) | buffer.s8;
-        return (int) buffer.u8;
+        buffer.raw[0] &= 0xFF >> (8 - entry->size);         //Zero MSB bits, if entry->size < 8
+        if(entry->sgn)                                      //If the initial value was signed and if it was not exactly of size 8, we need to add the missing sign-bits, which have been masked above with zeros.
+            buffer.raw[0] = buffer.raw[0] >> (8 - entry->size - 1) == 0 ? buffer.raw[0] : (0xFF ^ (0xFF >> (8 - entry->size))) | buffer.raw[0];
+        
+        return (int) (entry->sgn ? buffer.s8 : buffer.u8);
     }
     if(entry->size <= 16){
-        if(shift)
-            buffer.raw[1] &= (0xFF << shift);               //Mask bits, which do not belong here
-        buffer.u16 = le16_to_cpu(buffer.u16);               //Convert to machine units (must be done on the unsigned bytes)
-        if(entry->sgn)                                      //If the initial value was signed and if it was not exactly of size 16, we need to add the missing bits, which had been masked above with zeros.
-            return (int) (buffer.s16 >> (entry->size - 1)) == 0 ? buffer.s16 : (-1 ^ (0xFFFF >> (16 - entry->size))) | buffer.s16;
-        return (int) buffer.u16;
+        buffer.raw[1] &= 0xFF >> (16 - entry->size);        //Zero MSB bits, if entry->size < 16
+        if(entry->sgn)                                      //If the initial value was signed and if it was not exactly of size 16, we need to add the missing sign-bits, which have been masked above with zeros.
+            buffer.raw[1] = buffer.raw[1] >> (16 - entry->size - 1) == 0 ? buffer.raw[1] : (0xFF ^ (0xFF >> (16 - entry->size))) | buffer.raw[1];
+
+        buffer.u16 = le16_to_cpu(buffer.u16);               //Convert to machine units
+        return (int) (entry->sgn ? buffer.s16 : buffer.u16);
     }
 
     return 0; //All other lengths are not supported.
