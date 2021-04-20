@@ -1,85 +1,19 @@
-#include "util.h"
-#include <linux/kernel.h>   //fixed-len datatypes
-#include <linux/string.h>   //memcpy
+#include <iostream>
+using namespace std;
 
-// ########## Kernel module parameters
-// Debug parameters
-#include <linux/module.h>
-static char g_debug = 0;
-module_param_named(debug, g_debug, byte, 0644);
+//#include "linux/string.h" //Necessary for memcpy to work inside kernel module
+#include <cstring>          //memcpy
+#include <bitset>
+#include <linux/kernel.h>
+#include "hid_parser.h"
 
-//Converts string into float.
-inline void atof(const char *str, int len, float *result)
-{
-    float tmp = 0.0f;
-    unsigned int i, j, pos = 0;
-    signed char sign = 0;
-    int is_whole = 0;
-    char c;
+//This is supposed to be in linux/kernel.h. However, it is not within the scope when compiling this test-program here.
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
-    *result = 0.0f;
-
-    for(i = 0; i < len; i++){
-        c = str[i];
-        if(c == ' ') continue;              //Skip any white space
-        if(c == 0) break;                   //End of str
-        if(!sign && c == '-'){              //Sign is negative
-            sign = -1;
-            continue;
-        }
-        if(c == '.'){                       //Switch from whole to decimal
-            is_whole = 1;
-            //... We hit the decimal point. Rescale the float to the whole number part
-            for(j = 1; j < pos; j++) *result *= 10.0f;
-            pos = 1;
-            continue;
-        }
-
-        if(!(c >= 48 && c <= 57)) break;    //After all previous checks, the remaining characters HAVE to be digits. Otherwise break
-        if(!sign) sign = 1;                 //If no sign was yet applied, it has to be positive
-        
-        //Shift digit to the right... (see above, what we do, when we hit the decimal point)
-        tmp = 1;
-        for(j = 0; j < pos; j++) tmp /= 10.0f;
-        *result += tmp*(c-48);
-        pos++;
-    }
-    //We never hit the decimal point: Rescale here, as we do up in the if(c == '.') statement
-    if(is_whole)
-        for(j = 1; j < pos; j++) *result *= 10.0f;
-    *result *= sign;
-}
-
-// Rounds (up/down) depending on sign
-inline int Leet_round(float x)
-{
-    if (x >= 0) {
-        return (int)(x + 0.5f);
-    } else {
-        return (int)(x - 0.5f);
-    }
-}
-
-// What do we have here? Code from Quake 3, which is also GPL.
-// https://en.wikipedia.org/wiki/Fast_inverse_square_root
-// Copyright (C) 1999-2005 Id Software, Inc.
-inline void Q_sqrt(float *number)
-{
-    long i;
-    float x2, y;
-    const float threehalfs = 1.5F;
-
-    x2 = (*number) * 0.5F;
-    y  = (*number);
-    i  = * ( long * ) &y;                       // evil floating point bit level hacking
-    i  = 0x5f3759df - ( i >> 1 );               // what the fuck?
-    y  = * ( float * ) &i;
-    y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
-    //	y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
-
-    *number = 1 / y;
-}
-
+//Dummy
+#define le16_to_cpu(x) x
+#define le32_to_cpu(x) x
+#define be16_to_cpu(x) (x >> 8) | (x << 8)
 
 //This is the most crudest HID descriptor parser EVER.
 //We will skip most control words until we found an interesting one
@@ -90,13 +24,6 @@ struct parser_context {
     unsigned char id;                           // Report ID
     unsigned int offset;                        // Local offset in this report ID context
 };
-
-#define NUM_CONTEXTS 32                             // This should be more than enough for a HID mouse. If we exceed this number, the parser below will eventually fail
-#define SET_ENTRY(entry, _id, _offset, _size, _sign) \
-    entry.id = _id;                                 \
-    entry.offset = _offset;                         \
-    entry.size = _size;                             \
-    entry.sgn = _sign;
 
 #define NUM_CONTEXTS 32                             // This should be more than enough for a HID mouse. If we exceed this number, the parser below will eventually fail
 #define SET_ENTRY(entry, _id, _offset, _size, _sign) \
@@ -233,13 +160,6 @@ int parse_report_desc(unsigned char *buffer, int buffer_len, struct report_posit
         }
         i += len + 1;
     }
-    
-    if(g_debug){
-        printk("BTN\t(%d): Offset %u\tSize %u\t Sign %u",   pos->button.id ,    (unsigned int) pos->button.offset,  pos->button.size,   pos->button.sgn);
-        printk("X\t(%d): Offset %u\tSize %u\t Sign %u",     pos->x.id,          (unsigned int) pos->x.offset,       pos->x.size,        pos->x.sgn);
-        printk("Y\t(%d): Offset %u\tSize %u\t Sign %u",     pos->x.id,          (unsigned int) pos->y.offset,       pos->y.size,        pos->x.sgn);
-        printk("WHL\t(%d): Offset %u\tSize %u\t Sign %u",   pos->wheel.id,      (unsigned int) pos->wheel.offset,   pos->wheel.size,    pos->wheel.sgn);
-    }
 
     return 0;
 }
@@ -328,18 +248,17 @@ inline int extract_at(unsigned char *data, int data_len, struct report_entry *en
 int extract_mouse_events(unsigned char *buffer, int buffer_len, struct report_positions *pos, int *btn, int *x, int *y, int *wheel)
 {
     unsigned char id = 0;
-
-    if(g_debug){
-        int i;
-        printk(KERN_CONT "Raw: ");
-        for(i = 0; i<buffer_len;i++){
-            printk(KERN_CONT "0x%02x ", (int) buffer[i]);
-        }
-        printk(KERN_CONT "\n");
-    }
-
     if(pos->report_id_tagged)
         id = buffer[0];
+
+    /*
+    int i;
+    printk(KERN_CONT "Raw: ");
+    for(i = 0; i<buffer_len;i++){
+        printk(KERN_CONT "%x ", (int) buffer[i]);
+    }
+    printk(KERN_CONT "\n");
+    */
 
     *btn = 0; *x = 0; *y = 0; *wheel = 0;
     if(pos->button.id == id)
@@ -350,6 +269,99 @@ int extract_mouse_events(unsigned char *buffer, int buffer_len, struct report_po
         *y =        extract_at(buffer, buffer_len, &pos->y);
     if(pos->wheel.id == id)
         *wheel =    extract_at(buffer, buffer_len, &pos->wheel);
+
+    return 0;
+}
+
+struct steelseries_600_data{
+    unsigned char btn;
+    signed short x;
+    signed short y;
+    signed char wheel;
+} __attribute__((packed));
+
+// Report descriptor we use for debugging below
+unsigned char desc[] =  {
+    TRUST_GXT
+    //SWIFTPOINT_TRACER
+    //COOLERMASTER_MM710
+    //LOGITECH_G5
+    //CSL_OPTICAL_MOUSE
+    //STEELSERIES_RIVAL_600
+};
+
+//Raw packets from one of the mice I tested
+unsigned char packet[] = {
+    //### CSL Optical Mouse
+    
+    //0x01, 0x00, 0xfd, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    
+    //0x01, 0x00, 0x00, 0xc0, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    0x01, 0x00, 0x04, 0xd0, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    //0x01, 0x00, 0xfe, 0x0f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    //### Steelseries Rival 600
+    //0x00, 0xff, 0xff, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+
+#define DBG(pre, entry) \
+    cout << pre << "\t(" << (unsigned int) entry.id << "): Offset " << (unsigned int) entry.offset << "\tSize " << (unsigned int) entry.size << "\tSigned " << (unsigned int) entry.sgn << endl;
+int main(){
+    //Test parsing of report descriptor
+    struct report_positions pos;
+    parse_report_desc(desc, sizeof(desc)/sizeof(char), &pos);
+
+    cout << "Is tagged with report ID: " << (pos.report_id_tagged ? "Yes" : "No") << endl;
+
+    DBG("BTN",pos.button);
+    DBG("X",pos.x);
+    DBG("Y",pos.y);
+    DBG("WHL",pos.wheel);
+
+    //Test extraction from a reported data. Here, the "test" data is for a steelseries Rival 600 mouse
+    union test_data{
+        struct steelseries_600_data data;
+        unsigned char raw[32];          //Big enough buffer
+    } test;
+
+    //Apply some test-data to be extracted by extract_mouse_events for a steelseries rival 600
+    test.data.btn = 19;
+    test.data.x = -7;
+    test.data.y = 120;
+    test.data.wheel = 15;
+
+    int btn, x, y, wheel;
+
+    //extract_mouse_events(test.raw, sizeof(test), &data_struct, &btn, &x, &y, &wheel);
+    extract_mouse_events(packet, sizeof(packet), &pos, &btn, &x, &y, &wheel);
+
+    union {
+        int i;
+        unsigned char c[4];
+    } tmp;
+
+    cout << "Bits: " << endl;
+    for(int i = 0; i < sizeof(packet); i++){
+        cout << bitset<8>(packet[i]) << " ";
+    }
+    cout << endl;
+
+    tmp.i = x;
+    for(int i = 0; i < 4; i++){
+        cout << bitset<8>(tmp.c[i]) << " ";
+    }
+    cout << endl;
+
+    tmp.i = y;
+    for(int i = 0; i < 4; i++){
+        cout << bitset<8>(tmp.c[i]) << " ";
+    }
+    cout << endl;
+
+    cout << "BTN:\t" << btn << endl;
+    cout << "X:\t" << x << endl;
+    cout << "Y:\t" << y << endl;
+    cout << "WHL:\t" << wheel << endl;
 
     return 0;
 }

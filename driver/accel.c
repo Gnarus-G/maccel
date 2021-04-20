@@ -16,30 +16,40 @@
     #include <asm/fpu/api.h>
 #endif
 
-/*
-//Converts a preprocessor define's value in "config.h" to a string - Suspect to change in future version without a "config.h"
+
+//Converts a preprocessor define's value in "config.h" to a string - Suspect this to change in future version without a "config.h"
 #define _s(x) #x
 #define s(x) _s(x)
 
 #define PARAM(param, default, desc)                             \
-    float g_#param = default;                                   \
-    static char* g_param_#param
-    module_param_named(#param, g_param_#param, charp, 0644);    \
+    float g_##param = default;                                  \
+    static char* g_param_##param = s(default);                  \
+    module_param_named(param, g_param_##param, charp, 0644);    \
+    MODULE_PARM_DESC(param, desc);
 
 // ########## Kernel module parameters
 
-static float g_sensitivity = SENSITIVITY;
-static char* g_param_sensitivity = s(SENSITIVITY);
-module_param_named(sensitivity, g_param_sensitivity, charp, 0644);
-MODULE_PARM_DESC(sensitivity, "Mouse base sensitivity");
+// Debug parameters
+static char g_no_bind = 0;
+module_param_named(no_bind, g_no_bind, byte, 0644);
+MODULE_PARM_DESC(no_bind, "This will disable binding to this driver via 'leetmouse_bind' by udev.");
 
-PARAM(sensitivity, s(SENSITIVITY), "HEllo")
-*/
+// Configutation of acceleration
+PARAM(sensitivity, SENSITIVITY, "Mouse base sensitivity")
+
+// Updates the acceleration parameters. This is purposely done with a delay!
+// First, to not hammer too much the logic in "accelerate()", which is called VERY OFTEN!
+// Second, to fight possible cheating. However, this can be OFC changed, since we are OSS...
+static void updata_params(void)
+{
+    return;
+}
 
 // ########## Acceleration code
 
 // Acceleration happens here
-int accelerate(int* x, int* y, int* wheel){
+int accelerate(int *x, int *y, int *wheel)
+{
 	float delta_x, delta_y, delta_whl, ms, rate;
 	float accel_sens = SENSITIVITY;
     static long buffer_x = 0;
@@ -89,6 +99,9 @@ kernel_fpu_begin();
     delta_y += (float) buffer_y; buffer_y = 0;
     delta_whl += (float) buffer_whl; buffer_whl = 0;
 
+    //Update acceleration parameters periodically
+    updata_params();
+
     //Prescale
     delta_x *= PRE_SCALE_X;
     delta_y *= PRE_SCALE_Y;
@@ -134,7 +147,8 @@ kernel_fpu_begin();
     delta_whl *= SCROLLS_PER_TICK/3.0f;
     delta_x += carry_x;
     delta_y += carry_y;
-    delta_whl += carry_whl;
+    if((delta_whl < 0 && carry_whl < 0) || (delta_whl > 0 && carry_whl > 0)) //Only apply carry to the wheel, if it shares the same sign
+        delta_whl += carry_whl;
 
     //Cast back to int
     *x = Leet_round(delta_x);
@@ -152,12 +166,3 @@ kernel_fpu_end();
 
     return status;
 }
-
-// Updates the acceleration parameters. This is purposely done with a delay!
-// First, to not hammer too much the logic in "accelerate()", which is called VERY OFTEN!
-// Second, to fight possible cheating. However, this can be OFC changed, since we are OSS...
-/*
-static void updata_params(){
-    return;
-}
-*/

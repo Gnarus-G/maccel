@@ -1,4 +1,4 @@
-ACTION!="add", GOTO="leetmouse_end"
+ACTION=="remove", GOTO="leetmouse_end"
 SUBSYSTEMS=="usb|input|hid", ATTRS{bInterfaceClass}=="03", ATTRS{bInterfaceSubClass}=="01", ATTRS{bInterfaceProtocol}=="02", RUN+="leetmouse_bind leetmouse $kernel"
 
 LABEL="leetmouse_end"
