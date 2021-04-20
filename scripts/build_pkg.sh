@@ -18,6 +18,10 @@ cd $TEMP_DIR
 rm -rf $SRC_NAME > /dev/null
 mkdir -p $SRC_NAME
 tar -xf tmp.tar -C $SRC_NAME
+
+# HACK HACK HACK We purposedly ignored config.h earlier with the "--exclude-vcs --exclude-vcs-ignores" flags. Since config.h (if it exists) is in .gitignore, we need to add it manually.
+cp ${ROOT}/driver/config.h $SRC_NAME/driver/
+
 tar -cJf $SRC_NAME.tar.xz $SRC_NAME
 
 # ########## Move compressed file to build folder
