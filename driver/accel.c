@@ -24,40 +24,55 @@ MODULE_AUTHOR("Klaus Zipfel <klaus (at) zipfel (dot) family>");         //Curren
 #define s(x) _s(x)
 
 //Convenient helper for float based parameters, which are passed via a string to this module (must be individually parsed via atof() - available in util.c)
-#define PARAM(param, default, desc)                             \
+#define PARAM_F(param, default, desc)                           \
     float g_##param = default;                                  \
     static char* g_param_##param = s(default);                  \
     module_param_named(param, g_param_##param, charp, 0644);    \
     MODULE_PARM_DESC(param, desc);
 
+#define PARAM(param, default, desc)                             \
+    static char g_##param = default;                            \
+    module_param_named(param, g_##param, byte, 0644);           \
+    MODULE_PARM_DESC(param, desc);
+
 // ########## Kernel module parameters
 
-// Debug parameters
-static char g_no_bind = 0;
-module_param_named(no_bind, g_no_bind, byte, 0644);
-MODULE_PARM_DESC(no_bind, "This will disable binding to this driver via 'leetmouse_bind' by udev.");
+// Simple module parameters (instant update)
+PARAM(no_bind,          0,              "This will disable binding to this driver via 'leetmouse_bind' by udev.")
+PARAM(update,           0,              "Triggers an update of the acceleration parameters below")
 
-// Configutation of acceleration
-PARAM(PreScaleX,        SENSITIVITY,    "Prescale X-Axis before applying acceleration")
-PARAM(PreScaleY,        SENSITIVITY,    "Prescale Y-Axis before applying acceleration")
-PARAM(SpeedCap,         SPEED_CAP,      "Limit the maximum pointer speed before applying acceleration")
-PARAM(Sensitivity,      SENSITIVITY,    "Mouse base sensitivity")
-PARAM(Acceleration,     ACCELERATION,   "Mouse acceleration sensitivity")
-PARAM(SensitivityCap,   SENS_CAP,       "Cap maximum sensitivity")
-PARAM(Offset,           OFFSET,         "Mouse base sensitivity")
-//PARAM(AccelMode,        MODE,           "Acceleration method: 0 (power law), 1: exponential, 2: natural"
-//PARAM(Power,            XXX,            "")            //Not yet implemented
-PARAM(PostScaleX,       POST_SCALE_X,   "Postscale X-Axis after applying acceleration")
-PARAM(PostScaleY,       POST_SCALE_Y,   "Postscale >-Axis after applying acceleration")
-//PARAM(AngleAdjustment,  XXX,            "")            //Not yet implemented. Douptful, if I will ever add it - Not very useful and needs me to implement trigonometric functions from scratch in C.
-//PARAM(AngleSnapping,    XXX,            "")            //Not yet implemented. Douptful, if I will ever add it - Not very useful and needs me to implement trigonometric functions from scratch in C.
+//PARAM(AccelMode,        MODE,           "Acceleration method: 0 power law, 1: saturation, 2: log") //Not yet implemented
+
+// Acceleration parameters (type pchar. Converted to float via "updata_params" triggered by /sys/module/leetmouse/parameters/update)
+PARAM_F(PreScaleX,      PRE_SCALE_X,    "Prescale X-Axis before applying acceleration.")
+PARAM_F(PreScaleY,      PRE_SCALE_Y,    "Prescale Y-Axis before applying acceleration.")
+PARAM_F(SpeedCap,       SPEED_CAP,      "Limit the maximum pointer speed before applying acceleration.")
+PARAM_F(Sensitivity,    SENSITIVITY,    "Mouse base sensitivity.")
+PARAM_F(Acceleration,   ACCELERATION,   "Mouse acceleration sensitivity.")
+PARAM_F(SensitivityCap, SENS_CAP,       "Cap maximum sensitivity.")
+PARAM_F(Offset,         OFFSET,         "Mouse base sensitivity.")
+//PARAM_F(Power,          XXX,            "")            //Not yet implemented
+PARAM_F(PostScaleX,     POST_SCALE_X,   "Postscale X-Axis after applying acceleration.")
+PARAM_F(PostScaleY,     POST_SCALE_Y,   "Postscale >-Axis after applying acceleration.")
+//PARAM_F(AngleAdjustment,XXX,            "")            //Not yet implemented. Douptful, if I will ever add it - Not very useful and needs me to implement trigonometric functions from scratch in C.
+//PARAM_F(AngleSnapping,  XXX,            "")            //Not yet implemented. Douptful, if I will ever add it - Not very useful and needs me to implement trigonometric functions from scratch in C.
+PARAM_F(ScrollsPerTick, SCROLLS_PER_TICK,"Amount of lines to scroll per scroll-wheel tick.")
 
 // Updates the acceleration parameters. This is purposely done with a delay!
 // First, to not hammer too much the logic in "accelerate()", which is called VERY OFTEN!
 // Second, to fight possible cheating. However, this can be OFC changed, since we are OSS...
-static void updata_params(void)
+static ktime_t g_next_update = 0;
+static void updata_params(ktime_t now)
 {
-    return;
+    //FIXME Somehow the order of execution is REVERSE? First comes "WTF" and then the "UPDATING" message? What do I screw up here?
+    if(g_update){
+        //printk("UPDATING %lld",g_next_update - now);
+        if(now >= g_next_update){
+            g_update = 0;
+            g_next_update = now + 1000000000ll;    //Next update is allowed after 1s of delay
+            printk("WTF");
+        }
+    }
 }
 
 // ########## Acceleration code
@@ -114,14 +129,7 @@ kernel_fpu_begin();
     delta_y += (float) buffer_y; buffer_y = 0;
     delta_whl += (float) buffer_whl; buffer_whl = 0;
 
-    //Update acceleration parameters periodically
-    updata_params();
-
-    //Prescale
-    delta_x *= PRE_SCALE_X;
-    delta_y *= PRE_SCALE_Y;
-
-    //Calculate frametime to derive mouse rate & speed
+    //Calculate frametime
     now = ktime_get();
     ms = (now - last)/(1000*1000);
     last = now;
@@ -129,15 +137,23 @@ kernel_fpu_begin();
     if(ms > 100) ms = 100;      //Original InterAccel has 200 here. RawAccel rounds to 100. So do we.
     last_ms = ms;
 
+    //Update acceleration parameters periodically
+    updata_params(now);
+
+    //Prescale
+    delta_x *= g_PreScaleX;
+    delta_y *= g_PreScaleY;
+
+    //Calculate velocity (one step before rate, which divides rate by the last frametime)
     rate = delta_x * delta_x + delta_y * delta_y;
     B_sqrt(&rate);
 
     //Apply speedcap
-    if(SPEED_CAP != 0){
-        if (rate >= SPEED_CAP) {
-            delta_x *= SPEED_CAP / rate;
-            delta_y *= SPEED_CAP / rate;
-            rate = SPEED_CAP;
+    if(g_SpeedCap != 0){
+        if (rate >= g_SpeedCap) {
+            delta_x *= g_SpeedCap / rate;
+            delta_y *= g_SpeedCap / rate;
+            rate = g_SpeedCap;
         }
     }
 
@@ -148,20 +164,20 @@ kernel_fpu_begin();
     //TODO: Add different acceleration styles
     //Apply linear acceleration on the sensitivity if applicable and limit maximum value
     if(rate > 0){
-        rate *= ACCELERATION;
+        rate *= g_Acceleration;
         accel_sens += rate;
     }
-    if(SENS_CAP > 0 && accel_sens >= SENS_CAP){
-        accel_sens = SENS_CAP;
+    if(g_SensitivityCap > 0 && accel_sens >= g_SensitivityCap){
+        accel_sens = g_SensitivityCap;
     }
 
     //Actually apply accelerated sensitivity, allow post-scaling and apply carry from previous round
-    accel_sens /= SENSITIVITY;
+    accel_sens /= g_Sensitivity;
     delta_x *= accel_sens;
     delta_y *= accel_sens;
-    delta_x *= POST_SCALE_X;
-    delta_y *= POST_SCALE_Y;
-    delta_whl *= SCROLLS_PER_TICK/3.0f;
+    delta_x *= g_PostScaleX;
+    delta_y *= g_PostScaleY;
+    delta_whl *= g_ScrollsPerTick/3.0f;
     delta_x += carry_x;
     delta_y += carry_y;
     if((delta_whl < 0 && carry_whl < 0) || (delta_whl > 0 && carry_whl > 0)) //Only apply carry to the wheel, if it shares the same sign
