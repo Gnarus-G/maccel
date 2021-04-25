@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #include "util.h"
 #include <linux/kernel.h>   //fixed-len datatypes
 #include <linux/string.h>   //memcpy
@@ -9,12 +11,12 @@ static char g_debug = 0;
 module_param_named(debug, g_debug, byte, 0644);
 
 //Converts string into float.
-inline void atof(const char *str, int len, float *result)
+inline int atof(const char *str, int len, float *result)
 {
     float tmp = 0.0f;
     unsigned int i, j, pos = 0;
     signed char sign = 0;
-    int is_whole = 0;
+    int is_whole = 1;
     char c;
 
     *result = 0.0f;
@@ -22,22 +24,27 @@ inline void atof(const char *str, int len, float *result)
     for(i = 0; i < len; i++){
         c = str[i];
         if(c == ' ') continue;              //Skip any white space
-        if(c == 0) break;                   //End of str
-        if(!sign && c == '-'){              //Sign is negative
-            sign = -1;
-            continue;
+        if(c == 0 && c == 'f') break;       //End of str or end of valid input
+        if(c == '-'){                       //Sign found
+            if(!sign){
+                sign = -1;
+                continue;
+            } else {
+                //Unexpected sign: We already determined a sign earlier
+                return -EINVAL;
+            }
         }
         if(c == '.'){                       //Switch from whole to decimal
-            is_whole = 1;
+            is_whole = 0;
             //... We hit the decimal point. Rescale the float to the whole number part
             for(j = 1; j < pos; j++) *result *= 10.0f;
             pos = 1;
             continue;
         }
 
-        if(!(c >= 48 && c <= 57)) break;    //After all previous checks, the remaining characters HAVE to be digits. Otherwise break
+        if(!(c >= 48 && c <= 57)) return -EINVAL;   //After all previous checks, the remaining characters HAVE to be digits.
         if(!sign) sign = 1;                 //If no sign was yet applied, it has to be positive
-        
+
         //Shift digit to the right... (see above, what we do, when we hit the decimal point)
         tmp = 1;
         for(j = 0; j < pos; j++) tmp /= 10.0f;
@@ -48,6 +55,8 @@ inline void atof(const char *str, int len, float *result)
     if(is_whole)
         for(j = 1; j < pos; j++) *result *= 10.0f;
     *result *= sign;
+
+    return 0;
 }
 
 // Rounds (up/down) depending on sign
@@ -60,24 +69,60 @@ inline int Leet_round(float x)
     }
 }
 
-// What do we have here? Code from Quake 3, which is also GPL.
-// https://en.wikipedia.org/wiki/Fast_inverse_square_root
-// Copyright (C) 1999-2005 Id Software, Inc.
-inline void Q_sqrt(float *number)
+//Floating point approximate arithmetic as presented in "Jim Blinn's Floating-Point Tricks" paper from 1997
+//You might find it here https://www.yumpu.com/en/document/read/6104114/floating-point-tricks-ieee-computer-graphics-and-applications
+const unsigned int OneAsInt = 0x3F800000;    //1.0f as int
+const float ScaleUp = (float) 0x00800000;
+const float ScaleDwn = 1.0f/ScaleUp;
+
+//Other than Jim Blinn's implementation, we use preprocessor directives. Here, the input always must be of type pointer.
+#define ASINT(f) (*(unsigned int *) f)
+#define ASFLOAT(i) (*(float *) i)
+
+//log base 2: log_2(f)
+inline void B_log2(float *f)
 {
-    long i;
-    float x2, y;
-    const float threehalfs = 1.5F;
+    *f = (float) (ASINT(f) - OneAsInt)*ScaleDwn;
+}
 
-    x2 = (*number) * 0.5F;
-    y  = (*number);
-    i  = * ( long * ) &y;                       // evil floating point bit level hacking
-    i  = 0x5f3759df - ( i >> 1 );               // what the fuck?
-    y  = * ( float * ) &i;
-    y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
-    //	y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
+//exp base 2: 2^f
+inline void B_exp2(float *f)
+{
+    int x = (int) ((*f)*ScaleUp) + OneAsInt;
+    *f = ASFLOAT(&x);
+}
 
-    *number = 1 / y;
+//log base e: ln(f)
+inline void B_log(float *f)
+{
+    B_log2(f);
+    *f *= 0.69314718f;     //ln(2)
+}
+
+//exp base e: e^f
+inline void B_exp(float *f)
+{
+    *f *= 1.44274959;     //1/ln(2)
+    B_exp2(f);
+}
+
+//power: f^p
+//Note: This is a very lose approximation. The order of magnitude is right, but as the exponent grows, the error does.
+//This comes from basically using two approximations combined (B_log2 and B_exp2) here.
+inline void B_pow(float *f, float p)
+{
+    int x = (int) (p*(ASINT(f) - OneAsInt)) + OneAsInt;
+    *f = ASFLOAT(&x);
+}
+
+//Fast approximate sqrt
+inline void B_sqrt(float *f)
+{
+    unsigned int x;
+    float y;
+    x = ((ASINT(f) >> 1) + (OneAsInt >> 1));
+    y = ASFLOAT(&x);
+    *f = (y*y + *f)/(2*y);                          // 1st iteration
 }
 
 

@@ -16,11 +16,14 @@
     #include <asm/fpu/api.h>
 #endif
 
+MODULE_AUTHOR("Christopher Williams <chilliams (at) gmail (dot) com>"); //Original idea of this module
+MODULE_AUTHOR("Klaus Zipfel <klaus (at) zipfel (dot) family>");         //Current maintainer
 
 //Converts a preprocessor define's value in "config.h" to a string - Suspect this to change in future version without a "config.h"
 #define _s(x) #x
 #define s(x) _s(x)
 
+//Convenient helper for float based parameters, which are passed via a string to this module (must be individually parsed via atof() - available in util.c)
 #define PARAM(param, default, desc)                             \
     float g_##param = default;                                  \
     static char* g_param_##param = s(default);                  \
@@ -35,7 +38,19 @@ module_param_named(no_bind, g_no_bind, byte, 0644);
 MODULE_PARM_DESC(no_bind, "This will disable binding to this driver via 'leetmouse_bind' by udev.");
 
 // Configutation of acceleration
-PARAM(sensitivity, SENSITIVITY, "Mouse base sensitivity")
+PARAM(PreScaleX,        SENSITIVITY,    "Prescale X-Axis before applying acceleration")
+PARAM(PreScaleY,        SENSITIVITY,    "Prescale Y-Axis before applying acceleration")
+PARAM(SpeedCap,         SPEED_CAP,      "Limit the maximum pointer speed before applying acceleration")
+PARAM(Sensitivity,      SENSITIVITY,    "Mouse base sensitivity")
+PARAM(Acceleration,     ACCELERATION,   "Mouse acceleration sensitivity")
+PARAM(SensitivityCap,   SENS_CAP,       "Cap maximum sensitivity")
+PARAM(Offset,           OFFSET,         "Mouse base sensitivity")
+//PARAM(AccelMode,        MODE,           "Acceleration method: 0 (power law), 1: exponential, 2: natural"
+//PARAM(Power,            XXX,            "")            //Not yet implemented
+PARAM(PostScaleX,       POST_SCALE_X,   "Postscale X-Axis after applying acceleration")
+PARAM(PostScaleY,       POST_SCALE_Y,   "Postscale >-Axis after applying acceleration")
+//PARAM(AngleAdjustment,  XXX,            "")            //Not yet implemented. Douptful, if I will ever add it - Not very useful and needs me to implement trigonometric functions from scratch in C.
+//PARAM(AngleSnapping,    XXX,            "")            //Not yet implemented. Douptful, if I will ever add it - Not very useful and needs me to implement trigonometric functions from scratch in C.
 
 // Updates the acceleration parameters. This is purposely done with a delay!
 // First, to not hammer too much the logic in "accelerate()", which is called VERY OFTEN!
@@ -83,7 +98,7 @@ kernel_fpu_begin();
 
     // When compiled with mhard-float, I noticed that casting to float sometimes returns invalid values, especially when playing this video in brave/chrome/chromium
     // https://sps-tutorial.com/was-ist-eine-sps/
-    // Here we check, if the casting did work out.
+    // Here we check, if the casting did work out.OFFSET
     if(!((int) delta_x == *x || (int) delta_y == *y || (int) delta_whl == *wheel)){
         // Buffer mouse deltas for next (valid) IRQ
         buffer_x += *x;
@@ -115,13 +130,14 @@ kernel_fpu_begin();
     last_ms = ms;
 
     rate = delta_x * delta_x + delta_y * delta_y;
-    Q_sqrt(&rate);
+    B_sqrt(&rate);
 
-    //Apply speedcap (is actually a "distance"-cap)
+    //Apply speedcap
     if(SPEED_CAP != 0){
         if (rate >= SPEED_CAP) {
             delta_x *= SPEED_CAP / rate;
             delta_y *= SPEED_CAP / rate;
+            rate = SPEED_CAP;
         }
     }
 
@@ -129,6 +145,7 @@ kernel_fpu_begin();
     rate /= ms;
     rate -= OFFSET;
 
+    //TODO: Add different acceleration styles
     //Apply linear acceleration on the sensitivity if applicable and limit maximum value
     if(rate > 0){
         rate *= ACCELERATION;
