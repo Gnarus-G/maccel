@@ -6,6 +6,7 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/time.h>
+#include <linux/string.h>   //strlen
 
 //Needed for kernel_fpu_begin/end
 #include <linux/version.h>
@@ -38,41 +39,50 @@ MODULE_AUTHOR("Klaus Zipfel <klaus (at) zipfel (dot) family>");         //Curren
 // ########## Kernel module parameters
 
 // Simple module parameters (instant update)
-PARAM(no_bind,          0,              "This will disable binding to this driver via 'leetmouse_bind' by udev.")
-PARAM(update,           0,              "Triggers an update of the acceleration parameters below")
+PARAM(no_bind,          0,              "This will disable binding to this driver via 'leetmouse_bind' by udev.");
+PARAM(update,           0,              "Triggers an update of the acceleration parameters below");
 
-//PARAM(AccelMode,        MODE,           "Acceleration method: 0 power law, 1: saturation, 2: log") //Not yet implemented
+//PARAM(AccelMode,        MODE,           "Acceleration method: 0 power law, 1: saturation, 2: log"); //Not yet implemented
 
 // Acceleration parameters (type pchar. Converted to float via "updata_params" triggered by /sys/module/leetmouse/parameters/update)
-PARAM_F(PreScaleX,      PRE_SCALE_X,    "Prescale X-Axis before applying acceleration.")
-PARAM_F(PreScaleY,      PRE_SCALE_Y,    "Prescale Y-Axis before applying acceleration.")
-PARAM_F(SpeedCap,       SPEED_CAP,      "Limit the maximum pointer speed before applying acceleration.")
-PARAM_F(Sensitivity,    SENSITIVITY,    "Mouse base sensitivity.")
-PARAM_F(Acceleration,   ACCELERATION,   "Mouse acceleration sensitivity.")
-PARAM_F(SensitivityCap, SENS_CAP,       "Cap maximum sensitivity.")
-PARAM_F(Offset,         OFFSET,         "Mouse base sensitivity.")
-//PARAM_F(Power,          XXX,            "")            //Not yet implemented
-PARAM_F(PostScaleX,     POST_SCALE_X,   "Postscale X-Axis after applying acceleration.")
-PARAM_F(PostScaleY,     POST_SCALE_Y,   "Postscale >-Axis after applying acceleration.")
-//PARAM_F(AngleAdjustment,XXX,            "")            //Not yet implemented. Douptful, if I will ever add it - Not very useful and needs me to implement trigonometric functions from scratch in C.
-//PARAM_F(AngleSnapping,  XXX,            "")            //Not yet implemented. Douptful, if I will ever add it - Not very useful and needs me to implement trigonometric functions from scratch in C.
-PARAM_F(ScrollsPerTick, SCROLLS_PER_TICK,"Amount of lines to scroll per scroll-wheel tick.")
+PARAM_F(PreScaleX,      PRE_SCALE_X,    "Prescale X-Axis before applying acceleration.");
+PARAM_F(PreScaleY,      PRE_SCALE_Y,    "Prescale Y-Axis before applying acceleration.");
+PARAM_F(SpeedCap,       SPEED_CAP,      "Limit the maximum pointer speed before applying acceleration.");
+PARAM_F(Sensitivity,    SENSITIVITY,    "Mouse base sensitivity.");
+PARAM_F(Acceleration,   ACCELERATION,   "Mouse acceleration sensitivity.");
+PARAM_F(SensitivityCap, SENS_CAP,       "Cap maximum sensitivity.");
+PARAM_F(Offset,         OFFSET,         "Mouse base sensitivity.");
+//PARAM_F(Power,          XXX,            "");           //Not yet implemented
+PARAM_F(PostScaleX,     POST_SCALE_X,   "Postscale X-Axis after applying acceleration.");
+PARAM_F(PostScaleY,     POST_SCALE_Y,   "Postscale >-Axis after applying acceleration.");
+//PARAM_F(AngleAdjustment,XXX,            "");           //Not yet implemented. Douptful, if I will ever add it - Not very useful and needs me to implement trigonometric functions from scratch in C.
+//PARAM_F(AngleSnapping,  XXX,            "");           //Not yet implemented. Douptful, if I will ever add it - Not very useful and needs me to implement trigonometric functions from scratch in C.
+PARAM_F(ScrollsPerTick, SCROLLS_PER_TICK,"Amount of lines to scroll per scroll-wheel tick.");
+
 
 // Updates the acceleration parameters. This is purposely done with a delay!
 // First, to not hammer too much the logic in "accelerate()", which is called VERY OFTEN!
 // Second, to fight possible cheating. However, this can be OFC changed, since we are OSS...
+#define PARAM_UPDATE(param) atof(g_param_##param, strlen(g_param_##param) , &g_##param);
+
 static ktime_t g_next_update = 0;
 static void updata_params(ktime_t now)
 {
-    //FIXME Somehow the order of execution is REVERSE? First comes "WTF" and then the "UPDATING" message? What do I screw up here?
-    if(g_update){
-        //printk("UPDATING %lld",g_next_update - now);
-        if(now >= g_next_update){
-            g_update = 0;
-            g_next_update = now + 1000000000ll;    //Next update is allowed after 1s of delay
-            printk("WTF");
-        }
-    }
+    if(!g_update) return;
+    if(now < g_next_update) return;
+    g_update = 0;
+    g_next_update = now + 1000000000ll;    //Next update is allowed after 1s of delay
+
+    PARAM_UPDATE(PreScaleX);
+    PARAM_UPDATE(PreScaleY);
+    PARAM_UPDATE(SpeedCap);
+    PARAM_UPDATE(Sensitivity);
+    PARAM_UPDATE(Acceleration);
+    PARAM_UPDATE(SensitivityCap);
+    PARAM_UPDATE(Offset);
+    PARAM_UPDATE(PostScaleX);
+    PARAM_UPDATE(PostScaleY);
+    PARAM_UPDATE(ScrollsPerTick);
 }
 
 // ########## Acceleration code
@@ -81,7 +91,7 @@ static void updata_params(ktime_t now)
 int accelerate(int *x, int *y, int *wheel)
 {
 	float delta_x, delta_y, delta_whl, ms, rate;
-	float accel_sens = SENSITIVITY;
+	float accel_sens = g_Sensitivity;
     static long buffer_x = 0;
     static long buffer_y = 0;
     static long buffer_whl = 0;
@@ -101,7 +111,7 @@ int accelerate(int *x, int *y, int *wheel)
         buffer_x += *x;
         buffer_y += *y;
         buffer_whl += *wheel;
-        return 1;
+        return -EBUSY;
     }
 
 //We are going to use the FPU within the kernel. So we need to safely switch context during all FPU processing in order to not corrupt the userspace FPU state
@@ -113,14 +123,14 @@ kernel_fpu_begin();
 
     // When compiled with mhard-float, I noticed that casting to float sometimes returns invalid values, especially when playing this video in brave/chrome/chromium
     // https://sps-tutorial.com/was-ist-eine-sps/
-    // Here we check, if the casting did work out.OFFSET
+    // Here we check, if the casting did work out.
     if(!((int) delta_x == *x || (int) delta_y == *y || (int) delta_whl == *wheel)){
         // Buffer mouse deltas for next (valid) IRQ
         buffer_x += *x;
         buffer_y += *y;
         buffer_whl += *wheel;
         // Jump out of kernel_fpu_begin
-        status = 1;
+        status = -EFAULT;
         goto exit;
     }
 
@@ -159,7 +169,7 @@ kernel_fpu_begin();
 
     //Calculate rate from travelled overall distance and add possible rate offsets
     rate /= ms;
-    rate -= OFFSET;
+    rate -= g_Offset;
 
     //TODO: Add different acceleration styles
     //Apply linear acceleration on the sensitivity if applicable and limit maximum value
