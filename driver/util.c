@@ -60,12 +60,12 @@ inline int atof(const char *str, int len, float *result)
 }
 
 // Rounds (up/down) depending on sign
-inline int Leet_round(float x)
+inline int Leet_round(float *x)
 {
-    if (x >= 0) {
-        return (int)(x + 0.5f);
+    if (*x >= 0) {
+        return (int)(*x + 0.5f);
     } else {
-        return (int)(x - 0.5f);
+        return (int)(*x - 0.5f);
     }
 }
 

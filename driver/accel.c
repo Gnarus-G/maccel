@@ -124,7 +124,7 @@ kernel_fpu_begin();
     // When compiled with mhard-float, I noticed that casting to float sometimes returns invalid values, especially when playing this video in brave/chrome/chromium
     // https://sps-tutorial.com/was-ist-eine-sps/
     // Here we check, if the casting did work out.
-    if(!((int) delta_x == *x || (int) delta_y == *y || (int) delta_whl == *wheel)){
+    if(!((int) delta_x == *x && (int) delta_y == *y && (int) delta_whl == *wheel)){
         // Buffer mouse deltas for next (valid) IRQ
         buffer_x += *x;
         buffer_y += *y;
@@ -194,9 +194,9 @@ kernel_fpu_begin();
         delta_whl += carry_whl;
 
     //Cast back to int
-    *x = Leet_round(delta_x);
-    *y = Leet_round(delta_y);
-    *wheel = Leet_round(delta_whl);
+    *x = Leet_round(&delta_x);
+    *y = Leet_round(&delta_y);
+    *wheel = Leet_round(&delta_whl);
 
     //Save carry for next round
     carry_x = delta_x - *x;

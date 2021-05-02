@@ -43,7 +43,7 @@ struct report_positions {
 };
 
 int atof(const char *str, int len, float *result);
-int Leet_round(float x);
+int Leet_round(float *x);
 void B_log2(float *number);
 void B_exp2(float *number);
 void B_log(float *number);
