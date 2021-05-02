@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>882</width>
-    <height>562</height>
+    <height>497</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -23,10 +23,10 @@
    <widget class="QGroupBox" name="Settings">
     <property name="geometry">
      <rect>
-      <x>0</x>
-      <y>70</y>
+      <x>10</x>
+      <y>60</y>
       <width>321</width>
-      <height>391</height>
+      <height>431</height>
      </rect>
     </property>
     <property name="title">
@@ -495,19 +495,101 @@
       <double>999999999999999.000000000000000</double>
      </property>
     </widget>
+    <widget class="QCheckBox" name="EnablePreScaleY">
+     <property name="geometry">
+      <rect>
+       <x>120</x>
+       <y>70</y>
+       <width>21</width>
+       <height>26</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="EnablePostScaleY">
+     <property name="geometry">
+      <rect>
+       <x>120</x>
+       <y>350</y>
+       <width>21</width>
+       <height>26</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="Line" name="line_3">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>380</y>
+       <width>301</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_15">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>400</y>
+       <width>111</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Scrolls per Tick</string>
+     </property>
+    </widget>
+    <widget class="QDoubleSpinBox" name="ScrollsPerTick">
+     <property name="geometry">
+      <rect>
+       <x>140</x>
+       <y>400</y>
+       <width>81</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="buttonSymbols">
+      <enum>QAbstractSpinBox::NoButtons</enum>
+     </property>
+     <property name="showGroupSeparator" stdset="0">
+      <bool>true</bool>
+     </property>
+     <property name="suffix">
+      <string/>
+     </property>
+     <property name="decimals">
+      <number>0</number>
+     </property>
+     <property name="maximum">
+      <double>999999999999999.000000000000000</double>
+     </property>
+    </widget>
    </widget>
    <widget class="PlotWidget" name="PlotCurve" native="true">
     <property name="geometry">
      <rect>
       <x>340</x>
-      <y>70</y>
+      <y>60</y>
       <width>531</width>
-      <height>391</height>
+      <height>431</height>
      </rect>
     </property>
    </widget>
   </widget>
-  <widget class="QStatusBar" name="StatusBar"/>
  </widget>
  <customwidgets>
   <customwidget>
