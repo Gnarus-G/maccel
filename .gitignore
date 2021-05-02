@@ -13,3 +13,4 @@ modules.order
 config.h
 pkg/build
 .directory
+__pycache__
