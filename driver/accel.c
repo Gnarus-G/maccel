@@ -2,6 +2,7 @@
 
 #include "accel.h"
 #include "util.h"
+#include "float.h"
 #include "config.h"
 #include <linux/kernel.h>
 #include <linux/module.h>

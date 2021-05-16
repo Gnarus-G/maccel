@@ -44,15 +44,6 @@ struct report_positions {
 	struct report_entry wheel;
 };
 
-int atof(const char *str, int len, float *result);
-int Leet_round(float *x);
-void B_log2(float *number);
-void B_exp2(float *number);
-void B_log(float *number);
-void B_exp(float *number);
-void B_pow(float *f, float *p);
-void B_sqrt(float *number);
-int is_valid(float *number);
 int parse_report_desc(unsigned char *data, int data_len, struct report_positions *data_pos);
 int extract_mouse_events(unsigned char *data, int data_len, struct report_positions *data_pos, int *btn, int *x, int *y, int *wheel);
 
