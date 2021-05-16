@@ -1,10 +1,14 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #ifndef _FLOAT_H
 #define _FLOAT_H
 
 #include "util.h"
 #include <linux/module.h>
 
-// ########## Floating point arithmetic. Meant for static inline inclusion within kernel_fpu_begin() / kernel_fpu_end()
+// Floating point arithmetic. Meant for static inline inclusion within kernel_fpu_begin() / kernel_fpu_end() blocks.
+// That's why we "miss-use" this header with having code declared instead of only having prototypes. As an alternative, link-time-optimization could have solved this more elegantly.
+// Reason: Avoid any function calls (https://yarchive.net/comp/linux/kernel_fp.html - Torvalds: "It all has to be stuff that gcc can do in-line,without any function calls.")
 
 //Converts string to float.
 static INLINE int atof(const char *str, int len, float *result)
@@ -121,11 +125,11 @@ static INLINE void B_sqrt(float *f)
     *f = (y*y + *f)/(2*y);                          // 1st iteration
 }
 
-//Checks, if a float is a valid number
+//Checks, if a float is a finite number or NaN/Infinity
 const unsigned int NaNAsInt = 0xFFFFFFFF;   //NaN
 const unsigned int PInfAsInt = 0x7F800000;  //Positive Infinity
 const unsigned int NInfAsInt = 0xFF800000;  //Negative Infinity
-static INLINE int is_valid(float *number){
+static INLINE int isfinite(float *number){
     unsigned int n = ASINT(number);
     return !(n == NaNAsInt || n == PInfAsInt || n == PInfAsInt);
 }

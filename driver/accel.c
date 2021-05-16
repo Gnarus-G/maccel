@@ -91,11 +91,11 @@ INLINE void updata_params(ktime_t now)
 // Acceleration happens here
 int accelerate(int *x, int *y, int *wheel)
 {
-	float delta_x, delta_y, delta_whl, ms, rate;
-	float accel_sens = g_Sensitivity;
+	float delta_x, delta_y, delta_whl, ms, rate, accel_sens;
     static long buffer_x = 0;
     static long buffer_y = 0;
     static long buffer_whl = 0;
+    //Static float assignment should happen at compile-time and thus should be safe here. However, avoid non-static assignment of floats outside kernel_fpu_begin()/kernel_fpu_end()
 	static float carry_x = 0.0f;
     static float carry_y = 0.0f;
     static float carry_whl = 0.0f;
@@ -105,7 +105,7 @@ int accelerate(int *x, int *y, int *wheel)
     int status = 0;
 
     // We can only safely use the FPU in an IRQ event when this returns 1.
-    // Not taking care for this lead to data-corruption of my BTRFS volumes. And I guess, the same would be true for raid6 (both use kernel_fpu_begin/kernel_fpu_end).
+    // Not taking care for this interfered with BTRFS on my machine (which also uses kernel_fpu_begin/kernel_fpu_end) and lead to data corruption. And I guess, the same would be true for raid6 (both use kernel_fpu_begin/kernel_fpu_end).
     if(!irq_fpu_usable()){
         // Buffer mouse deltas for next (valid) IRQ
         buffer_x += *x;
@@ -116,16 +116,17 @@ int accelerate(int *x, int *y, int *wheel)
 
 //We are going to use the FPU within the kernel. So we need to safely switch context during all FPU processing in order to not corrupt the userspace FPU state
 //Note: Avoid any function calls (https://yarchive.net/comp/linux/kernel_fp.html - Torvalds: "It all has to be stuff that gcc can do in-line,without any function calls.")
-//This is why we use the "INLINE" pre-processor directive (defined in util.h), which expands to "__attribute__((always_inline)) inline" in order to force gcc to inline functions, no matter what.
+//This is why we use the "INLINE" pre-processor directive (defined in util.h), which expands to "__attribute__((always_inline)) inline" in order to force gcc to inline the functions defined in float.h
 //Not doing this caused the FPU state to get randomly screwed up (https://github.com/systemofapwne/leetmouse/issues/4), making the cursor to get stuck on the left screen. Especially when playing certain videos in the browser.
 kernel_fpu_begin();
+    accel_sens = g_Sensitivity;
 
     delta_x = (float) (*x);
     delta_y = (float) (*y);
     delta_whl = (float) (*wheel);
 
     // When compiled with mhard-float, I noticed that casting to float sometimes returns invalid values, especially when playing this video in brave/chrome/chromium
-    // https://sps-tutorial.com/was-ist-eine-sps/ and https://www.youtube.com/watch?v=tjT9gt0dArQ
+    // https://sps-tutorial.com/was-ist-eine-sps/ or https://www.youtube.com/watch?v=tjT9gt0dArQ or https://www.ginx.tv/en/cs-go/cs-go-trusted-mode-how-to-enable-third-party-software
     // Here we check, if casting did work out.
     if(!((int) delta_x == *x && (int) delta_y == *y && (int) delta_whl == *wheel)){
         // Buffer mouse deltas for next (valid) IRQ
@@ -134,6 +135,7 @@ kernel_fpu_begin();
         buffer_whl += *wheel;
         // Jump out of kernel_fpu_begin
         status = -EFAULT;
+        printk("LEETMOUSE: First float-trap triggered. Should very very rarely happen, if at all");
         goto exit;
     }
 
@@ -197,12 +199,13 @@ kernel_fpu_begin();
         delta_whl += carry_whl;
 
     //Last check for validity
-    if(!(is_valid(&delta_x) && is_valid(&delta_y) && is_valid(&delta_whl))){
+    if(!(isfinite(&delta_x) && isfinite(&delta_y) && isfinite(&delta_whl))){
         // Buffer mouse deltas for next (valid) IRQ
         buffer_x += *x;
         buffer_y += *y;
         buffer_whl += *wheel;
         // Jump out of kernel_fpu_begin
+        printk("LEETMOUSE: Acceleration of NaN value");
         status = -EFAULT;
         goto exit;
     }
@@ -211,6 +214,14 @@ kernel_fpu_begin();
     *x = Leet_round(&delta_x);
     *y = Leet_round(&delta_y);
     *wheel = Leet_round(&delta_whl);
+
+    // Very last trap. This should NEVER get triggered. Buf if the FPU state gets screwed up "somehow", it seems like the floats get casted to MIN_INT (-2147483648). So we trap this edge case
+    if(*x == -2147483648 || *y == -2147483648 || *wheel == -2147483648){
+        // Jump out of kernel_fpu_begin
+        printk("LEETMOUSE: Final float-trap triggered. This should NEVER happen!");
+        status = -EFAULT;
+        goto exit;
+    }
 
     //Save carry for next round
     carry_x = delta_x - *x;
