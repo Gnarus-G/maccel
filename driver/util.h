@@ -1,6 +1,8 @@
 #ifndef _UTIL_H
 #define _UTIL_H
 
+#define INLINE __attribute__((always_inline)) inline
+
 // HID Descriptors
 enum D_hid_descriptor{
     // No data follows after descriptor
@@ -48,7 +50,9 @@ void B_log2(float *number);
 void B_exp2(float *number);
 void B_log(float *number);
 void B_exp(float *number);
+void B_pow(float *f, float *p);
 void B_sqrt(float *number);
+int is_valid(float *number);
 int parse_report_desc(unsigned char *data, int data_len, struct report_positions *data_pos);
 int extract_mouse_events(unsigned char *data, int data_len, struct report_positions *data_pos, int *btn, int *x, int *y, int *wheel);
 

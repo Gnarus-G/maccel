@@ -66,7 +66,7 @@ PARAM_F(ScrollsPerTick, SCROLLS_PER_TICK,"Amount of lines to scroll per scroll-w
 #define PARAM_UPDATE(param) atof(g_param_##param, strlen(g_param_##param) , &g_##param);
 
 static ktime_t g_next_update = 0;
-static void updata_params(ktime_t now)
+INLINE void updata_params(ktime_t now)
 {
     if(!g_update) return;
     if(now < g_next_update) return;
@@ -104,7 +104,6 @@ int accelerate(int *x, int *y, int *wheel)
     int status = 0;
 
     // We can only safely use the FPU in an IRQ event when this returns 1.
-    // This is especially important, when compiling this module with msse (triggered it a lot) instead of mhard-float (never triggered it for me)
     // Not taking care for this lead to data-corruption of my BTRFS volumes. And I guess, the same would be true for raid6 (both use kernel_fpu_begin/kernel_fpu_end).
     if(!irq_fpu_usable()){
         // Buffer mouse deltas for next (valid) IRQ
@@ -115,6 +114,9 @@ int accelerate(int *x, int *y, int *wheel)
     }
 
 //We are going to use the FPU within the kernel. So we need to safely switch context during all FPU processing in order to not corrupt the userspace FPU state
+//Note: Avoid any function calls (https://yarchive.net/comp/linux/kernel_fp.html - Torvalds: "It all has to be stuff that gcc can do in-line,without any function calls.")
+//This is why we use the "INLINE" pre-processor directive (defined in util.h), which expands to "__attribute__((always_inline)) inline" in order to force gcc to inline functions, no matter what.
+//Not doing this caused the FPU state to get randomly screwed up (https://github.com/systemofapwne/leetmouse/issues/4), making the cursor to get stuck on the left screen. Especially when playing certain videos in the browser.
 kernel_fpu_begin();
 
     delta_x = (float) (*x);
@@ -122,8 +124,8 @@ kernel_fpu_begin();
     delta_whl = (float) (*wheel);
 
     // When compiled with mhard-float, I noticed that casting to float sometimes returns invalid values, especially when playing this video in brave/chrome/chromium
-    // https://sps-tutorial.com/was-ist-eine-sps/
-    // Here we check, if the casting did work out.
+    // https://sps-tutorial.com/was-ist-eine-sps/ and https://www.youtube.com/watch?v=tjT9gt0dArQ
+    // Here we check, if casting did work out.
     if(!((int) delta_x == *x && (int) delta_y == *y && (int) delta_whl == *wheel)){
         // Buffer mouse deltas for next (valid) IRQ
         buffer_x += *x;
@@ -192,6 +194,17 @@ kernel_fpu_begin();
     delta_y += carry_y;
     if((delta_whl < 0 && carry_whl < 0) || (delta_whl > 0 && carry_whl > 0)) //Only apply carry to the wheel, if it shares the same sign
         delta_whl += carry_whl;
+
+    //Last check for validity
+    if(!(is_valid(&delta_x) && is_valid(&delta_y) && is_valid(&delta_whl))){
+        // Buffer mouse deltas for next (valid) IRQ
+        buffer_x += *x;
+        buffer_y += *y;
+        buffer_whl += *wheel;
+        // Jump out of kernel_fpu_begin
+        status = -EFAULT;
+        goto exit;
+    }
 
     //Cast back to int
     *x = Leet_round(&delta_x);

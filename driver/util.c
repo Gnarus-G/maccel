@@ -10,8 +10,8 @@
 static char g_debug = 0;
 module_param_named(debug, g_debug, byte, 0644);
 
-//Converts string into float.
-inline int atof(const char *str, int len, float *result)
+//Converts string to float.
+INLINE int atof(const char *str, int len, float *result)
 {
     float tmp = 0.0f;
     unsigned int i, j, pos = 0;
@@ -60,7 +60,7 @@ inline int atof(const char *str, int len, float *result)
 }
 
 // Rounds (up/down) depending on sign
-inline int Leet_round(float *x)
+INLINE int Leet_round(float *x)
 {
     if (*x >= 0) {
         return (int)(*x + 0.5f);
@@ -71,7 +71,7 @@ inline int Leet_round(float *x)
 
 //Floating point approximate arithmetic as presented in "Jim Blinn's Floating-Point Tricks" paper from 1997
 //You might find it here https://www.yumpu.com/en/document/read/6104114/floating-point-tricks-ieee-computer-graphics-and-applications
-const unsigned int OneAsInt = 0x3F800000;    //1.0f as int
+const unsigned int OneAsInt = 0x3F800000;   //1.0f as int
 const float ScaleUp = (float) 0x00800000;
 const float ScaleDwn = 1.0f/ScaleUp;
 
@@ -80,27 +80,27 @@ const float ScaleDwn = 1.0f/ScaleUp;
 #define ASFLOAT(i) (*(float *) i)
 
 //log base 2: log_2(f)
-inline void B_log2(float *f)
+INLINE void B_log2(float *f)
 {
     *f = (float) (ASINT(f) - OneAsInt)*ScaleDwn;
 }
 
 //exp base 2: 2^f
-inline void B_exp2(float *f)
+INLINE void B_exp2(float *f)
 {
     int x = (int) ((*f)*ScaleUp) + OneAsInt;
     *f = ASFLOAT(&x);
 }
 
 //log base e: ln(f)
-inline void B_log(float *f)
+INLINE void B_log(float *f)
 {
     B_log2(f);
     *f *= 0.69314718f;     //ln(2)
 }
 
 //exp base e: e^f
-inline void B_exp(float *f)
+INLINE void B_exp(float *f)
 {
     *f *= 1.44274959;     //1/ln(2)
     B_exp2(f);
@@ -109,14 +109,14 @@ inline void B_exp(float *f)
 //power: f^p
 //Note: This is a very lose approximation. The order of magnitude is right, but as the exponent grows, the error does.
 //This comes from basically using two approximations combined (B_log2 and B_exp2) here.
-inline void B_pow(float *f, float p)
+INLINE void B_pow(float *f, float *p)
 {
-    int x = (int) (p*(ASINT(f) - OneAsInt)) + OneAsInt;
+    int x = (int) ((*p)*(ASINT(f) - OneAsInt)) + OneAsInt;
     *f = ASFLOAT(&x);
 }
 
 //Fast approximate sqrt
-inline void B_sqrt(float *f)
+INLINE void B_sqrt(float *f)
 {
     unsigned int x;
     float y;
@@ -125,6 +125,14 @@ inline void B_sqrt(float *f)
     *f = (y*y + *f)/(2*y);                          // 1st iteration
 }
 
+//Checks, if a float is a valid number
+const unsigned int NaNAsInt = 0xFFFFFFFF;   //NaN
+const unsigned int PInfAsInt = 0x7F800000;  //Positive Infinity
+const unsigned int NInfAsInt = 0xFF800000;  //Negative Infinity
+INLINE int is_valid(float *number){
+    unsigned int n = ASINT(number);
+    return !(n == NaNAsInt || n == PInfAsInt || n == PInfAsInt);
+}
 
 //This is the most crudest HID descriptor parser EVER.
 //We will skip most control words until we found an interesting one
