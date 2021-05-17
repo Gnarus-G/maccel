@@ -71,9 +71,9 @@ static INLINE int Leet_round(float *x)
 
 //Floating point approximate arithmetic as presented in "Jim Blinn's Floating-Point Tricks" paper from 1997
 //You might find it here https://www.yumpu.com/en/document/read/6104114/floating-point-tricks-ieee-computer-graphics-and-applications
-const unsigned int OneAsInt = 0x3F800000;   //1.0f as int
-const float ScaleUp = (float) 0x00800000;
-const float ScaleDwn = 1.0f/ScaleUp;
+static const unsigned int OneAsInt = 0x3F800000;   //1.0f as int
+static const float ScaleUp = (float) 0x00800000;
+static const float ScaleDwn = 1.0f/ScaleUp;
 
 //Other than Jim Blinn's implementation, we use preprocessor directives. Here, the input always must be of type pointer.
 #define ASINT(f) (*(unsigned int *) f)
@@ -126,9 +126,9 @@ static INLINE void B_sqrt(float *f)
 }
 
 //Checks, if a float is a finite number or NaN/Infinity
-const unsigned int NaNAsInt = 0xFFFFFFFF;   //NaN
-const unsigned int PInfAsInt = 0x7F800000;  //Positive Infinity
-const unsigned int NInfAsInt = 0xFF800000;  //Negative Infinity
+static const unsigned int NaNAsInt = 0xFFFFFFFF;   //NaN
+static const unsigned int PInfAsInt = 0x7F800000;  //Positive Infinity
+static const unsigned int NInfAsInt = 0xFF800000;  //Negative Infinity
 static INLINE int isfinite(float *number){
     unsigned int n = ASINT(number);
     return !(n == NaNAsInt || n == PInfAsInt || n == PInfAsInt);
