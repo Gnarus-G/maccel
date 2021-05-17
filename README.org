@@ -65,13 +65,13 @@
    You can take a look at =/scripts/bind.sh= for an example on how to determine your mouse's USB address for that. However using the udev rules for development is advised.
 
 * TODOS
-  | Fixing the only [[https://github.com/systemofapwne/mousedriver/issues/2][vertical srolling bug]]                              | Next priority           |
-  | External interface for dynamically pushing acceleration parameters | Next priority           |
-  | GUI to configure the parameters                                    | Next next priority      |
-  | Feature parity with Povohats driver and later even RawAccel        | Next next next priority |
-  | Easier installation & binding                                      | Done                    |
-  | DKMS support                                                       | Done                    |
-  | PKGBUILD for Arch based systems                                    | Done                    |
-  | AUR package release                                                | TBD                     |
-  | dpkg package for Debian based systems                              | TBD                     |
+  | GUI to configure the acceleration parameters                       | Current priority                                                   |
+  | AUR package release                                                | Once it reaches version 1.0 (basically after having a working GUI) |
+  | dpkg package for Debian based systems                              | After AUR release                                                  |
+  | Feature parity with Povohats driver and later even RawAccel        | When I find time - Definitely after aboves milestones              |
+  | External interface for dynamically pushing acceleration parameters | Done                                                               |
+  | Fixing the only [[https://github.com/systemofapwne/mousedriver/issues/2][vertical srolling bug]]                              | Done                                                               |
+  | Easier installation & binding                                      | Done                                                               |
+  | DKMS support                                                       | Done                                                               |
+  | PKGBUILD for Arch based systems                                    | Done                                                               |
   

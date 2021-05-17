@@ -1,6 +1,8 @@
 #ifndef _UTIL_H
 #define _UTIL_H
 
+#define INLINE __attribute__((always_inline)) inline
+
 // HID Descriptors
 enum D_hid_descriptor{
     // No data follows after descriptor
@@ -25,7 +27,7 @@ enum hid_data{
     D_USAGE_Y = 0x31
 };
 
-//Stores the bit offset and bit size in the raw reported data structure of usb_mouse::data
+//Stores the bit offset, bit size, sign and associated report ID of an entry for extracting the value from the raw usb_mouse->data buffer
 struct report_entry {
     unsigned char id;       // Report ID
 	unsigned char offset;	// In bits
@@ -33,7 +35,7 @@ struct report_entry {
     unsigned char sgn;      // Is this value signed (1) or unsigned (0)?
 };
 
-//Stores a collection of important offsets & sizes for report data in usb_mouse::data
+//Stores a collection of important offsets & sizes etc for the received raw data in the usb_mouse->data buffer
 struct report_positions {
     int report_id_tagged;   //When the report descriptor parser recognizes a report ID is used, this field is set to 1
 	struct report_entry button;
@@ -42,9 +44,6 @@ struct report_positions {
 	struct report_entry wheel;
 };
 
-void atof(const char *str, int len, float *result);
-int Leet_round(float x);
-void Q_sqrt(float *number);
 int parse_report_desc(unsigned char *data, int data_len, struct report_positions *data_pos);
 int extract_mouse_events(unsigned char *data, int data_len, struct report_positions *data_pos, int *btn, int *x, int *y, int *wheel);
 

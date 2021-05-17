@@ -12,3 +12,5 @@ modules.order
 .vscode
 config.h
 pkg/build
+.directory
+__pycache__

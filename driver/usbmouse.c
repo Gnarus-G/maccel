@@ -37,7 +37,7 @@
  */
 #define DRIVER_VERSION "v1.6"
 #define DRIVER_AUTHOR "Vojtech Pavlik <vojtech@ucw.cz>"
-#define DRIVER_DESC "USB HID Boot Protocol mouse driver with acceleration (LEETMOUSE)"   //Leetmouse Mod
+#define DRIVER_DESC "USB HID mouse driver with acceleration (LEETMOUSE)"   //Leetmouse Mod
 
 MODULE_AUTHOR(DRIVER_AUTHOR);
 MODULE_DESCRIPTION(DRIVER_DESC);
@@ -150,16 +150,16 @@ static int usb_mouse_probe(struct usb_interface *intf, const struct usb_device_i
     struct input_dev *input_dev;
     int pipe, maxp;
     int ret = -ENOMEM;
-                                                            //Leetmouse Mod BEGIN
+                                                                //Leetmouse Mod BEGIN
     // Taken from drivers/hid/usbhid/hid-core.c (usbhid_probe, usbhid_parse, usbhid_start)
     // ##########################################################################
-    // This code extracts the report descriptor from the mouse. Might not be safe though...
+    // This code extracts the report descriptor from the mouse. Might not be safe though (see https://github.com/torvalds/linux/blob/2a1d7946fa53cea2083e5981ff55a8176ab2be6b/drivers/hid/usbhid/hid-core.c#L1001)
     // I know, this is a total hack! The cleanest way would be to write a real HID
     // driver, with the HID subsystem taking care for probing the device.
-    // This is definitely planned. Due to my limited knowledge about the HID 
+    // This is (probably) planned. Due to my limited knowledge about the HID 
     // subsystem, I have chosen to go this hacky route of merging usbmouse.c and hid-core.c
     // code for now.
-    // Expect this to change in the future!
+    // Expect this to (probably) change in the future!
     // ##########################################################################
     struct hid_descriptor *hdesc;
     struct report_positions *rpos;
