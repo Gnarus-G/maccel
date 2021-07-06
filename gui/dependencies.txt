@@ -1,2 +1,0 @@
-PyQt5==5.15.4
-python-pyqtgraph==0.11.1
