@@ -33,3 +33,8 @@
 // Steelseries Rival 600/650 @ 12000 DPI
 //#define PRE_SCALE_X 0.0333333f
 //#define PRE_SCALE_Y 0.0333333f
+
+#define ACCELERATION_MODE 1
+
+// For exponential curves.
+#define EXPONENT 2.0f

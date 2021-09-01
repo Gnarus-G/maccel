@@ -40,25 +40,26 @@ MODULE_AUTHOR("Klaus Zipfel <klaus (at) zipfel (dot) family>");         //Curren
 // ########## Kernel module parameters
 
 // Simple module parameters (instant update)
-PARAM(no_bind,          0,              "This will disable binding to this driver via 'leetmouse_bind' by udev.");
-PARAM(update,           0,              "Triggers an update of the acceleration parameters below");
+PARAM(no_bind,          0,                  "This will disable binding to this driver via 'leetmouse_bind' by udev.");
+PARAM(update,           0,                  "Triggers an update of the acceleration parameters below");
+PARAM(AccelerationMode, ACCELERATION_MODE,  "Sets the algorithm to be used for acceleration");
 
 //PARAM(AccelMode,        MODE,           "Acceleration method: 0 power law, 1: saturation, 2: log"); //Not yet implemented
 
 // Acceleration parameters (type pchar. Converted to float via "updata_params" triggered by /sys/module/leetmouse/parameters/update)
-PARAM_F(PreScaleX,      PRE_SCALE_X,    "Prescale X-Axis before applying acceleration.");
-PARAM_F(PreScaleY,      PRE_SCALE_Y,    "Prescale Y-Axis before applying acceleration.");
-PARAM_F(SpeedCap,       SPEED_CAP,      "Limit the maximum pointer speed before applying acceleration.");
-PARAM_F(Sensitivity,    SENSITIVITY,    "Mouse base sensitivity.");
-PARAM_F(Acceleration,   ACCELERATION,   "Mouse acceleration sensitivity.");
-PARAM_F(SensitivityCap, SENS_CAP,       "Cap maximum sensitivity.");
-PARAM_F(Offset,         OFFSET,         "Mouse base sensitivity.");
-//PARAM_F(Power,          XXX,            "");           //Not yet implemented
-PARAM_F(PostScaleX,     POST_SCALE_X,   "Postscale X-Axis after applying acceleration.");
-PARAM_F(PostScaleY,     POST_SCALE_Y,   "Postscale >-Axis after applying acceleration.");
+PARAM_F(PreScaleX,      PRE_SCALE_X,        "Prescale X-Axis before applying acceleration.");
+PARAM_F(PreScaleY,      PRE_SCALE_Y,        "Prescale Y-Axis before applying acceleration.");
+PARAM_F(SpeedCap,       SPEED_CAP,          "Limit the maximum pointer speed before applying acceleration.");
+PARAM_F(Sensitivity,    SENSITIVITY,        "Mouse base sensitivity.");
+PARAM_F(Acceleration,   ACCELERATION,       "Mouse acceleration sensitivity.");
+PARAM_F(SensitivityCap, SENS_CAP,           "Cap maximum sensitivity.");
+PARAM_F(Offset,         OFFSET,             "Mouse base sensitivity.");
+PARAM_F(Exponent,       EXPONENT,           "Exponent for algorithms that use it");           //Not yet implemented
+PARAM_F(PostScaleX,     POST_SCALE_X,       "Postscale X-Axis after applying acceleration.");
+PARAM_F(PostScaleY,     POST_SCALE_Y,       "Postscale >-Axis after applying acceleration.");
 //PARAM_F(AngleAdjustment,XXX,            "");           //Not yet implemented. Douptful, if I will ever add it - Not very useful and needs me to implement trigonometric functions from scratch in C.
 //PARAM_F(AngleSnapping,  XXX,            "");           //Not yet implemented. Douptful, if I will ever add it - Not very useful and needs me to implement trigonometric functions from scratch in C.
-PARAM_F(ScrollsPerTick, SCROLLS_PER_TICK,"Amount of lines to scroll per scroll-wheel tick.");
+PARAM_F(ScrollsPerTick, SCROLLS_PER_TICK,   "Amount of lines to scroll per scroll-wheel tick.");
 
 
 // Updates the acceleration parameters. This is purposely done with a delay!
@@ -84,6 +85,7 @@ INLINE void updata_params(ktime_t now)
     PARAM_UPDATE(PostScaleX);
     PARAM_UPDATE(PostScaleY);
     PARAM_UPDATE(ScrollsPerTick);
+    PARAM_UPDATE(Exponent);
 }
 
 // ########## Acceleration code
@@ -91,7 +93,7 @@ INLINE void updata_params(ktime_t now)
 // Acceleration happens here
 int accelerate(int *x, int *y, int *wheel)
 {
-	float delta_x, delta_y, delta_whl, ms, rate, accel_sens;
+	float delta_x, delta_y, delta_whl, ms, rate, accel_sens, product;
     static long buffer_x = 0;
     static long buffer_y = 0;
     static long buffer_whl = 0;
@@ -176,12 +178,28 @@ kernel_fpu_begin();
     rate /= ms;
     rate -= g_Offset;
 
-    //TODO: Add different acceleration styles
-    //Apply linear acceleration on the sensitivity if applicable and limit maximum value
-    if(rate > 0){
-        rate *= g_Acceleration;
-        accel_sens += rate;
+    switch(g_AccelerationMode){
+
+        //Linear Acceleration
+        case 1 : 
+            if(rate > 0){
+                rate *= g_Acceleration;
+                accel_sens += rate;
+                
+            }
+            break;
+        
+        //Classic Acceleration
+        case 2 :
+            if(rate > 0){
+                product = rate * g_Acceleration;
+                B_pow(&product, &g_Exponent);
+                accel_sens += product;
+            }
+            break;
+
     }
+    
     if(g_SensitivityCap > 0 && accel_sens >= g_SensitivityCap){
         accel_sens = g_SensitivityCap;
     }
