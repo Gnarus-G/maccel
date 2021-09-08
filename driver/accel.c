@@ -93,7 +93,7 @@ INLINE void updata_params(ktime_t now)
 // Acceleration happens here
 int accelerate(int *x, int *y, int *wheel)
 {
-	float delta_x, delta_y, delta_whl, ms, rate, accel_sens, product;
+	float delta_x, delta_y, delta_whl, ms, speed, accel_sens, product;
     static long buffer_x = 0;
     static long buffer_y = 0;
     static long buffer_whl = 0;
@@ -157,76 +157,42 @@ kernel_fpu_begin();
     //Update acceleration parameters periodically
     updata_params(now);
 
-    //Prescale
-    delta_x *= g_PreScaleX;
-    delta_y *= g_PreScaleY;
+    //Get distance traveled
+    speed = delta_x * delta_x + delta_y * delta_y;
+    B_sqrt(&speed);
+    
 
-    //Calculate velocity (one step before rate, which divides rate by the last frametime)
-    rate = delta_x * delta_x + delta_y * delta_y;
-    B_sqrt(&rate);
+    //Calculate rate from travelled overall distance and add possible rate offsets
+    speed /= ms;
+    speed -= g_Offset;
 
-    //Apply speedcap
-    if(g_SpeedCap != 0){
-        if (rate >= g_SpeedCap) {
-            delta_x *= g_SpeedCap / rate;
-            delta_y *= g_SpeedCap / rate;
-            rate = g_SpeedCap;
+    //Apply acceleration if movement is over offset
+    if(speed > 0) {
+
+        //Linear acceleration
+        if(g_AccelerationMode == 1) {
+            // Apply acceleration to speed
+            speed *= g_Acceleration;
+            speed += 1;
+        }
+
+        if(g_AccelerationMode == 2) {
+            speed *= g_Acceleration;
+            speed += 1;
+            B_pow(&speed, &g_Exponent);
         }
     }
 
-    //Calculate rate from travelled overall distance and add possible rate offsets
-    rate /= ms;
-    rate -= g_Offset;
+    //Apply acceleration
+    delta_x *= speed;
+    delta_y *= speed;
 
-    switch(g_AccelerationMode){
+    //Like RawAccel, sensitivity will be a final multiplier:
+    delta_x *= g_Sensitivity;
+    delta_y *= g_Sensitivity;
 
-        //Linear Acceleration
-        case 1 : 
-            if(rate > 0){
-                rate *= g_Acceleration;
-                accel_sens += rate;
-                
-            }
-            break;
-        
-        //Classic Acceleration
-        case 2 :
-            if(rate > 0){
-                product = rate * g_Acceleration;
-                B_pow(&product, &g_Exponent);
-                accel_sens += product;
-            }
-            break;
-
-    }
-    
-    if(g_SensitivityCap > 0 && accel_sens >= g_SensitivityCap){
-        accel_sens = g_SensitivityCap;
-    }
-
-    //Actually apply accelerated sensitivity, allow post-scaling and apply carry from previous round
-    accel_sens /= g_Sensitivity;
-    delta_x *= accel_sens;
-    delta_y *= accel_sens;
-    delta_x *= g_PostScaleX;
-    delta_y *= g_PostScaleY;
-    delta_whl *= g_ScrollsPerTick/3.0f;
     delta_x += carry_x;
     delta_y += carry_y;
-    if((delta_whl < 0 && carry_whl < 0) || (delta_whl > 0 && carry_whl > 0)) //Only apply carry to the wheel, if it shares the same sign
-        delta_whl += carry_whl;
-
-    //Last check for validity
-    if(!(isfinite(&delta_x) && isfinite(&delta_y) && isfinite(&delta_whl))){
-        // Buffer mouse deltas for next (valid) IRQ
-        buffer_x += *x;
-        buffer_y += *y;
-        buffer_whl += *wheel;
-        // Jump out of kernel_fpu_begin
-        printk("LEETMOUSE: Acceleration of NaN value");
-        status = -EFAULT;
-        goto exit;
-    }
 
     //Cast back to int
     *x = Leet_round(&delta_x);
