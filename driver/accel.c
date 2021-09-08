@@ -161,6 +161,11 @@ kernel_fpu_begin();
     speed = delta_x * delta_x + delta_y * delta_y;
     B_sqrt(&speed);
     
+    if(g_SpeedCap != 0){
+        if(speed >= g_SpeedCap) {
+            speed = g_SpeedCap;
+        }
+    }
 
     //Calculate rate from travelled overall distance and add possible rate offsets
     speed /= ms;
