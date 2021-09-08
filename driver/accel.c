@@ -53,6 +53,7 @@ PARAM_F(Acceleration,   ACCELERATION,       "Mouse acceleration sensitivity.");
 PARAM_F(SensitivityCap, SENS_CAP,           "Cap maximum sensitivity.");
 PARAM_F(Offset,         OFFSET,             "Mouse base sensitivity.");
 PARAM_F(Exponent,       EXPONENT,           "Exponent for algorithms that use it"); 
+PARAM_F(Midpoint,       MIDPOINT,           "Midpoint for sigmoid function"); 
 //PARAM_F(AngleAdjustment,XXX,            "");           //Not yet implemented. Douptful, if I will ever add it - Not very useful and needs me to implement trigonometric functions from scratch in C.
 //PARAM_F(AngleSnapping,  XXX,            "");           //Not yet implemented. Douptful, if I will ever add it - Not very useful and needs me to implement trigonometric functions from scratch in C.
 PARAM_F(ScrollsPerTick, SCROLLS_PER_TICK,   "Amount of lines to scroll per scroll-wheel tick.");
@@ -78,6 +79,7 @@ INLINE void updata_params(ktime_t now)
     PARAM_UPDATE(Offset);
     PARAM_UPDATE(ScrollsPerTick);
     PARAM_UPDATE(Exponent);
+    PARAM_UPDATE(Midpoint);
 }
 
 // ########## Acceleration code
@@ -85,7 +87,8 @@ INLINE void updata_params(ktime_t now)
 // Acceleration happens here
 int accelerate(int *x, int *y, int *wheel)
 {
-	float delta_x, delta_y, delta_whl, ms, speed, accel_sens, product;
+	float delta_x, delta_y, delta_whl, ms, speed, accel_sens, product, motivity;
+    float e = 2.71828f;
     static long buffer_x = 0;
     static long buffer_y = 0;
     static long buffer_whl = 0;
@@ -168,15 +171,27 @@ kernel_fpu_begin();
 
         //Linear acceleration
         if(g_AccelerationMode == 1) {
-            // Apply acceleration to speed
+            // Speed * Acceleration
             speed *= g_Acceleration;
             speed += 1;
         }
 
+        //Classic acceleration
         if(g_AccelerationMode == 2) {
+            // (Speed * Acceleration)^Exponent
             speed *= g_Acceleration;
             speed += 1;
             B_pow(&speed, &g_Exponent);
+        }
+
+        //Motivity (Sigmoid function)
+        if(g_AccelerationMode == 3) {
+            // Acceleration / ( 1 + e ^ (midpoint - x))
+            product =  g_Midpoint-speed;
+            motivity = e;
+            B_pow(&motivity, &product);
+            motivity = g_Acceleration / (1 + motivity);
+            speed = motivity;
         }
     }
 
