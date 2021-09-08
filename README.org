@@ -1,5 +1,5 @@
 * Description
-  This fork of =LEETMOUSE= by chilliams and systemofapwne adds in Classic acceleration and changes the functionality of sensitivity to behave more like RawAccel. It is supported by the in-progress GUI tool https://github.com/Skyl3r/leetmouse-gui. Below are the changes from this fork:
+  This fork of =LEETMOUSE= by chilliams and systemofapwne adds in Classic acceleration, a sigmoid function acceleration and changes the functionality of sensitivity to behave more like RawAccel. It is supported by the in-progress GUI tool https://github.com/Skyl3r/leetmouse-gui. Below are the changes from this fork:
    * Pre Scale is removed
    * Post Scale is removed
    * Sensitivity is made to behave more like RawAccel (post calculation multiplier, like Post Scale)
