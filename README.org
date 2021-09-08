@@ -1,5 +1,5 @@
 * Description
-  This fork of =LEETMOUSE= by chilliams and systemofapwne adds in Classic acceleration. It is supported by the in-progress GUI tool https://github.com/Skyl3r/leetmouse-gui.
+  This fork of =LEETMOUSE= by chilliams and systemofapwne adds in Classic acceleration and changes the functionality of sensitivity to behave more like RawAccel. It is supported by the in-progress GUI tool https://github.com/Skyl3r/leetmouse-gui.
   Currently post/pre scale does nothing, sensitivity cap does nothing and scrolls per tick does nothing.
 
   The =LEETMOUSE= kernelmodule enables quake-live like acceleration for your mouse on Linux and is heavily inspired by previous works from [[http://accel.drok-radnik.com/old.html][Povohat's mouse driver for Windows.]]
