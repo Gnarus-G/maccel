@@ -47,16 +47,12 @@ PARAM(AccelerationMode, ACCELERATION_MODE,  "Sets the algorithm to be used for a
 //PARAM(AccelMode,        MODE,           "Acceleration method: 0 power law, 1: saturation, 2: log"); //Not yet implemented
 
 // Acceleration parameters (type pchar. Converted to float via "updata_params" triggered by /sys/module/leetmouse/parameters/update)
-PARAM_F(PreScaleX,      PRE_SCALE_X,        "Prescale X-Axis before applying acceleration.");
-PARAM_F(PreScaleY,      PRE_SCALE_Y,        "Prescale Y-Axis before applying acceleration.");
 PARAM_F(SpeedCap,       SPEED_CAP,          "Limit the maximum pointer speed before applying acceleration.");
 PARAM_F(Sensitivity,    SENSITIVITY,        "Mouse base sensitivity.");
 PARAM_F(Acceleration,   ACCELERATION,       "Mouse acceleration sensitivity.");
 PARAM_F(SensitivityCap, SENS_CAP,           "Cap maximum sensitivity.");
 PARAM_F(Offset,         OFFSET,             "Mouse base sensitivity.");
-PARAM_F(Exponent,       EXPONENT,           "Exponent for algorithms that use it");           //Not yet implemented
-PARAM_F(PostScaleX,     POST_SCALE_X,       "Postscale X-Axis after applying acceleration.");
-PARAM_F(PostScaleY,     POST_SCALE_Y,       "Postscale >-Axis after applying acceleration.");
+PARAM_F(Exponent,       EXPONENT,           "Exponent for algorithms that use it"); 
 //PARAM_F(AngleAdjustment,XXX,            "");           //Not yet implemented. Douptful, if I will ever add it - Not very useful and needs me to implement trigonometric functions from scratch in C.
 //PARAM_F(AngleSnapping,  XXX,            "");           //Not yet implemented. Douptful, if I will ever add it - Not very useful and needs me to implement trigonometric functions from scratch in C.
 PARAM_F(ScrollsPerTick, SCROLLS_PER_TICK,   "Amount of lines to scroll per scroll-wheel tick.");
@@ -75,15 +71,11 @@ INLINE void updata_params(ktime_t now)
     g_update = 0;
     g_next_update = now + 1000000000ll;    //Next update is allowed after 1s of delay
 
-    PARAM_UPDATE(PreScaleX);
-    PARAM_UPDATE(PreScaleY);
     PARAM_UPDATE(SpeedCap);
     PARAM_UPDATE(Sensitivity);
     PARAM_UPDATE(Acceleration);
     PARAM_UPDATE(SensitivityCap);
     PARAM_UPDATE(Offset);
-    PARAM_UPDATE(PostScaleX);
-    PARAM_UPDATE(PostScaleY);
     PARAM_UPDATE(ScrollsPerTick);
     PARAM_UPDATE(Exponent);
 }
@@ -198,6 +190,8 @@ kernel_fpu_begin();
 
     delta_x += carry_x;
     delta_y += carry_y;
+
+    delta_whl *= g_ScrollsPerTick/3.0f;
 
     //Cast back to int
     *x = Leet_round(&delta_x);
