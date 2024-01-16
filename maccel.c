@@ -23,7 +23,7 @@ void disconnect(struct usb_interface *intf) {
   printk(KERN_INFO "maccel removed");
 }
 
-static struct usb_driver maccel_driver = {.name = "MAccel Mouse Driver",
+static struct usb_driver maccel_driver = {.name = "maccel",
                                           .id_table = maccel_table,
                                           .probe = probe,
                                           .disconnect = disconnect};
