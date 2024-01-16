@@ -1,0 +1,8 @@
+# artifacts
+.*.cmd 
+*.ko 
+*.mod 
+*.mod.* 
+*.symvers 
+*.order 
+*.o
