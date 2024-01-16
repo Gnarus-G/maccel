@@ -2,7 +2,7 @@
   {
     "arguments": [
       "/usr/bin/gcc",
-      "-Wp,-MMD,/home/gnarus/d/ldd3/.hello.o.d",
+      "-Wp,-MMD,/root/maccel/.maccel.o.d",
       "-nostdinc",
       "-I./arch/x86/include",
       "-I./arch/x86/include/generated",
@@ -101,16 +101,16 @@
       "-g",
       "-gdwarf-5",
       "-DMODULE",
-      "-DKBUILD_BASENAME=\"hello\"",
-      "-DKBUILD_MODNAME=\"hello\"",
-      "-D__KBUILD_MODNAME=kmod_hello",
+      "-DKBUILD_BASENAME=\"maccel\"",
+      "-DKBUILD_MODNAME=\"maccel\"",
+      "-D__KBUILD_MODNAME=kmod_maccel",
       "-c",
       "-o",
-      "/home/gnarus/d/ldd3/hello.o",
-      "/home/gnarus/d/ldd3/hello.c"
+      "/root/maccel/maccel.o",
+      "/root/maccel/maccel.c"
     ],
-    "directory": "/usr/lib/modules/6.6.10-arch1-1/build",
-    "file": "/home/gnarus/d/ldd3/hello.c",
-    "output": "/home/gnarus/d/ldd3/hello.o"
+    "directory": "/usr/lib/modules/6.7.0-arch3-1/build",
+    "file": "/root/maccel/maccel.c",
+    "output": "/root/maccel/maccel.o"
   }
 ]
