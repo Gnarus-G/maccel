@@ -9,3 +9,6 @@
 
 # build
 .cache
+
+# misc
+compile_commands.json
