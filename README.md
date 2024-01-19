@@ -32,3 +32,4 @@ echo "$BUS_ID" > /sys/bus/usb/drivers/usbhid/unbind
 - https://lwn.net/Kernel/LDD3/
 - https://github.com/torvalds/linux/blob/master/drivers/hid/usbhid/usbmouse.c
 - https://www.kernel.org/doc/html/latest/input/index.html
+- https://github.com/a1xd/rawaccel/blob/master/doc/Guide.md#jump
