@@ -1,3 +1,4 @@
+#include "accel.h"
 #include <linux/hid.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
@@ -13,6 +14,8 @@ MODULE_DESCRIPTION("Mouse acceleration driver.");
 
 typedef struct {
   s8 *data_buf;
+  u8 poll_interval;
+
   char name[64];
   char phys[128];
   struct input_dev *input_dev;
@@ -41,9 +44,6 @@ void on_complete(struct urb *u) {
   struct input_dev *dev = ctx->input_dev;
   s8 *data = ctx->data_buf;
 
-  s8 x = data[1];
-  s8 y = data[2];
-
   switch (u->status) {
   case 0:
     break;
@@ -64,11 +64,11 @@ void on_complete(struct urb *u) {
   input_report_key(dev, BTN_SIDE, data[0] & 0x08);
   input_report_key(dev, BTN_EXTRA, data[0] & 0x10);
 
-  input_report_rel(dev, REL_X, x);
-  input_report_rel(dev, REL_Y, y);
-  input_report_rel(dev, REL_WHEEL, data[3]);
+  AccelResult result = accelerate(data[1], data[2], ctx->poll_interval);
 
-  printk(KERN_INFO "[MOUSE_MOVE] (%d, %d)", x, y);
+  input_report_rel(dev, REL_X, result.x);
+  input_report_rel(dev, REL_Y, result.y);
+  input_report_rel(dev, REL_WHEEL, data[3]);
 
   input_sync(dev);
 
@@ -91,6 +91,8 @@ int probe(struct usb_interface *intf, const struct usb_device_id *id) {
   if (!usb_endpoint_is_int_in(endpoint)) {
     return -ENODEV;
   }
+
+  ctx->poll_interval = endpoint->bInterval;
 
   if (!urb || !ctx) {
     goto err_free_ctx_and_urb;
@@ -153,15 +155,17 @@ int probe(struct usb_interface *intf, const struct usb_device_id *id) {
   urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
 
   usb_fill_int_urb(urb, usb_dev, pipe, ctx->data_buf, TRANSFER_BUFFER_LEN,
-                   on_complete, ctx, endpoint->bInterval);
+                   on_complete, ctx, ctx->poll_interval);
 
   if (!ctx->data_buf || err) {
     goto err_free_urb_transfer_data;
   }
 
   usb_set_intfdata(intf, ctx);
-  printk(KERN_INFO "plugged in %s %s <> (%04x:%04x) intf %d\n", ctx->name,
-         ctx->phys, id->idVendor, id->idProduct, id->bInterfaceNumber);
+  printk(KERN_INFO
+         "plugged in %s %s <> (%04x:%04x) intf %d; polling interval %d\n",
+         ctx->name, ctx->phys, id->idVendor, id->idProduct,
+         id->bInterfaceNumber, ctx->poll_interval);
 
   return 0;
 

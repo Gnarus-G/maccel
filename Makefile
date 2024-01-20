@@ -2,6 +2,8 @@ MOD_NAME = maccel
 
 obj-m += $(MOD_NAME).o
 
+ccflags-y += -msse -mhard-float
+
 CC=gcc
 KDIR=/lib/modules/`uname -r`/build
 

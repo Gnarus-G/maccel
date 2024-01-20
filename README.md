@@ -1,5 +1,18 @@
 # maccel
 
+Linear mouse acceleration.
+
+$$V = \frac{\sqrt{dx_0^2 + dy_0^2}}{i}$$
+
+$$dx_f = dx_0 * (1 + aV)$$
+
+$$dy_f = dy_0 * (1 + aV)$$
+
+Where $dx$ and $dy$ are the directional displacement read from the mouse,
+$i$ is the polling interval of the mouse; this would be 1ms if the polling rate if 1000Hz,
+and $a$ is the user provided
+acceleration factor
+
 ## Tips
 
 ### finding the bus id of a usb device
@@ -32,4 +45,5 @@ echo "$BUS_ID" > /sys/bus/usb/drivers/usbhid/unbind
 - https://lwn.net/Kernel/LDD3/
 - https://github.com/torvalds/linux/blob/master/drivers/hid/usbhid/usbmouse.c
 - https://www.kernel.org/doc/html/latest/input/index.html
-- https://github.com/a1xd/rawaccel/blob/master/doc/Guide.md#jump
+- https://github.com/a1xd/rawaccel/blob/master/doc/Guide.md
+- https://github.com/Skyl3r/leetmouse/blob/master/driver/accel.c
