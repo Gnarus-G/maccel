@@ -1,6 +1,7 @@
 #include "asm-generic/int-ll64.h"
 
 #define ACCEL_FACTOR 0.3
+#define OUTPUT_CAP 2
 
 #define INLINE __attribute__((always_inline)) inline
 
@@ -37,6 +38,11 @@ AccelResult INLINE accelerate(s8 x, s8 y, u32 polling_interval) {
   float speed_in = distance / polling_interval;
 
   float speed_factor = (1 + ACCEL_FACTOR * speed_in);
+
+  if (speed_factor > OUTPUT_CAP) {
+    speed_factor = OUTPUT_CAP;
+  }
+
   float dx_out = dx * speed_factor;
   float dy_out = dy * speed_factor;
 
