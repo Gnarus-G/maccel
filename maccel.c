@@ -9,7 +9,9 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Gnarus-G");
 MODULE_DESCRIPTION("Mouse acceleration driver.");
 
-#define TRANSFER_BUFFER_LEN 16
+#define TRANSFER_BUFFER_LEN                                                    \
+  8 // When this was 16, sometimes clicks would fail to register, 8 is how it is
+    // in the linux usbhid driver so it's probably better
 
 typedef struct {
   s8 *data_buf;
