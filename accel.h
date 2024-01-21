@@ -1,6 +1,6 @@
 #include "fixedptc.h"
 
-#define ACCEL_FACTOR fixedpt_rconst(0.3)
+#define ACCEL fixedpt_rconst(0.3)
 #define OFFSET fixedpt_rconst(2)
 #define OUTPUT_CAP fixedpt_rconst(2)
 
@@ -36,8 +36,7 @@ AccelResult inline accelerate(s8 x, s8 y, u32 polling_interval) {
   fixedpt accel_factor = FIXEDPT_ONE;
 
   if (speed_in > fixedpt_rconst(0.0)) {
-    accel_factor =
-        fixedpt_add(FIXEDPT_ONE, fixedpt_mul((ACCEL_FACTOR), speed_in));
+    accel_factor = fixedpt_add(FIXEDPT_ONE, fixedpt_mul((ACCEL), speed_in));
 
     if (accel_factor > OUTPUT_CAP) {
       accel_factor = OUTPUT_CAP;
