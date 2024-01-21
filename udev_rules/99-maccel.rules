@@ -1,0 +1,4 @@
+ACTION=="remove", GOTO="maccel_end"
+SUBSYSTEMS=="usb|input|hid", ATTRS{bInterfaceClass}=="03", ATTRS{bInterfaceSubClass}=="01", ATTRS{bInterfaceProtocol}=="02", RUN+="maccel_bind maccel $kernel"
+
+LABEL="maccel_end"

@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# Script is adpated from systemofapwne 
+# https://github.com/systemofapwne/leetmouse/tree/master/install_files/udev
+
+# Exit on error
+set -e
+
+DRIVER=maccel
+DRIVER_PATH=/sys/bus/usb/drivers/$DRIVER
+
+# No argument has been passed over. Exit
+if [ $# -eq 0 ]; then
+    exit
+fi
+
+# ########## Code below is ran only, if the maccel kernel module has been loaded successfully
+
+# Leetmouse is not loaded. Exit
+if [ ! -d $DRIVER_PATH ] ; then
+    exit
+fi
+
+# Find all devices, which are currenlty bount to maccel and unbind them (+ rebind to usbhid)
+# Note: Only works, if the udev rules are disabled. This manage function is mainly used for the uninstall process
+if [ $1 = "unbind_all" ]; then
+    for d in $DRIVER_PATH/*/ ; do
+        # Strip basepath and trailing/leading slashes
+        d=${d#$DRIVER_PATH}
+        d="${d#?}"; d="${d%?}"
+
+        if [ $d != "module" ]; then
+            printf '%s' "$d" > /sys/bus/usb/drivers/maccel/unbind
+            printf '%s' "$d" > /sys/bus/usb/drivers/usbhid/bind
+        fi
+    done
+fi
+
+# Triggers a udev refresh so it binds all pointer devices to maccel
+if [ $1 = "bind_all" ]; then
+    udevadm control --reload-rules
+    udevadm trigger --subsystem-match=usb --subsystem-match=input --subsystem-match=hid --attr-match=bInterfaceClass=03 --attr-match=bInterfaceSubClass=01 --attr-match=bInterfaceProtocol=02
+fi

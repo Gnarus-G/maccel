@@ -23,7 +23,22 @@ driver_install: default
 	depmod
 
 driver_uninstall:
-	@rm -fv $(DESTDIR)/$(MODULEDIR)/leetmouse.ko
+	@rm -fv $(DESTDIR)/$(MODULEDIR)/maccel.ko
+	
+udev_install:
+	install -m 644 -v -D udev_rules/99-maccel.rules $(DESTDIR)/usr/lib/udev/rules.d/99-maccel.rules
+	install -m 755 -v -D udev_rules/maccel_bind $(DESTDIR)/usr/lib/udev/maccel_bind
+	install -m 755 -v -D udev_rules/maccel_manage $(DESTDIR)/usr/lib/udev/maccel_manage
+
+udev_uninstall:
+	@rm -f $(DESTDIR)/usr/lib/udev/rules.d/99-maccel.rules $(DESTDIR)/usr/lib/udev/maccel_bind
+	udevadm control --reload-rules
+	. $(DESTDIR)/usr/lib/udev/maccel_manage unbind_all
+	@rm -f $(DESTDIR)/usr/lib/udev/maccel_manage
+
+udev_trigger:
+	udevadm control --reload-rules
+	udevadm trigger --subsystem-match=usb --subsystem-match=input --subsystem-match=hid --attr-match=bInterfaceClass=03 --attr-match=bInterfaceSubClass=01 --attr-match=bInterfaceProtocol=02
 
 clean:
 	rm -rf .*.cmd *.ko *.mod *.mod.* *.symvers *.order *.o
