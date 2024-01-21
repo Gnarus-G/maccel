@@ -1,6 +1,7 @@
 #include "fixedptc.h"
 
 #define ACCEL_FACTOR fixedpt_rconst(0.3)
+#define OFFSET fixedpt_rconst(2)
 #define OUTPUT_CAP fixedpt_rconst(2)
 
 typedef struct {
@@ -27,22 +28,26 @@ AccelResult inline accelerate(s8 x, s8 y, u32 polling_interval) {
 
   fixedpt speed_in = fixedpt_div(distance, fixedpt_fromint(polling_interval));
 
-  // printk("speed_in %s, with interval %s", fixedpt_cstr(speed_in, 5),
+  // printk("input speed %s, with interval %s", fixedpt_cstr(speed_in, 5),
   //        fixedpt_cstr(polling_interval, 5));
 
-  fixedpt speed_factor =
-      fixedpt_add(FIXEDPT_ONE, fixedpt_mul((ACCEL_FACTOR), speed_in));
+  speed_in = fixedpt_sub(speed_in, OFFSET);
 
-  // printk("speed_factor %s", fixedpt_cstr(speed_factor, 5));
+  fixedpt accel_factor = FIXEDPT_ONE;
 
-  if (speed_factor > OUTPUT_CAP) {
-    speed_factor = OUTPUT_CAP;
+  if (speed_in > fixedpt_rconst(0.0)) {
+    accel_factor =
+        fixedpt_add(FIXEDPT_ONE, fixedpt_mul((ACCEL_FACTOR), speed_in));
+
+    if (accel_factor > OUTPUT_CAP) {
+      accel_factor = OUTPUT_CAP;
+    }
   }
 
-  // printk("speed_factor %s", fixedpt_cstr(speed_factor, 5));
+  // printk("accel_factor %s", fixedpt_cstr(accel_factor, 5));
 
-  fixedpt dx_out = fixedpt_mul(dx, speed_factor);
-  fixedpt dy_out = fixedpt_mul(dy, speed_factor);
+  fixedpt dx_out = fixedpt_mul(dx, accel_factor);
+  fixedpt dy_out = fixedpt_mul(dy, accel_factor);
 
   dx_out = fixedpt_add(dx_out, carry_x);
   dy_out = fixedpt_add(dy_out, carry_y);
@@ -54,7 +59,7 @@ AccelResult inline accelerate(s8 x, s8 y, u32 polling_interval) {
   carry_y = fixedpt_sub(dy_out, fixedpt_fromint(result.y));
 
   // printk(KERN_INFO "[MOUSE_MOVE_ACCEL] (%d, %d)", result.x, result.y);
-  //
+
   // printk(KERN_INFO "[MOUSE_MOVE] carry (%s, %s)", fixedpt_cstr(carry_x, 5),
   //        fixedpt_cstr(carry_y, 5));
 
