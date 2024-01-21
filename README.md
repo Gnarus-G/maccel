@@ -29,8 +29,8 @@ At this point the bus id can be probably formed by using one the patterns:
 - Bus-Port_hub.Port_device:Subdevice.If, eg 3-1.2:1.0
 
 ```sh
-# see all the usb devices' as their bus ids
-ls /sys/bus/usb/devices
+# see all the mice bus ids in the paths liste with this command
+grep 02 /sys/bus/usb/devices/*/bInterfaceProtocol
 ```
 
 ### unbinding usbhid
