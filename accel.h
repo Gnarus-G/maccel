@@ -1,55 +1,52 @@
-#include "asm-generic/int-ll64.h"
+#define FIXEDPT_BITS 32
+#define FIXEDPT_WBITS 8
+#include "fixedptc.h"
 
 #define ACCEL_FACTOR 0.3
 #define OUTPUT_CAP 2
-
-#define INLINE __attribute__((always_inline)) inline
-
-static INLINE float Q_sqrt(float number) {
-  long i;
-  float x2, y;
-  const float threehalfs = 1.5F;
-
-  x2 = number * 0.5F;
-  y = number;
-  i = *(long *)&y;           // evil floating point bit level hacking
-  i = 0x5f3759df - (i >> 1); // what the fuck?
-  y = *(float *)&i;
-  y = y * (threehalfs - (x2 * y * y)); // 1st iteration
-  //	y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can
-  // be removed
-
-  return 1 / y;
-}
 
 typedef struct {
   s8 x;
   s8 y;
 } AccelResult;
 
-AccelResult INLINE accelerate(s8 x, s8 y, u32 polling_interval) {
-  AccelResult result = {};
-  float dx = x;
-  float dy = y;
+AccelResult inline accelerate(s8 x, s8 y, u32 polling_interval) {
+  AccelResult result = {.x = 0, .y = 0};
 
-  /* printk(KERN_INFO "[MOUSE_MOVE] (%d, %d)", (int)dx, (int)dy); */
+  static fixedpt carry_x = fixedpt_rconst(0);
+  static fixedpt carry_y = fixedpt_rconst(0);
 
-  float distance = Q_sqrt(dx * dx + dy * dy);
-  float speed_in = distance / polling_interval;
+  fixedpt dx = fixedpt_fromint(x);
+  fixedpt dy = fixedpt_fromint(y);
 
-  float speed_factor = (1 + ACCEL_FACTOR * speed_in);
+  // printk(KERN_INFO "[MOUSE_MOVE] (%d, %d)", (int)dx, (int)dy);
 
-  if (speed_factor > OUTPUT_CAP) {
-    speed_factor = OUTPUT_CAP;
+  fixedpt distance =
+      fixedpt_sqrt(fixedpt_add(fixedpt_mul(dx, dx), fixedpt_mul(dy, dy)));
+
+  fixedpt speed_in = fixedpt_div(distance, polling_interval);
+
+  fixedpt speed_factor =
+      fixedpt_add(1, fixedpt_mul(fixedpt_rconst(ACCEL_FACTOR), speed_in));
+
+  fixedpt output_cap = fixedpt_rconst(OUTPUT_CAP);
+  if (speed_factor > output_cap) {
+    speed_factor = output_cap;
   }
 
-  float dx_out = dx * speed_factor;
-  float dy_out = dy * speed_factor;
+  fixedpt dx_out = fixedpt_mul(dx, speed_factor);
+  fixedpt dy_out = fixedpt_mul(dy, speed_factor);
 
-  result.x = (s8)dx_out;
-  result.y = (s8)dy_out;
+  dx_out = fixedpt_add(dx_out, carry_x);
+  dy_out = fixedpt_add(dy_out, carry_y);
 
-  /* printk(KERN_INFO "[MOUSE_MOVE_ACCEL] (%d, %d)", (int)dx, (int)dy); */
+  result.x = fixedpt_toint(dx_out);
+  result.y = fixedpt_toint(dy_out);
+
+  carry_x = fixedpt_sub(dx_out, fixedpt_fromint(result.x));
+  carry_y = fixedpt_sub(dy_out, fixedpt_fromint(result.y));
+
+  // printk(KERN_INFO "[MOUSE_MOVE_ACCEL] (%d, %d)", result.x, result.y);
 
   return result;
 }

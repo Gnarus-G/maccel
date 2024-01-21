@@ -47,3 +47,4 @@ echo "$BUS_ID" > /sys/bus/usb/drivers/usbhid/unbind
 - https://www.kernel.org/doc/html/latest/input/index.html
 - https://github.com/a1xd/rawaccel/blob/master/doc/Guide.md
 - https://github.com/Skyl3r/leetmouse/blob/master/driver/accel.c
+- https://sourceforge.net/p/fixedptc/code/ci/default/tree/
