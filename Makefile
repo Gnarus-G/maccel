@@ -28,3 +28,21 @@ driver_uninstall:
 
 clean:
 	rm -rf .*.cmd *.ko *.mod *.mod.* *.symvers *.order *.o
+
+# The following is only for me @Gnarus: To bind my mice.
+# While I haven't setup udev rules
+bind_death_adder:
+	echo "3-3.3:1.0" > /sys/bus/usb/drivers/usbhid/unbind
+	echo "3-3.3:1.0" > /sys/bus/usb/drivers/maccel/bind
+
+unbind_death_adder:
+	echo "3-3.3:1.0" > /sys/bus/usb/drivers/maccel/unbind
+	echo "3-3.3:1.0" > /sys/bus/usb/drivers/usbhid/bind
+
+bind_viper:
+	echo "5-3:1.0" > /sys/bus/usb/drivers/usbhid/unbind
+	echo "5-3:1.0" > /sys/bus/usb/drivers/maccel/bind
+
+unbind_viper:
+	echo "5-3:1.0" > /sys/bus/usb/drivers/maccel/unbind
+	echo "5-3:1.0" > /sys/bus/usb/drivers/usbhid/bind
