@@ -30,7 +30,8 @@ AccelResult inline accelerate(s8 x, s8 y, u32 polling_interval) {
   // printk("speed_in %s, with interval %s", fixedpt_cstr(speed_in, 5),
   //        fixedpt_cstr(polling_interval, 5));
 
-  fixedpt speed_factor = fixedpt_add(1, fixedpt_mul((ACCEL_FACTOR), speed_in));
+  fixedpt speed_factor =
+      fixedpt_add(FIXEDPT_ONE, fixedpt_mul((ACCEL_FACTOR), speed_in));
 
   // printk("speed_factor %s", fixedpt_cstr(speed_factor, 5));
 
