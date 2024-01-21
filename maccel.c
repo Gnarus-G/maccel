@@ -209,24 +209,4 @@ static struct usb_driver maccel_driver = {.name = "maccel",
                                           .probe = probe,
                                           .disconnect = disconnect};
 
-static int __init maccel_init(void) {
-  int ret = -1;
-  printk(KERN_INFO "registering driver");
-  ret = usb_register(&maccel_driver);
-
-  if (ret) {
-    printk(KERN_ERR "registration failed, error number %d", ret);
-  } else {
-    printk(KERN_INFO "registration complete");
-  }
-
-  return ret;
-}
-
-static void __exit maccel_exit(void) {
-  usb_deregister(&maccel_driver);
-  printk(KERN_INFO "unregistration complete");
-}
-
-module_init(maccel_init);
-module_exit(maccel_exit);
+module_usb_driver(maccel_driver);
