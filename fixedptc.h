@@ -69,7 +69,7 @@
  */
 
 #ifndef FIXEDPT_BITS
-#define FIXEDPT_BITS 64
+#define FIXEDPT_BITS 32
 #endif
 
 #include "asm-generic/int-ll64.h"

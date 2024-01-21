@@ -1,9 +1,7 @@
-#define FIXEDPT_BITS 32
-#define FIXEDPT_WBITS 8
 #include "fixedptc.h"
 
-#define ACCEL_FACTOR 0.3
-#define OUTPUT_CAP 2
+#define ACCEL_FACTOR fixedpt_rconst(0.3)
+#define OUTPUT_CAP fixedpt_rconst(2)
 
 typedef struct {
   s8 x;
@@ -26,12 +24,10 @@ AccelResult inline accelerate(s8 x, s8 y, u32 polling_interval) {
 
   fixedpt speed_in = fixedpt_div(distance, polling_interval);
 
-  fixedpt speed_factor =
-      fixedpt_add(1, fixedpt_mul(fixedpt_rconst(ACCEL_FACTOR), speed_in));
+  fixedpt speed_factor = fixedpt_add(1, fixedpt_mul((ACCEL_FACTOR), speed_in));
 
-  fixedpt output_cap = fixedpt_rconst(OUTPUT_CAP);
-  if (speed_factor > output_cap) {
-    speed_factor = output_cap;
+  if (speed_factor > OUTPUT_CAP) {
+    speed_factor = OUTPUT_CAP;
   }
 
   fixedpt dx_out = fixedpt_mul(dx, speed_factor);
