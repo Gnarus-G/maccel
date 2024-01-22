@@ -1,8 +1,5 @@
 #include "fixedptc.h"
-
-#define ACCEL fixedpt_rconst(0.3)
-#define OFFSET fixedpt_rconst(2)
-#define OUTPUT_CAP fixedpt_rconst(2)
+#include "params.h"
 
 typedef struct {
   s8 x;
@@ -31,15 +28,16 @@ AccelResult inline accelerate(s8 x, s8 y, u32 polling_interval) {
   // printk("input speed %s, with interval %s", fixedpt_cstr(speed_in, 5),
   //        fixedpt_cstr(polling_interval, 5));
 
-  speed_in = fixedpt_sub(speed_in, OFFSET);
+  speed_in = fixedpt_sub(speed_in, PARAM_OFFSET);
 
   fixedpt accel_factor = FIXEDPT_ONE;
 
   if (speed_in > fixedpt_rconst(0.0)) {
-    accel_factor = fixedpt_add(FIXEDPT_ONE, fixedpt_mul((ACCEL), speed_in));
+    accel_factor =
+        fixedpt_add(FIXEDPT_ONE, fixedpt_mul((PARAM_ACCEL), speed_in));
 
-    if (accel_factor > OUTPUT_CAP) {
-      accel_factor = OUTPUT_CAP;
+    if (accel_factor > PARAM_OUTPUT_CAP) {
+      accel_factor = PARAM_OUTPUT_CAP;
     }
   }
 
