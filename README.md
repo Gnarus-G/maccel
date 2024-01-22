@@ -8,8 +8,8 @@ $$dx_f = dx_0 * (1 + aV)$$
 
 $$dy_f = dy_0 * (1 + aV)$$
 
-Where $dx$ and $dy$ are the directional displacement read from the mouse,
-$i$ is the polling interval of the mouse; this would be 1ms if the polling rate if 1000Hz,
+Where $dx$ and $dy$ are the directional displacements read from the mouse,
+$i$ is the polling interval of the mouse; this would be 1ms if the polling rate is 1000Hz,
 and $a$ is the user provided
 acceleration factor
 
