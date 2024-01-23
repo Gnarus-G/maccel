@@ -8,14 +8,20 @@ default:
 	$(MAKE) CC=$(CC) -C $(KDIR) M=$(DRIVERDIR)
 
 install: default
-	@cp -v $(DRIVERDIR)/*.ko $(MODULEDIR)
-	@chown -v root:root $(MODULEDIR)/*.ko
-	depmod
+	@cp -v $(DRIVERDIR)/*.ko $(MODULEDIR);
+	@chown -v root:root $(MODULEDIR)/*.ko;
+	@insmod $(MODULEDIR)/*.ko;
+	groupadd -f maccel;
+	depmod; 
+	sudo chown -v root:maccel /sys/module/maccel/parameters/*;
+	ls -l /sys/module/maccel/parameters/*
+	@echo '[Recommended] Add yourself to the "maccel" group'
+	@echo '[Recommended] usermod -aG maccel $$USER'
 
 uninstall:
 	sudo rmmod maccel
 
-update: install uninstall 
+update: uninstall install 
 
 sys_uninstall: default
 	@rm -fv $(MODULEDIR)/maccel.ko
