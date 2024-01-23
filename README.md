@@ -13,6 +13,33 @@ $i$ is the polling interval of the mouse; this would be 1ms if the polling rate 
 and $a$ is the user provided
 acceleration factor
 
+## Install
+
+Clone the repo, and run some make commands.
+
+```sh
+git clone https://github.com/Gnarus-G/maccel.git
+cd maccel
+```
+
+```sh
+sudo make install
+sudo make udev_install
+```
+
+Optionally, it's recommended that you add yourself to the `maccel` group;
+and remember to restart your session after you do so it takes effect.
+
+Adding yourself to that `maccel` group allows you to run the maccel-cli
+to set parameter values without `sudo`
+
+### Uninstall
+
+```sh
+sudo make uninstall
+sudo make udev_uninstall
+```
+
 ## Tips
 
 ### finding the bus id of a usb device
