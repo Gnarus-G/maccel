@@ -72,13 +72,11 @@
 #define FIXEDPT_BITS 32
 #endif
 
-#include "asm-generic/int-ll64.h"
-
 #if FIXEDPT_BITS == 32
-typedef s32 fixedpt;
-typedef s64 fixedptd;
-typedef u32 fixedptu;
-typedef u64 fixedptud;
+typedef int fixedpt;
+typedef long long fixedptd;
+typedef unsigned int fixedptu;
+typedef unsigned long long fixedptud;
 #elif FIXEDPT_BITS == 64
 #include "linux/types.h"
 typedef s64 fixedpt;
