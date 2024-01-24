@@ -24,8 +24,8 @@ cd maccel
 
 ```sh
 cargo build --release --manifest-path=maccel-cli/Cargo.toml
-sudo make install
-sudo make udev_install
+make install
+make udev_install
 ```
 
 Optionally, it's recommended that you add yourself to the `maccel` group;
@@ -37,8 +37,8 @@ to set parameter values without `sudo`
 ### Uninstall
 
 ```sh
-sudo make uninstall
-sudo make udev_uninstall
+make uninstall
+make udev_uninstall
 ```
 
 ## CLI Usage

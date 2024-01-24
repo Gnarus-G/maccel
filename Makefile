@@ -8,34 +8,35 @@ default:
 	$(MAKE) CC=$(CC) -C $(KDIR) M=$(DRIVERDIR)
 
 install: default
-	@cp -v $(DRIVERDIR)/*.ko $(MODULEDIR);
-	@chown -v root:root $(MODULEDIR)/*.ko;
-	@insmod $(MODULEDIR)/*.ko;
+	@sudo cp -v $(DRIVERDIR)/*.ko $(MODULEDIR);
+	@sudo chown -v root:root $(MODULEDIR)/*.ko;
+	@sudo insmod $(MODULEDIR)/*.ko;
 	groupadd -f maccel;
-	depmod; 
+	sudo depmod; 
 	sudo chown -v root:maccel /sys/module/maccel/parameters/*;
 	ls -l /sys/module/maccel/parameters/*
 	@echo '[Recommended] Add yourself to the "maccel" group'
 	@echo '[Recommended] usermod -aG maccel $$USER'
 
 uninstall:
-	sudo rmmod maccel
+	@sudo rmmod maccel
+	@sudo rm -fv $(MODULEDIR)/maccel.ko
 
 update: uninstall install 
 
-sys_uninstall: default
-	@rm -fv $(MODULEDIR)/maccel.ko
+build_cli:
+	cargo build --release --manifest-path=maccel-cli/Cargo.toml
 	
-udev_install:
-	install -m 644 -v -D `pwd`/udev_rules/99-maccel.rules /usr/lib/udev/rules.d/99-maccel.rules
-	install -m 755 `pwd`/maccel-cli/target/release/maccel /usr/local/bin/maccel
-	install -m 755 -v -D `pwd`/udev_rules/maccel_bind /usr/lib/udev/maccel_bind
+udev_install: build_cli
+	sudo install -m 644 -v -D `pwd`/udev_rules/99-maccel.rules /usr/lib/udev/rules.d/99-maccel.rules
+	sudo install -m 755 `pwd`/maccel-cli/target/release/maccel /usr/local/bin/maccel
+	sudo install -m 755 -v -D `pwd`/udev_rules/maccel_bind /usr/lib/udev/maccel_bind
 
 udev_uninstall:
-	@rm -f /usr/lib/udev/rules.d/99-maccel.rules /usr/lib/udev/maccel_bind
-	udevadm control --reload-rules
-	/usr/local/bin/maccel unbindall
-	@rm -f /usr/local/bin/maccel
+	@sudo rm -f /usr/lib/udev/rules.d/99-maccel.rules /usr/lib/udev/maccel_bind
+	sudo udevadm control --reload-rules
+	sudo /usr/local/bin/maccel unbindall
+	@sudo rm -f /usr/local/bin/maccel
 
 udev_trigger:
 	udevadm control --reload-rules
