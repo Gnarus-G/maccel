@@ -9,8 +9,9 @@ mod fixedptc_proxy;
 
 use anyhow::{anyhow, Context};
 use binder::{bind_device, unbind_device};
-use clap::{Parser, ValueEnum};
+use clap::{builder::OsStr, Parser, ValueEnum};
 use fixedptc_proxy::{fixedpt, fixedpt_as_str};
+use glob::glob;
 
 #[derive(Parser)]
 struct Cli {
@@ -21,7 +22,9 @@ struct Cli {
 #[derive(clap::Subcommand)]
 enum ParamsCommand {
     Bind { device_id: String },
+    Bindall,
     Unbind { device_id: String },
+    Unbindall,
     Set { name: Param, value: f32 },
     Get { name: Param },
 }
@@ -69,8 +72,58 @@ fn main() -> anyhow::Result<()> {
         ParamsCommand::Bind { device_id } => {
             bind_device(&device_id)?;
         }
+        ParamsCommand::Bindall => {
+            eprintln!("[INFO] looking for all mice bound to usbhid: the generic hid driver");
+
+            let paths = glob("/sys/bus/usb/drivers/usbhid/[0-9]*")?;
+
+            for path in paths.flatten() {
+                let basename = path.file_name();
+                if path.is_dir() && basename != Some(&OsStr::from("module")) {
+                    let protocol =
+                        File::open(path.join("bInterfaceProtocol")).and_then(|mut f| {
+                            let mut buf = String::new();
+                            return f.read_to_string(&mut buf).map(|_| buf);
+                        })?;
+
+                    let subclass =
+                        File::open(path.join("bInterfaceSubClass")).and_then(|mut f| {
+                            let mut buf = String::new();
+                            return f.read_to_string(&mut buf).map(|_| buf);
+                        })?;
+
+                    // checking for the observed invariant for a usb mouse device
+                    if protocol.trim() == "02" && subclass.trim() == "01" {
+                        let device_id = basename.unwrap().to_str().expect(
+                        "basename of the /sys/*/drivers/usbhid device_id paths should be strings",
+                    );
+                        eprintln!("[INFO] found device to bind, id: {}", device_id);
+                        bind_device(device_id)?;
+                        eprintln!()
+                    }
+                }
+            }
+        }
         ParamsCommand::Unbind { device_id } => {
             unbind_device(&device_id)?;
+        }
+        ParamsCommand::Unbindall => {
+            eprintln!("[INFO] looking for all devices bound to maccel");
+
+            let dirs = std::fs::read_dir("/sys/bus/usb/drivers/maccel")?;
+
+            for d in dirs.flatten() {
+                let path = d.path();
+                let basename = path.file_name();
+                if path.is_dir() && basename != Some(&OsStr::from("module")) {
+                    let device_id = basename.unwrap().to_str().expect(
+                        "basename of the /sys/*/drivers/maccel device_id paths should be strings",
+                    );
+                    eprintln!("[INFO] found device to unbind, id: {}", device_id);
+                    unbind_device(device_id)?;
+                    eprintln!()
+                }
+            }
         }
     }
 

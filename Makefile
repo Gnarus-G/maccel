@@ -29,14 +29,13 @@ sys_uninstall: default
 udev_install:
 	install -m 644 -v -D `pwd`/udev_rules/99-maccel.rules /usr/lib/udev/rules.d/99-maccel.rules
 	install -m 755 `pwd`/maccel-cli/target/release/maccel /usr/local/bin/maccel
-	install -m 755 -v -D udev_rules/maccel_bind /usr/lib/udev/maccel_bind
-	install -m 755 -v -D udev_rules/maccel_manage /usr/lib/udev/maccel_manage
+	install -m 755 -v -D `pwd`/udev_rules/maccel_bind /usr/lib/udev/maccel_bind
 
 udev_uninstall:
 	@rm -f /usr/lib/udev/rules.d/99-maccel.rules /usr/lib/udev/maccel_bind
 	udevadm control --reload-rules
-	. /usr/lib/udev/maccel_manage unbind_all
-	@rm -f /usr/lib/udev/maccel_manage
+	/usr/local/bin/maccel unbindall
+	@rm -f /usr/local/bin/maccel
 
 udev_trigger:
 	udevadm control --reload-rules
