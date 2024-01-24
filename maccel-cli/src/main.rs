@@ -14,6 +14,8 @@ use fixedptc_proxy::{fixedpt, fixedpt_as_str};
 use glob::glob;
 
 #[derive(Parser)]
+#[clap(author, about, version)]
+/// CLI to control the paramters for the maccel driver, and manage mice bindings
 struct Cli {
     #[clap(subcommand)]
     command: ParamsCommand,
@@ -21,11 +23,19 @@ struct Cli {
 
 #[derive(clap::Subcommand)]
 enum ParamsCommand {
+    /// Attach a device to the maccel driver
     Bind { device_id: String },
+    /// Attach all detected mice to the maccel driver
     Bindall,
+    /// Detach a device from the maccel driver,
+    /// reattach to the generic usbhid driver
     Unbind { device_id: String },
+    /// Detach all detected mice from the maccel driver
+    /// reattach them to the generic usbhid driver
     Unbindall,
+    /// Set the value for a parameter of the maccel driver
     Set { name: Param, value: f32 },
+    /// Get the value for a parameter of the maccel driver
     Get { name: Param },
 }
 

@@ -41,6 +41,27 @@ sudo make uninstall
 sudo make udev_uninstall
 ```
 
+## CLI Usage
+
+```
+CLI to control the paramters for the maccel driver, and manage mice bindings
+
+Usage: maccel <COMMAND>
+
+Commands:
+  bind       Attach a device to the maccel driver
+  bindall    Attach all detected mice to the maccel driver
+  unbind     Detach a device from the maccel driver, reattach to the generic usbhid driver
+  unbindall  Detach all detected mice from the maccel driver reattach them to the generic usbhid driver
+  set        Set the value for a parameter of the maccel driver
+  get        Get the value for a parameter of the maccel driver
+  help       Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
+```
+
 ## Tips
 
 ### finding the bus id of a usb device
