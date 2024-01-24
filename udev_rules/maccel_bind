@@ -2,4 +2,4 @@
 
 PATH='/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin'
 
-maccel bind $1
+maccel bind $1 &> /var/log/maccel-cli;
