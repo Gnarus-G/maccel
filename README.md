@@ -22,10 +22,23 @@ git clone https://github.com/Gnarus-G/maccel.git
 cd maccel
 ```
 
+### Install the cli.
+
+If you don't have `cargo`, then get it with rust
+from https://www.rust-lang.org/tools/install
+
+You can skip this step if you will install the udev rules,
+because the cli will be installed as part of that process.
+
 ```sh
-cargo build --release --manifest-path=maccel-cli/Cargo.toml
+cargo install --path maccel-cli
+```
+
+### Instal the driver and the udev rules.
+
+```sh
 make install
-make udev_install
+make udev_install # This depends on the cli and will install in /usr/local/bin
 ```
 
 Optionally, it's recommended that you add yourself to the `maccel` group;
