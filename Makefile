@@ -27,7 +27,8 @@ sys_uninstall: default
 	@rm -fv $(MODULEDIR)/maccel.ko
 	
 udev_install:
-	install -m 644 -v -D udev_rules/99-maccel.rules /usr/lib/udev/rules.d/99-maccel.rules
+	install -m 644 -v -D `pwd`/udev_rules/99-maccel.rules /usr/lib/udev/rules.d/99-maccel.rules
+	install -m 755 `pwd`/maccel-cli/target/release/maccel /usr/local/bin/maccel
 	install -m 755 -v -D udev_rules/maccel_bind /usr/lib/udev/maccel_bind
 	install -m 755 -v -D udev_rules/maccel_manage /usr/lib/udev/maccel_manage
 

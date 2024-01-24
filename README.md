@@ -23,6 +23,7 @@ cd maccel
 ```
 
 ```sh
+cargo build --release --manifest-path=maccel-cli/Cargo.toml
 sudo make install
 sudo make udev_install
 ```

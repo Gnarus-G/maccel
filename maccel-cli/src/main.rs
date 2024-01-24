@@ -4,9 +4,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
+mod binder;
 mod fixedptc_proxy;
 
 use anyhow::{anyhow, Context};
+use binder::{bind_device, unbind_device};
 use clap::{Parser, ValueEnum};
 use fixedptc_proxy::{fixedpt, fixedpt_as_str};
 
@@ -18,6 +20,8 @@ struct Cli {
 
 #[derive(clap::Subcommand)]
 enum ParamsCommand {
+    Bind { device_id: String },
+    Unbind { device_id: String },
     Set { name: Param, value: f32 },
     Get { name: Param },
 }
@@ -61,6 +65,12 @@ fn main() -> anyhow::Result<()> {
                 .context(format!("couldn't interpert the parameter's value {}", buf))?;
 
             println!("{}", fixedpt_as_str(&value)?);
+        }
+        ParamsCommand::Bind { device_id } => {
+            bind_device(&device_id)?;
+        }
+        ParamsCommand::Unbind { device_id } => {
+            unbind_device(&device_id)?;
         }
     }
 
