@@ -1,3 +1,4 @@
+use anyhow::Context;
 use crossterm::{
     event::{self, Event, KeyCode, KeyEventKind},
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -13,41 +14,74 @@ use ratatui::{
 use std::io::stdout;
 use tui_input::{backend::crossterm::EventHandler, Input};
 
+use crate::params::Param;
+
 enum InputMode {
     Normal,
     Editing,
 }
 
 struct ParameterInput {
-    name: &'static str,
+    param: Param,
     value: String,
     input: Input,
     input_mode: InputMode,
+    error: Option<String>,
+}
+
+impl From<Param> for ParameterInput {
+    fn from(param: Param) -> Self {
+        let value = param
+            .get_as_str()
+            .expect("failed to read an initialize a parameter's value");
+
+        Self {
+            param,
+            value: value.clone(),
+            input: value.into(),
+            input_mode: InputMode::Normal,
+            error: None,
+        }
+    }
 }
 
 impl ParameterInput {
-    fn new(name: &'static str, value: &str) -> Self {
-        Self {
-            name,
-            value: value.into(),
-            input: value.into(),
-            input_mode: InputMode::Normal,
+    fn update_value(&mut self) {
+        match self
+            .input
+            .value()
+            .parse()
+            .context("should be a number")
+            .and_then(|value| self.param.set(value))
+        {
+            Ok(_) => {
+                self.value = self.input.value().into();
+                self.error = None;
+            }
+            Err(err) => {
+                self.reset();
+                self.error = Some(err.to_string());
+            }
         }
     }
 
-    fn apply_value(&mut self) {
-        self.value = self.input.value().into();
+    fn reset(&mut self) {
+        self.input = self.value.clone().into();
     }
 }
 
 struct AppState {
-    parameters: [ParameterInput; 1],
+    parameters: [ParameterInput; 3],
 }
 
 impl AppState {
     fn new() -> Self {
         Self {
-            parameters: [ParameterInput::new("accel", "0.3")],
+            parameters: [
+                Param::Accel.into(),
+                Param::Offset.into(),
+                Param::OutputCap.into(),
+            ],
         }
     }
 }
@@ -83,12 +117,12 @@ pub fn run_tui() -> anyhow::Result<()> {
                     },
                     InputMode::Editing => match key.code {
                         KeyCode::Enter => {
-                            param.apply_value();
+                            param.update_value();
                             param.input_mode = InputMode::Normal;
                         }
                         KeyCode::Esc => {
                             param.input_mode = InputMode::Normal;
-                            param.input = param.value.clone().into();
+                            param.reset();
                         }
                         _ => {
                             param.input.handle_event(&Event::Key(key));
@@ -137,14 +171,19 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
 
     // Done with main layout, now to layout the parameters inputs
 
-    let params_layout = Layout::new(
-        Direction::Vertical,
-        [Constraint::Length(3), Constraint::default()],
-    )
-    .margin(2)
-    .split(main_layout[0]);
+    let mut constraints: Vec<_> = app
+        .parameters
+        .iter()
+        .map(|_| Constraint::Length(3))
+        .collect();
 
-    for param in &app.parameters {
+    constraints.push(Constraint::default());
+    let params_layout = Layout::new(Direction::Vertical, constraints)
+        .margin(2)
+        .split(main_layout[0]);
+
+    for (idx, param) in app.parameters.iter().enumerate() {
+        let input_layout = params_layout[idx];
         let input_width = params_layout[0].width.max(3) - 3; // keep 2 for borders and 1 for cursor
         let input_scroll_position = param.input.visual_scroll(input_width as usize);
 
@@ -156,7 +195,11 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
                 }
             })
             .scroll((0, input_scroll_position as u16))
-            .block(Block::default().borders(Borders::ALL).title(param.name));
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(param.param.display_name()),
+            );
 
         match param.input_mode {
             InputMode::Normal =>
@@ -167,16 +210,16 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
                 // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
                 frame.set_cursor(
                     // Put cursor past the end of the input text
-                    params_layout[0].x
+                    input_layout.x
                         + ((param.input.visual_cursor()).max(input_scroll_position)
                             - input_scroll_position) as u16
                         + 1,
                     // Move one line down, from the border to the input line
-                    params_layout[0].y + 1,
+                    input_layout.y + 1,
                 )
             }
         }
 
-        frame.render_widget(input, params_layout[0]);
+        frame.render_widget(input, input_layout);
     }
 }
