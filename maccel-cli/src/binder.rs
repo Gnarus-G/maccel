@@ -12,18 +12,11 @@ pub fn bind_device(device_id: &str) -> anyhow::Result<()> {
 }
 
 pub fn unbind_device(device_id: &str) -> anyhow::Result<()> {
-    let udev_rules_path = "/usr/lib/udev/rules.d/99-maccel.rules";
-    let udev_rules =
-        std::fs::read_to_string(udev_rules_path).context("failed to read udev_rules file")?;
-
-    std::fs::remove_file(udev_rules_path).context("failed to temporarily delete the udev_rules")?;
-
     eprintln!("[INFO] unbinding from maccel");
     unbind_device_from_driver("maccel", device_id)?;
     eprintln!("[INFO] binding to hid-generic");
     bind_device_to_driver("usbhid", device_id)?;
 
-    std::fs::write(udev_rules_path, udev_rules).context("failed to write back udev rules")?;
     Ok(())
 }
 
@@ -75,6 +68,26 @@ fn unbind_device_from_driver(driver: &str, device_id: &str) -> anyhow::Result<()
                 device_id, driver
             )
         })?;
+
+    Ok(())
+}
+
+/// Because our udev rules auto bind mice to maccel driver, use this while trying to unbind mice.
+pub fn disabling_udev_rules<F: Fn() -> anyhow::Result<()>>(proc: F) -> anyhow::Result<()> {
+    let udev_rules_path = "/usr/lib/udev/rules.d/99-maccel.rules";
+
+    if !std::path::Path::new(udev_rules_path).exists() {
+        return proc();
+    }
+
+    let udev_rules =
+        std::fs::read_to_string(udev_rules_path).context("failed to read udev_rules file")?;
+
+    std::fs::remove_file(udev_rules_path).context("failed to temporarily delete the udev_rules")?;
+
+    proc()?;
+
+    std::fs::write(udev_rules_path, udev_rules).context("failed to write back udev rules")?;
 
     Ok(())
 }

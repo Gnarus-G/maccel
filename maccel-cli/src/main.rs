@@ -8,7 +8,7 @@ mod binder;
 mod fixedptc_proxy;
 
 use anyhow::{anyhow, Context};
-use binder::{bind_device, unbind_device};
+use binder::{bind_device, disabling_udev_rules, unbind_device};
 use clap::{builder::OsStr, Parser, ValueEnum};
 use fixedptc_proxy::{fixedpt, fixedpt_as_str};
 use glob::glob;
@@ -114,26 +114,28 @@ fn main() -> anyhow::Result<()> {
                 }
             }
         }
-        ParamsCommand::Unbind { device_id } => {
-            unbind_device(&device_id)?;
-        }
+        ParamsCommand::Unbind { device_id } => disabling_udev_rules(|| unbind_device(&device_id))?,
         ParamsCommand::Unbindall => {
             eprintln!("[INFO] looking for all devices bound to maccel");
 
-            let dirs = std::fs::read_dir("/sys/bus/usb/drivers/maccel")?;
+            disabling_udev_rules(|| {
+                let dirs = std::fs::read_dir("/sys/bus/usb/drivers/maccel")?;
 
-            for d in dirs.flatten() {
-                let path = d.path();
-                let basename = path.file_name();
-                if path.is_dir() && basename != Some(&OsStr::from("module")) {
-                    let device_id = basename.unwrap().to_str().expect(
+                for d in dirs.flatten() {
+                    let path = d.path();
+                    let basename = path.file_name();
+                    if path.is_dir() && basename != Some(&OsStr::from("module")) {
+                        let device_id = basename.unwrap().to_str().expect(
                         "basename of the /sys/*/drivers/maccel device_id paths should be strings",
                     );
-                    eprintln!("[INFO] found device to unbind, id: {}", device_id);
-                    unbind_device(device_id)?;
-                    eprintln!()
+                        eprintln!("[INFO] found device to unbind, id: {}", device_id);
+                        unbind_device(device_id)?;
+                        eprintln!()
+                    }
                 }
-            }
+
+                Ok(())
+            })?;
         }
     }
 
