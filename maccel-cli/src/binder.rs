@@ -90,7 +90,7 @@ impl NobindVar {
 
     fn is_set() -> bool {
         let Ok(mut file) = File::open(Self::NO_BIND_VAR_PATH) else {
-            File::open(Self::NO_BIND_VAR_PATH).expect("failed to create variable file");
+            File::create(Self::NO_BIND_VAR_PATH).expect("failed to create variable file");
             return false;
         };
 
