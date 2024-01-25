@@ -50,6 +50,16 @@ fn bind_device_to_driver(driver: &str, device_id: &str) -> anyhow::Result<()> {
 }
 
 fn unbind_device_from_driver(driver: &str, device_id: &str) -> anyhow::Result<()> {
+    let device_path = PathBuf::from(format!("/sys/bus/usb/drivers/{}/{}", driver, device_id));
+
+    if !device_path.exists() {
+        eprintln!(
+            "[INFO] device {} is not bound to driver '{}'",
+            device_id, driver
+        );
+        return Ok(());
+    }
+
     let unbind_path = PathBuf::from(format!("/sys/bus/usb/drivers/{}/unbind", driver));
 
     let mut unbind_file = File::create(&unbind_path).with_context(|| {
