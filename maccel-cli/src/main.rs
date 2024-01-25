@@ -6,19 +6,21 @@ use std::{
 
 mod binder;
 mod fixedptc_proxy;
+mod tui;
 
 use anyhow::{anyhow, Context};
 use binder::{bind_device, disabling_udev_rules, unbind_device};
 use clap::{builder::OsStr, Parser, ValueEnum};
 use fixedptc_proxy::{fixedpt, fixedpt_as_str};
 use glob::glob;
+use tui::run_tui;
 
 #[derive(Parser)]
 #[clap(author, about, version)]
 /// CLI to control the paramters for the maccel driver, and manage mice bindings
 struct Cli {
     #[clap(subcommand)]
-    command: ParamsCommand,
+    command: Option<ParamsCommand>,
 }
 
 #[derive(clap::Subcommand)]
@@ -49,95 +51,103 @@ enum Param {
 fn main() -> anyhow::Result<()> {
     let args = Cli::parse();
 
-    match args.command {
-        ParamsCommand::Set { name, value } => {
-            let param_path = get_param_path(name)?;
-            let value = fixedpt(value);
+    if let Some(command) = args.command {
+        match command {
+            ParamsCommand::Set { name, value } => {
+                let param_path = get_param_path(name)?;
+                let value = fixedpt(value);
 
-            let mut file = File::create(param_path)
-                .context("failed to open the parameter's file for writing")?;
+                let mut file = File::create(param_path)
+                    .context("failed to open the parameter's file for writing")?;
 
-            use std::io::Write;
+                use std::io::Write;
 
-            write!(file, "{}", value.0).context("failed to write to parameter file")?;
-        }
-        ParamsCommand::Get { name } => {
-            let param_path = get_param_path(name)?;
+                write!(file, "{}", value.0).context("failed to write to parameter file")?;
+            }
+            ParamsCommand::Get { name } => {
+                let param_path = get_param_path(name)?;
 
-            let mut file = File::open(param_path)
-                .context("failed to open the parameter's file for reading")?;
+                let mut file = File::open(param_path)
+                    .context("failed to open the parameter's file for reading")?;
 
-            let mut buf = String::new();
+                let mut buf = String::new();
 
-            file.read_to_string(&mut buf)
-                .context("failed to read the parameter's value")?;
+                file.read_to_string(&mut buf)
+                    .context("failed to read the parameter's value")?;
 
-            let value = buf
-                .trim()
-                .parse()
-                .context(format!("couldn't interpert the parameter's value {}", buf))?;
+                let value = buf
+                    .trim()
+                    .parse()
+                    .context(format!("couldn't interpert the parameter's value {}", buf))?;
 
-            println!("{}", fixedpt_as_str(&value)?);
-        }
-        ParamsCommand::Bind { device_id } => {
-            bind_device(&device_id)?;
-        }
-        ParamsCommand::Bindall => {
-            eprintln!("[INFO] looking for all mice bound to usbhid: the generic hid driver");
+                println!("{}", fixedpt_as_str(&value)?);
+            }
+            ParamsCommand::Bind { device_id } => {
+                bind_device(&device_id)?;
+            }
+            ParamsCommand::Bindall => {
+                eprintln!("[INFO] looking for all mice bound to usbhid: the generic hid driver");
 
-            let paths = glob("/sys/bus/usb/drivers/usbhid/[0-9]*")?;
+                let paths = glob("/sys/bus/usb/drivers/usbhid/[0-9]*")?;
 
-            for path in paths.flatten() {
-                let basename = path.file_name();
-                if path.is_dir() && basename != Some(&OsStr::from("module")) {
-                    let protocol =
-                        File::open(path.join("bInterfaceProtocol")).and_then(|mut f| {
-                            let mut buf = String::new();
-                            return f.read_to_string(&mut buf).map(|_| buf);
-                        })?;
+                for path in paths.flatten() {
+                    let basename = path.file_name();
+                    if path.is_dir() && basename != Some(&OsStr::from("module")) {
+                        let protocol =
+                            File::open(path.join("bInterfaceProtocol")).and_then(|mut f| {
+                                let mut buf = String::new();
+                                return f.read_to_string(&mut buf).map(|_| buf);
+                            })?;
 
-                    let subclass =
-                        File::open(path.join("bInterfaceSubClass")).and_then(|mut f| {
-                            let mut buf = String::new();
-                            return f.read_to_string(&mut buf).map(|_| buf);
-                        })?;
+                        let subclass =
+                            File::open(path.join("bInterfaceSubClass")).and_then(|mut f| {
+                                let mut buf = String::new();
+                                return f.read_to_string(&mut buf).map(|_| buf);
+                            })?;
 
-                    // checking for the observed invariant for a usb mouse device
-                    if protocol.trim() == "02" && subclass.trim() == "01" {
-                        let device_id = basename.unwrap().to_str().expect(
-                        "basename of the /sys/*/drivers/usbhid device_id paths should be strings",
-                    );
-                        eprintln!("[INFO] found device to bind, id: {}", device_id);
-                        bind_device(device_id)?;
-                        eprintln!()
+                        // checking for the observed invariant for a usb mouse device
+                        if protocol.trim() == "02" && subclass.trim() == "01" {
+                            let device_id = basename.unwrap().to_str().expect(
+                    "basename of the /sys/*/drivers/usbhid device_id paths should be strings",
+                );
+                            eprintln!("[INFO] found device to bind, id: {}", device_id);
+                            bind_device(device_id)?;
+                            eprintln!()
+                        }
                     }
                 }
             }
-        }
-        ParamsCommand::Unbind { device_id } => disabling_udev_rules(|| unbind_device(&device_id))?,
-        ParamsCommand::Unbindall => {
-            eprintln!("[INFO] looking for all devices bound to maccel");
+            ParamsCommand::Unbind { device_id } => {
+                disabling_udev_rules(|| unbind_device(&device_id))?
+            }
+            ParamsCommand::Unbindall => {
+                eprintln!("[INFO] looking for all devices bound to maccel");
 
-            disabling_udev_rules(|| {
-                let dirs = std::fs::read_dir("/sys/bus/usb/drivers/maccel")?;
+                disabling_udev_rules(|| {
+                    let dirs = std::fs::read_dir("/sys/bus/usb/drivers/maccel")?;
 
-                for d in dirs.flatten() {
-                    let path = d.path();
-                    let basename = path.file_name();
-                    if path.is_dir() && basename != Some(&OsStr::from("module")) {
-                        let device_id = basename.unwrap().to_str().expect(
-                        "basename of the /sys/*/drivers/maccel device_id paths should be strings",
-                    );
-                        eprintln!("[INFO] found device to unbind, id: {}", device_id);
-                        unbind_device(device_id)?;
-                        eprintln!()
+                    for d in dirs.flatten() {
+                        let path = d.path();
+                        let basename = path.file_name();
+                        if path.is_dir() && basename != Some(&OsStr::from("module")) {
+                            let device_id = basename.unwrap().to_str().expect(
+                    "basename of the /sys/*/drivers/maccel device_id paths should be strings",
+                );
+                            eprintln!("[INFO] found device to unbind, id: {}", device_id);
+                            unbind_device(device_id)?;
+                            eprintln!()
+                        }
                     }
-                }
 
-                Ok(())
-            })?;
+                    Ok(())
+                })?;
+            }
         }
+        return Ok(());
     }
+
+    // TUI
+    run_tui()?;
 
     Ok(())
 }
