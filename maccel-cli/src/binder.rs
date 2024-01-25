@@ -1,15 +1,9 @@
-use std::io::Read;
 use std::io::Write;
-use std::time::Duration;
 use std::{fs::File, path::PathBuf};
 
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 
 pub fn bind_device(device_id: &str) -> anyhow::Result<()> {
-    if NobindVar::is_set() {
-        return Err(anyhow!("binding is disabled"));
-    }
-
     eprintln!("[INFO] unbinding from hid-generic");
     unbind_device_from_driver("usbhid", device_id)?;
     eprintln!("[INFO] binding to maccel");
@@ -18,14 +12,18 @@ pub fn bind_device(device_id: &str) -> anyhow::Result<()> {
 }
 
 pub fn unbind_device(device_id: &str) -> anyhow::Result<()> {
-    NobindVar::set()?;
+    let udev_rules_path = "/usr/lib/udev/rules.d/99-maccel.rules";
+    let udev_rules =
+        std::fs::read_to_string(udev_rules_path).context("failed to read udev_rules file")?;
+
+    std::fs::remove_file(udev_rules_path).context("failed to temporarily delete the udev_rules")?;
+
     eprintln!("[INFO] unbinding from maccel");
     unbind_device_from_driver("maccel", device_id)?;
     eprintln!("[INFO] binding to hid-generic");
     bind_device_to_driver("usbhid", device_id)?;
 
-    std::thread::sleep(Duration::from_secs(1)); // give the usbhid driver time to bind the device
-    NobindVar::unset()?;
+    std::fs::write(udev_rules_path, udev_rules).context("failed to write back udev rules")?;
     Ok(())
 }
 
@@ -79,40 +77,4 @@ fn unbind_device_from_driver(driver: &str, device_id: &str) -> anyhow::Result<()
         })?;
 
     Ok(())
-}
-
-/// When unbinding we want to temporarily disable to automatic binding
-/// that will happen because of the udev rules we ship.
-struct NobindVar;
-
-impl NobindVar {
-    const NO_BIND_VAR_PATH: &'static str = "/var/local/maccel-no-bind-var";
-
-    fn is_set() -> bool {
-        let Ok(mut file) = File::open(Self::NO_BIND_VAR_PATH) else {
-            File::create(Self::NO_BIND_VAR_PATH).expect("failed to create variable file");
-            return false;
-        };
-
-        let mut buf = String::new();
-
-        let is_set = file
-            .read_to_string(&mut buf)
-            .map(|_| buf.trim() != "0")
-            .unwrap_or(false);
-
-        return is_set;
-    }
-
-    fn set() -> anyhow::Result<()> {
-        let mut file = File::create(Self::NO_BIND_VAR_PATH)?;
-        write!(file, "1")?;
-        Ok(())
-    }
-
-    fn unset() -> anyhow::Result<()> {
-        let mut file = File::create(Self::NO_BIND_VAR_PATH)?;
-        write!(file, "0")?;
-        Ok(())
-    }
 }
