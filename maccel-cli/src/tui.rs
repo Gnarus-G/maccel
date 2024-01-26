@@ -108,6 +108,7 @@ pub fn run_tui() -> anyhow::Result<()> {
     loop {
         terminal.draw(|f| ui(f, &mut app))?;
 
+        // Update procedure per frame
         if event::poll(std::time::Duration::from_millis(16))? {
             if let event::Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press && key.code == KeyCode::Char('q') {
@@ -121,10 +122,10 @@ pub fn run_tui() -> anyhow::Result<()> {
                         KeyCode::Char('i') => {
                             param.input_mode = InputMode::Editing;
                         }
-                        KeyCode::BackTab => {
+                        KeyCode::BackTab | KeyCode::Up => {
                             app.tab_tick = app.tab_tick.wrapping_sub(1);
                         }
-                        KeyCode::Tab => {
+                        KeyCode::Tab | KeyCode::Down => {
                             app.tab_tick = app.tab_tick.wrapping_add(1);
                         }
                         _ => {}
