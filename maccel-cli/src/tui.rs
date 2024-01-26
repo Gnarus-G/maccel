@@ -60,7 +60,7 @@ impl ParameterInput {
             }
             Err(err) => {
                 self.reset();
-                self.error = Some(err.to_string());
+                self.error = Some(format!("{:#}", err));
             }
         }
     }
@@ -174,7 +174,7 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
     let mut constraints: Vec<_> = app
         .parameters
         .iter()
-        .map(|_| Constraint::Length(3))
+        .map(|_| Constraint::Length(5))
         .collect();
 
     constraints.push(Constraint::default());
@@ -183,11 +183,19 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
         .split(main_layout[0]);
 
     for (idx, param) in app.parameters.iter().enumerate() {
-        let input_layout = params_layout[idx];
+        let input_group_layout = params_layout[idx];
+        let input_group_layout = Layout::new(
+            Direction::Vertical,
+            [Constraint::Min(0), Constraint::Length(2)],
+        )
+        .split(input_group_layout);
+
+        let input_layout = input_group_layout[0];
+
         let input_width = params_layout[0].width.max(3) - 3; // keep 2 for borders and 1 for cursor
         let input_scroll_position = param.input.visual_scroll(input_width as usize);
 
-        let input = Paragraph::new(param.input.value())
+        let mut input = Paragraph::new(param.input.value())
             .style(match param.input_mode {
                 InputMode::Normal => ratatui::style::Style::default(),
                 InputMode::Editing => {
@@ -218,6 +226,18 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
                     input_layout.y + 1,
                 )
             }
+        }
+
+        let helpher_text_layout = input_group_layout[1];
+
+        if let Some(error) = &param.error {
+            let helper_text = Paragraph::new(error.as_str())
+                .red()
+                .wrap(ratatui::widgets::Wrap { trim: true });
+
+            frame.render_widget(helper_text, helpher_text_layout);
+
+            input = input.red();
         }
 
         frame.render_widget(input, input_layout);
