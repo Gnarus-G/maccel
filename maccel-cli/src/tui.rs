@@ -181,7 +181,10 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
     .split(root_layout[1]);
 
     frame.render_widget(
-        Block::default().borders(Borders::ALL).title("parameters"),
+        Block::default()
+            .borders(Borders::ALL)
+            .title("parameters")
+            .border_style(Style::new().blue().bold()),
         main_layout[0],
     );
 
@@ -279,7 +282,7 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
         .bounds(bounds)
         .labels(labels);
 
-    let data: Vec<_> = (0..1000)
+    let data: Vec<_> = (0..100)
         .map(|x| x as f32)
         .map(|x| (x as f64, sensitivity(x, Params::new())))
         .collect();

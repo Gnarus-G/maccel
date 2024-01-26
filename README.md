@@ -62,6 +62,7 @@ CLI to control the paramters for the maccel driver, and manage mice bindings
 Usage: maccel <COMMAND>
 
 Commands:
+  tui        Open the Terminal UI to manage the parameters and see a graph of the sensitivity
   bind       Attach a device to the maccel driver
   bindall    Attach all detected mice to the maccel driver
   unbind     Detach a device from the maccel driver, reattach to the generic usbhid driver
