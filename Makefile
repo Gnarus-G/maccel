@@ -11,7 +11,7 @@ install: default
 	@sudo cp -v $(DRIVERDIR)/*.ko $(MODULEDIR);
 	@sudo chown -v root:root $(MODULEDIR)/*.ko;
 	@sudo insmod $(MODULEDIR)/*.ko;
-	groupadd -f maccel;
+	sudo groupadd -f maccel;
 	sudo depmod; 
 	sudo chown -v root:maccel /sys/module/maccel/parameters/*;
 	ls -l /sys/module/maccel/parameters/*
