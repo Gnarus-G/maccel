@@ -71,18 +71,29 @@ impl ParameterInput {
 }
 
 struct AppState {
+    tab_tick: u8,
     parameters: [ParameterInput; 3],
 }
 
 impl AppState {
     fn new() -> Self {
         Self {
+            tab_tick: 0,
             parameters: [
                 Param::Accel.into(),
                 Param::Offset.into(),
                 Param::OutputCap.into(),
             ],
         }
+    }
+
+    fn selected_parameter_index(&self) -> usize {
+        return self.tab_tick as usize % self.parameters.len();
+    }
+
+    fn selected_parameter_input(&mut self) -> &mut ParameterInput {
+        let param = &mut self.parameters[self.selected_parameter_index()];
+        return param;
     }
 }
 
@@ -103,15 +114,18 @@ pub fn run_tui() -> anyhow::Result<()> {
                     break;
                 }
 
-                let param = &mut app.parameters[0];
+                let param = app.selected_parameter_input();
 
                 match param.input_mode {
                     InputMode::Normal => match key.code {
                         KeyCode::Char('i') => {
                             param.input_mode = InputMode::Editing;
                         }
-                        KeyCode::Char('q') => {
-                            return Ok(());
+                        KeyCode::BackTab => {
+                            app.tab_tick = app.tab_tick.wrapping_sub(1);
+                        }
+                        KeyCode::Tab => {
+                            app.tab_tick = app.tab_tick.wrapping_add(1);
                         }
                         _ => {}
                     },
@@ -238,6 +252,10 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
             frame.render_widget(helper_text, helpher_text_layout);
 
             input = input.red();
+        }
+
+        if idx == app.selected_parameter_index() {
+            input = input.bold();
         }
 
         frame.render_widget(input, input_layout);
