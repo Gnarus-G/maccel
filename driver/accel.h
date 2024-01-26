@@ -1,12 +1,45 @@
 #include "fixedptc.h"
-#include "params.h"
+
+typedef signed char s8;
+typedef unsigned int u32;
 
 typedef struct {
   s8 x;
   s8 y;
 } AccelResult;
 
-AccelResult inline accelerate(s8 x, s8 y, u32 polling_interval) {
+/**
+ * Calculate the normalized factor by which to multiply the input vector
+ * in order to get the desired output speed.
+ *
+ */
+extern inline fixedpt acceleration_factor(fixedpt input_speed,
+                                          fixedpt param_accel,
+                                          fixedpt param_offset,
+                                          fixedpt param_output_cap) {
+
+  // printk("input speed %s, with interval %s", fixedpt_cstr(speed_in, 5),
+  //        fixedpt_cstr(polling_interval, 5));
+
+  input_speed = fixedpt_sub(input_speed, param_offset);
+
+  fixedpt accel_factor = FIXEDPT_ONE;
+
+  if (input_speed > fixedpt_rconst(0.0)) {
+    accel_factor =
+        fixedpt_add(FIXEDPT_ONE, fixedpt_mul((param_accel), input_speed));
+
+    if (accel_factor > param_output_cap) {
+      accel_factor = param_output_cap;
+    }
+  }
+
+  return accel_factor;
+}
+
+inline AccelResult f_accelerate(s8 x, s8 y, u32 polling_interval,
+                                fixedpt param_accel, fixedpt param_offset,
+                                fixedpt param_output_cap) {
   AccelResult result = {.x = 0, .y = 0};
 
   static fixedpt carry_x = fixedpt_rconst(0);
@@ -28,18 +61,8 @@ AccelResult inline accelerate(s8 x, s8 y, u32 polling_interval) {
   // printk("input speed %s, with interval %s", fixedpt_cstr(speed_in, 5),
   //        fixedpt_cstr(polling_interval, 5));
 
-  speed_in = fixedpt_sub(speed_in, PARAM_OFFSET);
-
-  fixedpt accel_factor = FIXEDPT_ONE;
-
-  if (speed_in > fixedpt_rconst(0.0)) {
-    accel_factor =
-        fixedpt_add(FIXEDPT_ONE, fixedpt_mul((PARAM_ACCEL), speed_in));
-
-    if (accel_factor > PARAM_OUTPUT_CAP) {
-      accel_factor = PARAM_OUTPUT_CAP;
-    }
-  }
+  fixedpt accel_factor = acceleration_factor(speed_in, param_accel,
+                                             param_offset, param_output_cap);
 
   // printk("accel_factor %s", fixedpt_cstr(accel_factor, 5));
 

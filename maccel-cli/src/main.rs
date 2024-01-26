@@ -1,7 +1,7 @@
 use std::{fs::File, io::Read};
 
 mod binder;
-mod fixedptc_proxy;
+mod libmaccel;
 mod params;
 mod tui;
 

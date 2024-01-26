@@ -3,9 +3,7 @@ use std::{env, path::PathBuf};
 fn main() {
     let out = PathBuf::from(env::var("OUT_DIR").unwrap());
 
-    cc::Build::new()
-        .file("src/fixedptc_proxy.c")
-        .compile("fixedptc_proxy");
+    cc::Build::new().file("src/libmaccel.c").compile("maccel");
 
     println!("cargo:rust-link-search=static={}", out.display());
 

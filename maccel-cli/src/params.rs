@@ -1,4 +1,4 @@
-use crate::fixedptc_proxy::{fixedpt, fixedpt_as_str};
+use crate::libmaccel::fixedptc::{fixedpt, fixedpt_as_str, Fixedpt};
 use std::{
     fs::File,
     io::Read,
@@ -32,23 +32,28 @@ impl Param {
         Ok(())
     }
 
-    pub fn get_as_str(&self) -> anyhow::Result<String> {
+    pub fn get(&self) -> anyhow::Result<Fixedpt> {
         let param_path = get_param_path(self)?;
 
         let mut file =
-            File::open(param_path).context("failed to open the parameter's file for reading")?;
+            File::open(param_path).context("failed to open the parameter's file for reading: this shouldn't happen unless the maccel kernel module is not installed.")?;
 
         let mut buf = String::new();
 
         file.read_to_string(&mut buf)
             .context("failed to read the parameter's value")?;
 
-        let value = buf
+        let value: i32 = buf
             .trim()
             .parse()
             .context(format!("couldn't interpert the parameter's value {}", buf))?;
 
-        let value = fixedpt_as_str(&value)?.to_string();
+        return Ok(Fixedpt(value));
+    }
+
+    pub fn get_as_str(&self) -> anyhow::Result<String> {
+        let value = self.get()?;
+        let value = fixedpt_as_str(&value.0)?.to_string();
 
         return Ok(value);
     }

@@ -1,4 +1,5 @@
 #include "accel.h"
+#include "params.h"
 #include <linux/hid.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
@@ -37,6 +38,11 @@ static void usb_mouse_close(struct input_dev *dev) {
   maccel_ctx *ctx = input_get_drvdata(dev);
 
   usb_kill_urb(ctx->urb);
+}
+
+AccelResult inline accelerate(s8 x, s8 y, u32 polling_interval) {
+  return f_accelerate(x, y, polling_interval, PARAM_ACCEL, PARAM_OFFSET,
+                      PARAM_OUTPUT_CAP);
 }
 
 void on_complete(struct urb *u) {

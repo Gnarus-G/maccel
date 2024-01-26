@@ -7,14 +7,19 @@ use crossterm::{
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     prelude::{CrosstermBackend, Stylize, Terminal},
-    text::{Line, Text},
-    widgets::{Block, Borders, Paragraph},
+    style::Style,
+    symbols,
+    text::{Line, Span, Text},
+    widgets::{Axis, Block, Borders, Chart, Dataset, GraphType, Paragraph},
     Frame,
 };
 use std::io::stdout;
 use tui_input::{backend::crossterm::EventHandler, Input};
 
-use crate::params::Param;
+use crate::{
+    libmaccel::{sensitivity, Params},
+    params::Param,
+};
 
 enum InputMode {
     Normal,
@@ -33,7 +38,7 @@ impl From<Param> for ParameterInput {
     fn from(param: Param) -> Self {
         let value = param
             .get_as_str()
-            .expect("failed to read an initialize a parameter's value");
+            .expect("failed to read and initialize a parameter's value");
 
         Self {
             param,
@@ -158,6 +163,7 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
         Direction::Vertical,
         [Constraint::Length(1), Constraint::Min(5)],
     )
+    .horizontal_margin(2)
     .split(frame.size());
 
     frame.render_widget(
@@ -177,11 +183,6 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
     frame.render_widget(
         Block::default().borders(Borders::ALL).title("parameters"),
         main_layout[0],
-    );
-
-    frame.render_widget(
-        Block::default().borders(Borders::ALL).title("graph"),
-        main_layout[1],
     );
 
     // Done with main layout, now to layout the parameters inputs
@@ -261,4 +262,58 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
 
         frame.render_widget(input, input_layout);
     }
+
+    // Done with parameter inputs, now on to the graph
+
+    let (bounds, labels) = bounds_and_labels([0.0, 80.0], 8);
+    let x_axis = Axis::default()
+        .title("Speed_in".magenta())
+        .style(Style::default().white())
+        .bounds(bounds)
+        .labels(labels);
+
+    let (bounds, labels) = bounds_and_labels([0.0, 3.0], 3);
+    let y_axis = Axis::default()
+        .title("Sensitivity".magenta())
+        .style(Style::default().white())
+        .bounds(bounds)
+        .labels(labels);
+
+    let data: Vec<_> = (0..1000)
+        .map(|x| x as f32)
+        .map(|x| (x as f64, sensitivity(x, Params::new())))
+        .collect();
+
+    let chart = Chart::new(vec![Dataset::default()
+        .name(format!("f(x) = 1 + {}⋅x", Param::Accel.display_name()))
+        .marker(symbols::Marker::Braille)
+        .graph_type(GraphType::Line)
+        .style(Style::default().green())
+        .data(&data)])
+    .x_axis(x_axis)
+    .y_axis(y_axis);
+
+    frame.render_widget(
+        chart.block(
+            Block::default()
+                .borders(Borders::NONE)
+                .title("graph (Sensitivity = Speed_out / Speed_in)")
+                .bold(),
+        ),
+        main_layout[1],
+    );
+}
+
+fn bounds_and_labels(bounds: [f64; 2], div: usize) -> ([f64; 2], Vec<Span<'static>>) {
+    let [o, f] = bounds;
+    let d = f - o;
+    // let gap = 1f64;
+    let gap = d / (div as f64);
+
+    let labels = (0..=div)
+        .map(|i| o + i as f64 * gap)
+        .map(|label| format!("{:.2}", label).into())
+        .collect();
+
+    return (bounds, labels);
 }
