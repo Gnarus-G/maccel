@@ -13,7 +13,7 @@ install: default
 	@sudo insmod $(MODULEDIR)/*.ko;
 	sudo groupadd -f maccel;
 	sudo depmod; 
-	sudo chown -v root:maccel /sys/module/maccel/parameters/*;
+	sudo chown -v :maccel /sys/module/maccel/parameters/*;
 	ls -l /sys/module/maccel/parameters/*
 	@echo '[Recommended] Add yourself to the "maccel" group'
 	@echo '[Recommended] usermod -aG maccel $$USER'
