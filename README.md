@@ -74,6 +74,11 @@ Options:
   -h, --help     Print help
   -V, --version  Print version
 ```
+### Terminal UI
+```sh
+maccel tui
+```
+![image](https://github.com/Gnarus-G/maccel/assets/37311893/39302e58-e54f-4049-93b2-995f59c29f9e)
 
 ## References
 
