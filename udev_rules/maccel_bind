@@ -4,3 +4,10 @@ PATH='/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin'
 
 maccel bind $1 &> /var/log/maccel-cli;
 chown -v :maccel /sys/module/maccel/parameters/* &> /var/log/maccel-chown;
+
+# For persisting parameters values across reboots
+LIB_DIR=/var/lib/maccel
+mkdir -p $LIB_DIR
+chown -v :maccel $LIB_DIR 
+chmod -v g+w "$LIB_DIR" 
+ls $LIB_DIR/set_last_*_value.sh | xargs cat | sh &> /var/log/maccel-reset-scripts
