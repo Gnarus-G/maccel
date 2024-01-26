@@ -37,9 +37,10 @@ extern inline fixedpt acceleration_factor(fixedpt input_speed,
   return accel_factor;
 }
 
-inline AccelResult f_accelerate(s8 x, s8 y, u32 polling_interval,
-                                fixedpt param_accel, fixedpt param_offset,
-                                fixedpt param_output_cap) {
+static inline AccelResult f_accelerate(s8 x, s8 y, u32 polling_interval,
+                                       fixedpt param_accel,
+                                       fixedpt param_offset,
+                                       fixedpt param_output_cap) {
   AccelResult result = {.x = 0, .y = 0};
 
   static fixedpt carry_x = fixedpt_rconst(0);
