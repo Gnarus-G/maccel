@@ -1,4 +1,5 @@
 #include "accel.h"
+#include "linux/ktime.h"
 #include "params.h"
 #include <linux/hid.h>
 #include <linux/init.h>
@@ -16,10 +17,9 @@ MODULE_DESCRIPTION("Mouse acceleration driver.");
 
 typedef struct {
   s8 *data_buf;
-  u8 poll_interval;
-
   char name[64];
   char phys[128];
+
   struct input_dev *input_dev;
   struct urb *urb;
 } maccel_ctx;
@@ -40,9 +40,26 @@ static void usb_mouse_close(struct input_dev *dev) {
   usb_kill_urb(ctx->urb);
 }
 
-AccelResult inline accelerate(s8 x, s8 y, u32 polling_interval) {
-  return f_accelerate(x, y, polling_interval, PARAM_ACCEL, PARAM_OFFSET,
-                      PARAM_OUTPUT_CAP);
+static AccelResult inline accelerate(s8 x, s8 y) {
+  static ktime_t last;
+  static u64 last_ms = 1;
+
+  ktime_t now = ktime_get();
+  u64 ms = ktime_to_ms(now - last);
+
+  last = now;
+
+  if (ms < 1) { // ensure no less than 1ms
+    ms = last_ms;
+  }
+
+  last_ms = ms;
+
+  if (ms > 100) { // rounding dow to 100 ms
+    ms = 100;
+  }
+
+  return f_accelerate(x, y, ms, PARAM_ACCEL, PARAM_OFFSET, PARAM_OUTPUT_CAP);
 }
 
 void on_complete(struct urb *u) {
@@ -71,7 +88,7 @@ void on_complete(struct urb *u) {
   input_report_key(dev, BTN_SIDE, data[0] & 0x08);
   input_report_key(dev, BTN_EXTRA, data[0] & 0x10);
 
-  AccelResult result = accelerate(data[1], data[2], ctx->poll_interval);
+  AccelResult result = accelerate(data[1], data[2]);
 
   input_report_rel(dev, REL_X, result.x);
   input_report_rel(dev, REL_Y, result.y);
@@ -98,8 +115,6 @@ int probe(struct usb_interface *intf, const struct usb_device_id *id) {
   if (!usb_endpoint_is_int_in(endpoint)) {
     return -ENODEV;
   }
-
-  ctx->poll_interval = endpoint->bInterval;
 
   if (!urb || !ctx) {
     goto err_free_ctx_and_urb;
@@ -162,7 +177,7 @@ int probe(struct usb_interface *intf, const struct usb_device_id *id) {
   urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
 
   usb_fill_int_urb(urb, usb_dev, pipe, ctx->data_buf, TRANSFER_BUFFER_LEN,
-                   on_complete, ctx, ctx->poll_interval);
+                   on_complete, ctx, endpoint->bInterval);
 
   if (!ctx->data_buf || err) {
     goto err_free_urb_transfer_data;
@@ -172,7 +187,7 @@ int probe(struct usb_interface *intf, const struct usb_device_id *id) {
   printk(KERN_INFO
          "plugged in %s %s <> (%04x:%04x) intf %d; polling interval %d\n",
          ctx->name, ctx->phys, id->idVendor, id->idProduct,
-         id->bInterfaceNumber, ctx->poll_interval);
+         id->bInterfaceNumber, endpoint->bInterval);
 
   return 0;
 

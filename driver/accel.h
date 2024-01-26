@@ -60,7 +60,7 @@ static inline AccelResult f_accelerate(s8 x, s8 y, u32 polling_interval,
   fixedpt speed_in = fixedpt_div(distance, fixedpt_fromint(polling_interval));
 
   // printk("input speed %s, with interval %s", fixedpt_cstr(speed_in, 5),
-  //        fixedpt_cstr(polling_interval, 5));
+  //        fixedpt_cstr(fixedpt_fromint(polling_interval), 5));
 
   fixedpt accel_factor = acceleration_factor(speed_in, param_accel,
                                              param_offset, param_output_cap);
