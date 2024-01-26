@@ -21,6 +21,7 @@ use crate::{
     params::Param,
 };
 
+#[derive(PartialEq)]
 enum InputMode {
     Normal,
     Editing,
@@ -161,7 +162,11 @@ pub fn run_tui() -> anyhow::Result<()> {
 fn ui(frame: &mut Frame, app: &mut AppState) {
     let root_layout = Layout::new(
         Direction::Vertical,
-        [Constraint::Length(1), Constraint::Min(5)],
+        [
+            Constraint::Length(1),
+            Constraint::Min(5),
+            Constraint::Length(3),
+        ],
     )
     .horizontal_margin(2)
     .split(frame.size());
@@ -180,6 +185,51 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
     )
     .split(root_layout[1]);
 
+    // Bottom help section
+    let normal_mode_commands_help = [
+        ("Tab / Down", "select next parameter"),
+        ("Shift + Tab / Up", "select previous parameter"),
+        ("i", "start editing a parameter"),
+    ]
+    .into_iter()
+    .flat_map(|(command, description)| {
+        vec![
+            command.bold(),
+            ": ".into(),
+            description.into(),
+            ";  ".into(),
+        ]
+    })
+    .collect::<Vec<_>>();
+
+    let editin_mode_commands_help = [("Enter", "commit the value"), ("Esc", "cancel")]
+        .into_iter()
+        .flat_map(|(command, description)| {
+            vec![
+                command.bold(),
+                ": ".into(),
+                description.into(),
+                ";  ".into(),
+            ]
+        })
+        .collect::<Vec<_>>();
+
+    let help = match app
+        .parameters
+        .iter()
+        .find(|p| p.input_mode == InputMode::Editing)
+    {
+        Some(_) => Text::from(Line::from(editin_mode_commands_help)),
+        None => Text::from(Line::from(normal_mode_commands_help)),
+    };
+
+    frame.render_widget(
+        Paragraph::new(help).block(Block::new().borders(Borders::ALL)),
+        root_layout[2],
+    );
+
+    // Done with main layout, now to layout the parameters inputs
+
     frame.render_widget(
         Block::default()
             .borders(Borders::ALL)
@@ -187,8 +237,6 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
             .border_style(Style::new().blue().bold()),
         main_layout[0],
     );
-
-    // Done with main layout, now to layout the parameters inputs
 
     let mut constraints: Vec<_> = app
         .parameters
