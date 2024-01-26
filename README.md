@@ -75,11 +75,19 @@ Options:
   -h, --help     Print help
   -V, --version  Print version
 ```
+
 ### Terminal UI
+
 ```sh
 maccel tui
 ```
+
 ![image](https://github.com/Gnarus-G/maccel/assets/37311893/39302e58-e54f-4049-93b2-995f59c29f9e)
+
+## Notes
+
+Might want to disable the acceleration done by default in some distros, e.g. by `xset` or `libinput`.
+[Full Guide](https://wiki.archlinux.org/title/Mouse_acceleration#Disabling_mouse_acceleration)
 
 ## References
 
