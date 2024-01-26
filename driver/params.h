@@ -8,6 +8,6 @@
   module_param_named(param, PARAM_##param, int, RW_USER_GROUP);                \
   MODULE_PARM_DESC(param, desc);
 
-PARAM(ACCEL, 0.3, "Control the acceleration factor.");
-PARAM(OFFSET, 2, "Control the input speed past which to allow acceleration.");
-PARAM(OUTPUT_CAP, 2, "Control the maximum output speed.");
+PARAM(ACCEL, 0.0, "Control the acceleration factor.");
+PARAM(OFFSET, 0.0, "Control the input speed past which to allow acceleration.");
+PARAM(OUTPUT_CAP, 0.0, "Control the maximum output speed.");
