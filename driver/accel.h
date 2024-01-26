@@ -8,6 +8,8 @@ typedef struct {
   s8 y;
 } AccelResult;
 
+static const fixedpt FIXEDPT_ZERO = fixedpt_rconst(0.0);
+
 /**
  * Calculate the normalized factor by which to multiply the input vector
  * in order to get the desired output speed.
@@ -25,11 +27,11 @@ extern inline fixedpt acceleration_factor(fixedpt input_speed,
 
   fixedpt accel_factor = FIXEDPT_ONE;
 
-  if (input_speed > fixedpt_rconst(0.0)) {
+  if (input_speed > FIXEDPT_ZERO) {
     accel_factor =
         fixedpt_add(FIXEDPT_ONE, fixedpt_mul((param_accel), input_speed));
 
-    if (accel_factor > param_output_cap) {
+    if (param_output_cap != FIXEDPT_ZERO && accel_factor > param_output_cap) {
       accel_factor = param_output_cap;
     }
   }
@@ -43,8 +45,8 @@ static inline AccelResult f_accelerate(s8 x, s8 y, u32 polling_interval,
                                        fixedpt param_output_cap) {
   AccelResult result = {.x = 0, .y = 0};
 
-  static fixedpt carry_x = fixedpt_rconst(0);
-  static fixedpt carry_y = fixedpt_rconst(0);
+  static fixedpt carry_x = FIXEDPT_ZERO;
+  static fixedpt carry_y = FIXEDPT_ZERO;
 
   fixedpt dx = fixedpt_fromint(x);
   fixedpt dy = fixedpt_fromint(y);
