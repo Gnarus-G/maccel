@@ -4,6 +4,7 @@ Linear mouse acceleration.
 ![image](https://github.com/Gnarus-G/maccel/assets/37311893/dd62fc9a-3558-46a4-847e-05f691c31054)
 
 ## Acceleration Funcion
+
 $$V = \frac{\sqrt{dx_0^2 + dy_0^2}}{i}$$
 
 $$dx_f = dx_0 * (1 + aV)$$
@@ -28,9 +29,6 @@ cd maccel
 
 If you don't have `cargo`, then get it with rust
 from https://www.rust-lang.org/tools/install
-
-You can skip this step if you will install the udev rules,
-because the cli will be installed as part of that process.
 
 ```sh
 cargo install --path maccel-cli
