@@ -78,8 +78,10 @@ Options:
 
 ## Notes
 
-Might want to disable the acceleration done by default in some distros, e.g. by `xset` or `libinput`.
+One should disable the acceleration done by default in some distros, e.g. by `xset` or `libinput`.
 [Full Guide](https://wiki.archlinux.org/title/Mouse_acceleration#Disabling_mouse_acceleration)
+
+Here is [Breakdown of why and how I ended up making this](https://www.bytin.tech/blog/maccel/)
 
 ## References
 
