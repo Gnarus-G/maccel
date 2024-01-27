@@ -7,6 +7,6 @@ fn main() {
 
     println!("cargo:rust-link-search=static={}", out.display());
 
-    println!("cargo:rerun-if-changed=src/fixedptc_proxy.c");
-    println!("cargo:rerun-if-changed=../driver/fixedptc.h");
+    println!("cargo:rerun-if-changed=src/libmaccel.c");
+    println!("cargo:rerun-if-changed=../driver/accel.h");
 }
