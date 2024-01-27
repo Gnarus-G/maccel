@@ -1,7 +1,9 @@
 # maccel
 
 Linear mouse acceleration.
+![image](https://github.com/Gnarus-G/maccel/assets/37311893/dd62fc9a-3558-46a4-847e-05f691c31054)
 
+## Acceleration Funcion
 $$V = \frac{\sqrt{dx_0^2 + dy_0^2}}{i}$$
 
 $$dx_f = dx_0 * (1 + aV)$$
@@ -75,14 +77,6 @@ Options:
   -h, --help     Print help
   -V, --version  Print version
 ```
-
-### Terminal UI
-
-```sh
-maccel tui
-```
-
-![image](https://github.com/Gnarus-G/maccel/assets/37311893/39302e58-e54f-4049-93b2-995f59c29f9e)
 
 ## Notes
 
