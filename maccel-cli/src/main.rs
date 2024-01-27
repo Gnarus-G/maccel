@@ -6,7 +6,7 @@ mod params;
 mod tui;
 
 use binder::{bind_device, disabling_udev_rules, unbind_device};
-use clap::{builder::OsStr, Parser};
+use clap::{builder::OsStr, CommandFactory, Parser};
 use glob::glob;
 use params::Param;
 use tui::run_tui;
@@ -38,6 +38,11 @@ enum ParamsCommand {
     Set { name: Param, value: f32 },
     /// Get the value for a parameter of the maccel driver
     Get { name: Param },
+    /// Generate a completions file for a specified shell
+    Completion {
+        // The shell for which to generate completions
+        shell: clap_complete::Shell,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -109,6 +114,9 @@ fn main() -> anyhow::Result<()> {
             })?;
         }
         ParamsCommand::Tui => run_tui()?,
+        ParamsCommand::Completion { shell } => {
+            clap_complete::generate(shell, &mut Cli::command(), "maccel", &mut std::io::stdout())
+        }
     }
 
     Ok(())
