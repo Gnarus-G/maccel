@@ -16,13 +16,14 @@ use tui::run_tui;
 /// CLI to control the paramters for the maccel driver, and manage mice bindings
 struct Cli {
     #[clap(subcommand)]
-    command: ParamsCommand,
+    command: Option<ParamsCommand>,
 }
 
-#[derive(clap::Subcommand)]
+#[derive(clap::Subcommand, Default)]
 enum ParamsCommand {
     /// Open the Terminal UI to manage the parameters
     /// and see a graph of the sensitivity
+    #[default]
     Tui,
     /// Attach a device to the maccel driver
     Bind { device_id: String },
@@ -48,7 +49,7 @@ enum ParamsCommand {
 fn main() -> anyhow::Result<()> {
     let args = Cli::parse();
 
-    match args.command {
+    match args.command.unwrap_or_default() {
         ParamsCommand::Set { name, value } => {
             name.set(value)?;
         }
