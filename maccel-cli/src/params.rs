@@ -12,7 +12,7 @@ const SYS_MODULE_PATH: &str = "/sys/module/maccel";
 
 #[derive(Debug, Clone, Copy, ValueEnum, PartialEq)]
 pub enum Param {
-    Sensitivity,
+    SensMult,
     Accel,
     Offset,
     OutputCap,
@@ -76,7 +76,7 @@ impl Param {
     /// The cannonical name of parameter, exactly what can be read from /sys/module/maccel/parameters
     fn name(&self) -> &'static str {
         let param_name = match self {
-            Param::Sensitivity => "SENSITIVITY",
+            Param::SensMult => "SENS_MULT",
             Param::Accel => "ACCEL",
             Param::Offset => "OFFSET",
             Param::OutputCap => "OUTPUT_CAP",

@@ -59,7 +59,7 @@ static AccelResult inline accelerate(s8 x, s8 y) {
     ms = 100;
   }
 
-  return f_accelerate(x, y, ms, PARAM_SENSITIVITY, PARAM_ACCEL, PARAM_OFFSET,
+  return f_accelerate(x, y, ms, PARAM_SENS_MULT, PARAM_ACCEL, PARAM_OFFSET,
                       PARAM_OUTPUT_CAP);
 }
 

@@ -2,18 +2,20 @@ use crate::params::Param;
 
 use self::fixedptc::Fixedpt;
 
-extern "C" {
-    fn acceleration_factor(
-        speed_in: i32,
-        param_sensitivity: i32,
-        param_accel: i32,
-        param_offset: i32,
-        param_output_cap: i32,
-    ) -> i32;
+mod c_lib {
+    extern "C" {
+        pub fn sensitivity(
+            speed_in: i32,
+            param_sens_mult: i32,
+            param_accel: i32,
+            param_offset: i32,
+            param_output_cap: i32,
+        ) -> i32;
+    }
 }
 
 pub struct Params {
-    sensitivity: i32,
+    sens_mult: i32,
     accel: i32,
     offset: i32,
     output_cap: i32,
@@ -22,9 +24,9 @@ pub struct Params {
 impl Params {
     pub fn new() -> Self {
         Self {
-            sensitivity: Param::Sensitivity
+            sens_mult: Param::SensMult
                 .get()
-                .expect("failed to read Sensitivity parameter")
+                .expect("failed to read Sens_Mult parameter")
                 .0,
             accel: Param::Accel
                 .get()
@@ -43,12 +45,12 @@ impl Params {
 }
 
 /// Ratio of Output speed to Input speed
-pub fn accel_factor(s_in: f32, params: Params) -> f64 {
+pub fn sensitivity(s_in: f32, params: Params) -> f64 {
     let s_in = fixedptc::fixedpt(s_in);
     let a_factor = unsafe {
-        acceleration_factor(
+        c_lib::sensitivity(
             s_in.0,
-            params.sensitivity,
+            params.sens_mult,
             params.accel,
             params.offset,
             params.output_cap,

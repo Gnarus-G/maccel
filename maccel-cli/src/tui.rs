@@ -17,7 +17,7 @@ use std::io::stdout;
 use tui_input::{backend::crossterm::EventHandler, Input};
 
 use crate::{
-    libmaccel::{accel_factor, Params},
+    libmaccel::{sensitivity, Params},
     params::Param,
 };
 
@@ -89,7 +89,7 @@ impl AppState {
         Self {
             tab_tick: 0,
             parameters: [
-                Param::Sensitivity.into(),
+                Param::SensMult.into(),
                 Param::Accel.into(),
                 Param::Offset.into(),
                 Param::OutputCap.into(),
@@ -332,27 +332,27 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
     y_bounds[1] *= app
         .parameters
         .iter()
-        .find(|&p| p.param == Param::Sensitivity)
-        .expect("we should include the Sensitivity param in the list")
+        .find(|&p| p.param == Param::SensMult)
+        .expect("we should include the Sensitivity multiplier param in the list")
         .value;
 
     let (bounds, labels) = bounds_and_labels(y_bounds, 5);
     let y_axis = Axis::default()
-        .title("Acceleration Factor".magenta())
+        .title("Sensitivity".magenta())
         .style(Style::default().white())
         .bounds(bounds)
         .labels(labels);
 
     let data: Vec<_> = (0..100)
         .map(|x| x as f32)
-        .map(|x| (x as f64, accel_factor(x, Params::new())))
+        .map(|x| (x as f64, sensitivity(x, Params::new())))
         .collect();
 
     let chart = Chart::new(vec![Dataset::default()
         .name(format!(
             "f(x) = (1 + {}⋅x) ⋅ {}",
             Param::Accel.display_name(),
-            Param::Sensitivity.display_name()
+            Param::SensMult.display_name()
         ))
         .marker(symbols::Marker::Braille)
         .graph_type(GraphType::Line)
@@ -365,7 +365,7 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
         chart.block(
             Block::default()
                 .borders(Borders::NONE)
-                .title("graph (Acceleration Factor = Speed_out / Speed_in)")
+                .title("graph (Sensitivity = Speed_out / Speed_in)")
                 .bold(),
         ),
         main_layout[1],

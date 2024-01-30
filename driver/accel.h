@@ -11,41 +11,38 @@ typedef struct {
 static const fixedpt FIXEDPT_ZERO = fixedpt_rconst(0.0);
 
 /**
- * Calculate the normalized factor by which to multiply the input vector
+ * Calculate the factor by which to multiply the input vector
  * in order to get the desired output speed.
  *
  */
-extern inline fixedpt acceleration_factor(fixedpt input_speed,
-                                          fixedpt param_sensitivity,
-                                          fixedpt param_accel,
-                                          fixedpt param_offset,
-                                          fixedpt param_output_cap) {
+extern inline fixedpt sensitivity(fixedpt input_speed, fixedpt param_sens_mult,
+                                  fixedpt param_accel, fixedpt param_offset,
+                                  fixedpt param_output_cap) {
 
   // printk("input speed %s, with interval %s", fixedpt_cstr(speed_in, 5),
   //        fixedpt_cstr(polling_interval, 5));
 
   input_speed = fixedpt_sub(input_speed, param_offset);
 
-  fixedpt accel_factor = FIXEDPT_ONE;
+  fixedpt sens = FIXEDPT_ONE;
 
   if (input_speed > FIXEDPT_ZERO) {
-    accel_factor =
-        fixedpt_add(FIXEDPT_ONE, fixedpt_mul((param_accel), input_speed));
+    sens = fixedpt_add(FIXEDPT_ONE, fixedpt_mul((param_accel), input_speed));
   }
 
-  accel_factor = fixedpt_mul(accel_factor, param_sensitivity);
+  sens = fixedpt_mul(sens, param_sens_mult);
 
-  fixedpt output_cap = fixedpt_mul(param_output_cap, param_sensitivity);
+  fixedpt output_cap = fixedpt_mul(param_output_cap, param_sens_mult);
 
-  if (param_output_cap != FIXEDPT_ZERO && accel_factor > output_cap) {
-    accel_factor = output_cap;
+  if (param_output_cap != FIXEDPT_ZERO && sens > output_cap) {
+    sens = output_cap;
   }
 
-  return accel_factor;
+  return sens;
 }
 
 static inline AccelResult f_accelerate(s8 x, s8 y, u32 polling_interval,
-                                       fixedpt param_sensitivity,
+                                       fixedpt param_sens_mult,
                                        fixedpt param_accel,
                                        fixedpt param_offset,
                                        fixedpt param_output_cap) {
@@ -70,13 +67,13 @@ static inline AccelResult f_accelerate(s8 x, s8 y, u32 polling_interval,
   // printk("input speed %s, with interval %s", fixedpt_cstr(speed_in, 5),
   //        fixedpt_cstr(fixedpt_fromint(polling_interval), 5));
 
-  fixedpt accel_factor = acceleration_factor(
-      speed_in, param_sensitivity, param_accel, param_offset, param_output_cap);
+  fixedpt sens = sensitivity(speed_in, param_sens_mult, param_accel,
+                             param_offset, param_output_cap);
 
   // printk("accel_factor %s", fixedpt_cstr(accel_factor, 5));
 
-  fixedpt dx_out = fixedpt_mul(dx, accel_factor);
-  fixedpt dy_out = fixedpt_mul(dy, accel_factor);
+  fixedpt dx_out = fixedpt_mul(dx, sens);
+  fixedpt dy_out = fixedpt_mul(dy, sens);
 
   dx_out = fixedpt_add(dx_out, carry_x);
   dy_out = fixedpt_add(dy_out, carry_y);
