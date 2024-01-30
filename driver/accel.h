@@ -35,8 +35,10 @@ extern inline fixedpt acceleration_factor(fixedpt input_speed,
 
   accel_factor = fixedpt_mul(accel_factor, param_sensitivity);
 
-  if (param_output_cap != FIXEDPT_ZERO && accel_factor > param_output_cap) {
-    accel_factor = param_output_cap;
+  fixedpt output_cap = fixedpt_mul(param_output_cap, param_sensitivity);
+
+  if (param_output_cap != FIXEDPT_ZERO && accel_factor > output_cap) {
+    accel_factor = output_cap;
   }
 
   return accel_factor;
