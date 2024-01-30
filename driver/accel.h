@@ -19,9 +19,6 @@ extern inline fixedpt sensitivity(fixedpt input_speed, fixedpt param_sens_mult,
                                   fixedpt param_accel, fixedpt param_offset,
                                   fixedpt param_output_cap) {
 
-  // printk("input speed %s, with interval %s", fixedpt_cstr(speed_in, 5),
-  //        fixedpt_cstr(polling_interval, 5));
-
   input_speed = fixedpt_sub(input_speed, param_offset);
 
   fixedpt sens = FIXEDPT_ONE;
@@ -54,23 +51,13 @@ static inline AccelResult f_accelerate(s8 x, s8 y, u32 polling_interval,
   fixedpt dx = fixedpt_fromint(x);
   fixedpt dy = fixedpt_fromint(y);
 
-  // printk(KERN_INFO "[MOUSE_MOVE] (%s, %s)", fixedpt_cstr(dx, 5),
-  //        fixedpt_cstr(dy, 5));
-
   fixedpt distance =
       fixedpt_sqrt(fixedpt_add(fixedpt_mul(dx, dx), fixedpt_mul(dy, dy)));
 
-  // printk("distance %s", fixedpt_cstr(distance, 5));
-
   fixedpt speed_in = fixedpt_div(distance, fixedpt_fromint(polling_interval));
-
-  // printk("input speed %s, with interval %s", fixedpt_cstr(speed_in, 5),
-  //        fixedpt_cstr(fixedpt_fromint(polling_interval), 5));
 
   fixedpt sens = sensitivity(speed_in, param_sens_mult, param_accel,
                              param_offset, param_output_cap);
-
-  // printk("accel_factor %s", fixedpt_cstr(accel_factor, 5));
 
   fixedpt dx_out = fixedpt_mul(dx, sens);
   fixedpt dy_out = fixedpt_mul(dy, sens);
@@ -83,11 +70,6 @@ static inline AccelResult f_accelerate(s8 x, s8 y, u32 polling_interval,
 
   carry_x = fixedpt_sub(dx_out, fixedpt_fromint(result.x));
   carry_y = fixedpt_sub(dy_out, fixedpt_fromint(result.y));
-
-  // printk(KERN_INFO "[MOUSE_MOVE_ACCEL] (%d, %d)", result.x, result.y);
-
-  // printk(KERN_INFO "[MOUSE_MOVE] carry (%s, %s)", fixedpt_cstr(carry_x, 5),
-  //        fixedpt_cstr(carry_y, 5));
 
   return result;
 }
