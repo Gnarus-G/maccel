@@ -16,6 +16,7 @@ static const fixedpt FIXEDPT_ZERO = fixedpt_rconst(0.0);
  *
  */
 extern inline fixedpt acceleration_factor(fixedpt input_speed,
+                                          fixedpt param_sensitivity,
                                           fixedpt param_accel,
                                           fixedpt param_offset,
                                           fixedpt param_output_cap) {
@@ -36,10 +37,13 @@ extern inline fixedpt acceleration_factor(fixedpt input_speed,
     }
   }
 
+  accel_factor = fixedpt_mul(accel_factor, param_sensitivity);
+
   return accel_factor;
 }
 
 static inline AccelResult f_accelerate(s8 x, s8 y, u32 polling_interval,
+                                       fixedpt param_sensitivity,
                                        fixedpt param_accel,
                                        fixedpt param_offset,
                                        fixedpt param_output_cap) {
@@ -64,8 +68,8 @@ static inline AccelResult f_accelerate(s8 x, s8 y, u32 polling_interval,
   // printk("input speed %s, with interval %s", fixedpt_cstr(speed_in, 5),
   //        fixedpt_cstr(fixedpt_fromint(polling_interval), 5));
 
-  fixedpt accel_factor = acceleration_factor(speed_in, param_accel,
-                                             param_offset, param_output_cap);
+  fixedpt accel_factor = acceleration_factor(
+      speed_in, param_sensitivity, param_accel, param_offset, param_output_cap);
 
   // printk("accel_factor %s", fixedpt_cstr(accel_factor, 5));
 
