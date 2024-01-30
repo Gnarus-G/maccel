@@ -13,4 +13,4 @@ PARAM(
     "Control the sensitivity, a factor applied after the acceleration after.");
 PARAM(ACCEL, 0.0, "Control the acceleration factor.");
 PARAM(OFFSET, 0.0, "Control the input speed past which to allow acceleration.");
-PARAM(OUTPUT_CAP, 0.0, "Control the maximum output speed.");
+PARAM(OUTPUT_CAP, 0.0, "Control the maximum acceleration factor.");
