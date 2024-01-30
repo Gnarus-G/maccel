@@ -375,11 +375,10 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
 fn bounds_and_labels(bounds: [f64; 2], div: usize) -> ([f64; 2], Vec<Span<'static>>) {
     let [o, f] = bounds;
     let d = f - o;
-    // let gap = 1f64;
-    let gap = d / (div as f64);
+    let step = d / (div as f64);
 
     let labels = (0..=div)
-        .map(|i| o + i as f64 * gap)
+        .map(|i| o + i as f64 * step)
         .map(|label| format!("{:.2}", label).into())
         .collect();
 
