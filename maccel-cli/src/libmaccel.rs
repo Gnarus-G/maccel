@@ -5,6 +5,7 @@ use self::fixedptc::Fixedpt;
 extern "C" {
     fn acceleration_factor(
         speed_in: i32,
+        param_sensitivity: i32,
         param_accel: i32,
         param_offset: i32,
         param_output_cap: i32,
@@ -12,6 +13,7 @@ extern "C" {
 }
 
 pub struct Params {
+    sensitivity: i32,
     accel: i32,
     offset: i32,
     output_cap: i32,
@@ -20,6 +22,10 @@ pub struct Params {
 impl Params {
     pub fn new() -> Self {
         Self {
+            sensitivity: Param::Sensitivity
+                .get()
+                .expect("failed to read Sensitivity parameter")
+                .0,
             accel: Param::Accel
                 .get()
                 .expect("failed to read Accel parameter")
@@ -39,8 +45,15 @@ impl Params {
 /// Ratio of Output speed to Input speed
 pub fn sensitivity(s_in: f32, params: Params) -> f64 {
     let s_in = fixedptc::fixedpt(s_in);
-    let a_factor =
-        unsafe { acceleration_factor(s_in.0, params.accel, params.offset, params.output_cap) };
+    let a_factor = unsafe {
+        acceleration_factor(
+            s_in.0,
+            params.sensitivity,
+            params.accel,
+            params.offset,
+            params.output_cap,
+        )
+    };
     let a_factor: f32 = Fixedpt(a_factor).into();
 
     return a_factor as f64;

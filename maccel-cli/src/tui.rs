@@ -317,7 +317,7 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
 
     // Done with parameter inputs, now on to the graph
 
-    let (bounds, labels) = bounds_and_labels([0.0, 80.0], 8);
+    let (bounds, labels) = bounds_and_labels([0.0, 160.0], 8);
     let x_axis = Axis::default()
         .title("Speed_in".magenta())
         .style(Style::default().white())
@@ -337,7 +337,11 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
         .collect();
 
     let chart = Chart::new(vec![Dataset::default()
-        .name(format!("f(x) = 1 + {}⋅x", Param::Accel.display_name()))
+        .name(format!(
+            "f(x) = (1 + {}⋅x) ⋅ {}",
+            Param::Accel.display_name(),
+            Param::Sensitivity.display_name()
+        ))
         .marker(symbols::Marker::Braille)
         .graph_type(GraphType::Line)
         .style(Style::default().green())
