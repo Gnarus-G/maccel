@@ -17,7 +17,7 @@ use std::io::stdout;
 use tui_input::{backend::crossterm::EventHandler, Input};
 
 use crate::{
-    libmaccel::{sensitivity, Params},
+    libmaccel::{accel_factor, Params},
     params::Param,
 };
 
@@ -326,14 +326,14 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
 
     let (bounds, labels) = bounds_and_labels([0.0, 3.0], 3);
     let y_axis = Axis::default()
-        .title("Sensitivity".magenta())
+        .title("Acceleration Factor".magenta())
         .style(Style::default().white())
         .bounds(bounds)
         .labels(labels);
 
     let data: Vec<_> = (0..100)
         .map(|x| x as f32)
-        .map(|x| (x as f64, sensitivity(x, Params::new())))
+        .map(|x| (x as f64, accel_factor(x, Params::new())))
         .collect();
 
     let chart = Chart::new(vec![Dataset::default()
@@ -353,7 +353,7 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
         chart.block(
             Block::default()
                 .borders(Borders::NONE)
-                .title("graph (Sensitivity = Speed_out / Speed_in)")
+                .title("graph (Acceleration Factor = Speed_out / Speed_in)")
                 .bold(),
         ),
         main_layout[1],

@@ -43,7 +43,7 @@ impl Params {
 }
 
 /// Ratio of Output speed to Input speed
-pub fn sensitivity(s_in: f32, params: Params) -> f64 {
+pub fn accel_factor(s_in: f32, params: Params) -> f64 {
     let s_in = fixedptc::fixedpt(s_in);
     let a_factor = unsafe {
         acceleration_factor(
