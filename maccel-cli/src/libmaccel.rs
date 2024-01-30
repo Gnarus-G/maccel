@@ -69,7 +69,7 @@ pub mod fixedptc {
         fn fixedpt_to_float(value: i32) -> f32;
     }
 
-    pub fn fixedpt_as_str(num: &i32) -> anyhow::Result<&str> {
+    fn fixedpt_as_str(num: &i32) -> anyhow::Result<&str> {
         unsafe {
             let s = CStr::from_ptr(fixedpt_to_str(*num));
             let s = core::str::from_utf8(s.to_bytes())?;
@@ -91,6 +91,14 @@ pub mod fixedptc {
                 let i = fixedpt_from_float(value);
                 return Fixedpt(i);
             }
+        }
+    }
+
+    impl<'a> TryFrom<&'a Fixedpt> for &'a str {
+        type Error = anyhow::Error;
+
+        fn try_from(value: &'a Fixedpt) -> Result<Self, Self::Error> {
+            return fixedpt_as_str(&value.0);
         }
     }
 

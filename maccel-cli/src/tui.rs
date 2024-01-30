@@ -29,7 +29,7 @@ enum InputMode {
 
 struct ParameterInput {
     param: Param,
-    value: String,
+    value: f64,
     input: Input,
     input_mode: InputMode,
     error: Option<String>,
@@ -37,14 +37,15 @@ struct ParameterInput {
 
 impl From<Param> for ParameterInput {
     fn from(param: Param) -> Self {
-        let value = param
-            .get_as_str()
-            .expect("failed to read and initialize a parameter's value");
+        let value: f32 = param
+            .get()
+            .expect("failed to read and initialize a parameter's value")
+            .into();
 
         Self {
             param,
-            value: value.clone(),
-            input: value.into(),
+            value: value as f64,
+            input: value.to_string().into(),
             input_mode: InputMode::Normal,
             error: None,
         }
@@ -58,10 +59,12 @@ impl ParameterInput {
             .value()
             .parse()
             .context("should be a number")
-            .and_then(|value| self.param.set(value))
-        {
-            Ok(_) => {
-                self.value = self.input.value().into();
+            .and_then(|value| {
+                self.param.set(value)?;
+                Ok(value)
+            }) {
+            Ok(value) => {
+                self.value = value as f64;
                 self.error = None;
             }
             Err(err) => {
@@ -72,7 +75,7 @@ impl ParameterInput {
     }
 
     fn reset(&mut self) {
-        self.input = self.value.clone().into();
+        self.input = self.value.to_string().into();
     }
 }
 
@@ -324,7 +327,16 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
         .bounds(bounds)
         .labels(labels);
 
-    let (bounds, labels) = bounds_and_labels([0.0, 3.0], 3);
+    // To make the y axis bounds and labels scale with our sensitivity multiplier
+    let mut y_bounds = [0.0, 5.0];
+    y_bounds[1] *= app
+        .parameters
+        .iter()
+        .find(|&p| p.param == Param::Sensitivity)
+        .expect("we should include the Sensitivity param in the list")
+        .value;
+
+    let (bounds, labels) = bounds_and_labels(y_bounds, 5);
     let y_axis = Axis::default()
         .title("Acceleration Factor".magenta())
         .style(Style::default().white())

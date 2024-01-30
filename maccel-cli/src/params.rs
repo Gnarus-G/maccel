@@ -1,4 +1,4 @@
-use crate::libmaccel::fixedptc::{fixedpt, fixedpt_as_str, Fixedpt};
+use crate::libmaccel::fixedptc::{fixedpt, Fixedpt};
 use std::{
     fs::File,
     io::Read,
@@ -10,7 +10,7 @@ use clap::ValueEnum;
 
 const SYS_MODULE_PATH: &str = "/sys/module/maccel";
 
-#[derive(Debug, Clone, Copy, ValueEnum)]
+#[derive(Debug, Clone, Copy, ValueEnum, PartialEq)]
 pub enum Param {
     Sensitivity,
     Accel,
@@ -67,13 +67,6 @@ impl Param {
             .context(format!("couldn't interpert the parameter's value {}", buf))?;
 
         return Ok(Fixedpt(value));
-    }
-
-    pub fn get_as_str(&self) -> anyhow::Result<String> {
-        let value = self.get()?;
-        let value = fixedpt_as_str(&value.0)?.to_string();
-
-        return Ok(value);
     }
 
     pub fn display_name(&self) -> String {
