@@ -54,7 +54,9 @@ fn main() -> anyhow::Result<()> {
             name.set(value)?;
         }
         ParamsCommand::Get { name } => {
-            println!("{}", name.get_as_str()?);
+            let value = name.get()?;
+            let string_value: &str = (&value).try_into()?;
+            println!("{}", string_value);
         }
         ParamsCommand::Bind { device_id } => {
             bind_device(&device_id)?;
