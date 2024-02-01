@@ -72,17 +72,22 @@
 #define FIXEDPT_BITS 32
 #endif
 
+#ifdef __KERNEL__
+#include <linux/types.h>
+#else
+#include <stdint.h>
+#endif
+
 #if FIXEDPT_BITS == 32
-typedef int fixedpt;
-typedef long long fixedptd;
-typedef unsigned int fixedptu;
-typedef unsigned long long fixedptud;
+typedef int32_t fixedpt;
+typedef int64_t fixedptd;
+typedef uint32_t fixedptu;
+typedef uint64_t fixedptud;
 #elif FIXEDPT_BITS == 64
-#include "linux/types.h"
-typedef s64 fixedpt;
-typedef s128 fixedptd;
-typedef u64 fixedptu;
-typedef u128 fixedptud;
+typedef int64_t fixedpt;
+typedef __int128_t fixedptd;
+typedef uint64_t fixedptu;
+typedef __uint128_t fixedptud;
 #else
 #error "FIXEDPT_BITS must be equal to 32 or 64"
 #endif
