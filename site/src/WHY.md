@@ -14,7 +14,7 @@ of this. We also know that [Raw Accel](https://github.com/a1xd/rawaccel/blob/mas
 
 We want rawaccel on linux too, but we won't get it.
 So we're relegated to projects like [leetmouse](https://github.com/Skyl3r/leetmouse) that I found difficult to install,
-and not user friendly at all; or [libinput](https://wiki.archlinux.org/title/Libinput) with a (custom acceleration profile)[https://wayland.freedesktop.org/libinput/doc/latest/pointer-acceleration.html#the-custom-acceleration-profile].
+and not user friendly at all; or [libinput](https://wiki.archlinux.org/title/Libinput) with a [custom acceleration profile](https://wayland.freedesktop.org/libinput/doc/latest/pointer-acceleration.html#the-custom-acceleration-profile).
 
 Now, my gripe with `leetmouse` comes down to, mostly, skill issue. I eventually got it working, but it was still hard to change
 parameters since I had to recompile the source code to do so.
@@ -41,9 +41,9 @@ EndSection
 
 ```
 
-If you need more context on this, refer to https://wiki.archlinux.org/title/Libinput#Via_Xorg_configuration_file, and https://man.archlinux.org/man/libinput.4#SUPPORTED_PROPERTIES
+If you need more context on this, refer to https://wiki.archlinux.org/title/Libinput#Via_Xorg_configuration_file, and https://man.archlinux.org/man/libinput.4#SUPPORTED_PROPERTIES.
 I don't recommend using `libinput-points` to mimic Rawaccel's linear acceleration as I understood much less than I do now
-how the math works.
+about how the math works.
 
 Note then, that my main goal, and only goal for the moment, is to replicate the model for the linear type acceleration curves
 from `Rawaccel`
