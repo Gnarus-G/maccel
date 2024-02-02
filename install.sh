@@ -1,7 +1,7 @@
 set -ex
 
 setup_dirs() {
-  mkdir -p /opt/maccel
+  rm -rf /opt/maccel && mkdir -p /opt/maccel
   cd /opt/maccel
   git clone --depth 1 https://github.com/Gnarus-G/maccel.git .
 
@@ -17,7 +17,7 @@ install_cli() {
   export VERSION=$(wget -qO- https://github.com/Gnarus-G/maccel/releases/latest | grep -oP 'v\d+\.\d+\.\d+' | tail -n 1);
   curl -fsSL https://github.com/Gnarus-G/maccel/releases/download/$VERSION/maccel-cli.tar.gz -o maccel-cli.tar.gz
   tar -zxvf maccel-cli.tar.gz maccel_$VERSION/maccel 
-  sudo install -m 755 maccel bin
+  sudo install -m 755 maccel_$VERSION/maccel bin
   sudo ln -s bin/maccel /usr/local/bin/maccel
 }
 
