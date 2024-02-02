@@ -18,10 +18,20 @@ acceleration factor
 
 ## Install
 
-### Install script
-
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Gnarus-G/maccel/main/install.sh | sh
+```
+
+## Uninstall
+
+```sh
+sh /opt/maccel/uninstall.sh
+```
+
+Or
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Gnarus-G/maccel/main/uninstall.sh | sh
 ```
 
 ## CLI Usage
