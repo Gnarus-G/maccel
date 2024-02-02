@@ -23,7 +23,7 @@ jobs:
         run: |
           set -x
 
-          cargo build --release --manifest-path=maccel-cli/Cargo.toml
+          cargo build --release --manifest-path=cli/Cargo.toml
 
           OUTPUT_DIR="built/output"
           mkdir -p "$OUTPUT_DIR"
@@ -31,7 +31,7 @@ jobs:
 
           BIN=maccel
           ARCHIVE=$BIN-cli.tar.gz
-          BIN_PATH=maccel-cli/target/release/$BIN
+          BIN_PATH=cli/target/release/$BIN
 
           strip $BIN_PATH;
 
