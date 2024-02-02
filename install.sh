@@ -9,6 +9,7 @@ setup_dirs() {
 }
 
 install_driver() {
+  make uninstall || true
   make install
 }
 
