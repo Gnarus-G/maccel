@@ -24,44 +24,6 @@ acceleration factor
 curl -fsSL https://raw.githubusercontent.com/Gnarus-G/maccel/main/install.sh | sh
 ```
 
-### Step by Step
-
-Clone the repo, and run some make commands.
-
-```sh
-git clone https://github.com/Gnarus-G/maccel.git
-cd maccel
-```
-
-#### Install the cli.
-
-If you don't have `cargo`, then get it with rust
-from https://www.rust-lang.org/tools/install
-
-```sh
-cargo install --path maccel-cli
-```
-
-#### Instal the driver and the udev rules.
-
-```sh
-make install
-make udev_install # This depends on the cli and will install in /usr/local/bin
-```
-
-Optionally, it's recommended that you add yourself to the `maccel` group;
-and remember to restart your session after you do so it takes effect.
-
-Adding yourself to that `maccel` group allows you to run the maccel-cli
-to set parameter values without `sudo`
-
-#### Uninstall
-
-```sh
-make uninstall
-make udev_uninstall
-```
-
 ## CLI Usage
 
 ```
