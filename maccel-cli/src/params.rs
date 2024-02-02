@@ -35,9 +35,9 @@ impl Param {
     }
 
     fn save_reset_script(&self, value: i32) -> anyhow::Result<()> {
-        let script_dir = "/var/lib/maccel";
+        let script_dir = "/var/opt/maccel/resets";
         if !Path::new(script_dir).exists() {
-            std::fs::create_dir(script_dir).context(format!("failed create directory: {}", script_dir))
+            std::fs::create_dir_all(script_dir).context(format!("failed create directory: {}", script_dir))
                 .context("failed to create the directory where we'd save the parameter value to apply on reboot")?;
         }
         std::fs::write(
