@@ -1,11 +1,9 @@
-set -ex
+set -e
 
 setup_dirs() {
   rm -rf /opt/maccel && mkdir -p /opt/maccel
   cd /opt/maccel
   git clone --depth 1 https://github.com/Gnarus-G/maccel.git .
-
-  mkdir -p bin
 }
 
 install_driver() {
@@ -18,7 +16,7 @@ install_cli() {
   export VERSION=$(wget -qO- https://github.com/Gnarus-G/maccel/releases/latest | grep -oP 'v\d+\.\d+\.\d+' | tail -n 1);
   curl -fsSL https://github.com/Gnarus-G/maccel/releases/download/$VERSION/maccel-cli.tar.gz -o maccel-cli.tar.gz
   tar -zxvf maccel-cli.tar.gz maccel_$VERSION/maccel 
-  sudo install -m 755 maccel_$VERSION/maccel bin
+  sudo install -m 755 -v -D maccel_$VERSION/maccel bin/maccel
   sudo ln -vfs `pwd`/bin/maccel /usr/local/bin/maccel
 }
 
@@ -42,3 +40,5 @@ trigger_udev_rules
 
 install_cli
 
+echo '[Recommended] Add yourself to the "maccel" group'
+echo '[Recommended] usermod -aG maccel $$USER'
