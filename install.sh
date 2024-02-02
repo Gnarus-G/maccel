@@ -3,9 +3,9 @@ set -ex
 setup_dirs() {
   mkdir -p /opt/maccel
   cd /opt/maccel
-  mkdir -p bin
-
   git clone --depth 1 https://github.com/Gnarus-G/maccel.git .
+
+  mkdir -p bin
 }
 
 install_driver() {
