@@ -2,12 +2,15 @@
 
 PATH='/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin'
 
-maccel bind $1 &> /var/log/maccel-cli;
-chown -v :maccel /sys/module/maccel/parameters/* &> /var/log/maccel-chown;
+LOG_DIR=/var/opt/maccel/logs
+mkdir -p $LOG_DIR
+
+maccel bind $1 &> $LOG_DIR/cli;
+chown -v :maccel /sys/module/maccel/parameters/* &> $LOG_DIR/chown;
 
 # For persisting parameters values across reboots
-LIB_DIR=/var/lib/maccel
-mkdir -p $LIB_DIR
-chown -v :maccel $LIB_DIR 
-chmod -v g+w "$LIB_DIR" 
-ls $LIB_DIR/set_last_*_value.sh | xargs cat | sh &> /var/log/maccel-reset-scripts
+RESET_SCRIPTS_DIR=/var/opt/maccel/resets
+mkdir -p $RESET_SCRIPTS_DIR
+chown -v :maccel $RESET_SCRIPTS_DIR 
+chmod -v g+w "$RESET_SCRIPTS_DIR" 
+ls $RESET_SCRIPTS_DIR/set_last_*_value.sh | xargs cat | sh &> $LOG_DIR/reset-scripts

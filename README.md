@@ -18,40 +18,23 @@ acceleration factor
 
 ## Install
 
-Clone the repo, and run some make commands.
+Make sure to have these dependencies installed on your machine:
+`curl`, `git`, `make`, `gcc`, and the linux headers in `/lib/modules/`
 
 ```sh
-git clone https://github.com/Gnarus-G/maccel.git
-cd maccel
+curl -fsSL https://raw.githubusercontent.com/Gnarus-G/maccel/main/install.sh | sudo sh
 ```
 
-### Install the cli.
-
-If you don't have `cargo`, then get it with rust
-from https://www.rust-lang.org/tools/install
+## Uninstall
 
 ```sh
-cargo install --path maccel-cli
+sh /opt/maccel/uninstall.sh
 ```
 
-### Instal the driver and the udev rules.
+Or
 
 ```sh
-make install
-make udev_install # This depends on the cli and will install in /usr/local/bin
-```
-
-Optionally, it's recommended that you add yourself to the `maccel` group;
-and remember to restart your session after you do so it takes effect.
-
-Adding yourself to that `maccel` group allows you to run the maccel-cli
-to set parameter values without `sudo`
-
-### Uninstall
-
-```sh
-make uninstall
-make udev_uninstall
+curl -fsSL https://raw.githubusercontent.com/Gnarus-G/maccel/main/uninstall.sh | sudo sh
 ```
 
 ## CLI Usage
@@ -91,3 +74,42 @@ Here is [Breakdown of why and how I ended up making this](https://www.bytin.tech
 - https://github.com/a1xd/rawaccel/blob/master/doc/Guide.md
 - https://github.com/Skyl3r/leetmouse/blob/master/driver/accel.c
 - https://sourceforge.net/p/fixedptc/code/ci/default/tree/
+
+## Troubleshooting Install
+
+### gcc
+
+The version matters, it must match the version with which the kernel was built.
+
+For example you might such an error:
+
+![image](https://github.com/Gnarus-G/maccel/assets/37311893/6147e20a-a132-4132-a45e-2af3dc035552)
+
+And you'll have to find a version of `gcc` that matches. This will be more or less annoying
+depending on your distro and/or how familiar you're familiar with it.
+
+### linux headers
+
+You want to make sure that `/lib/modules/` is not empty. For example mine looks like this:
+
+```
+total 0
+drwxr-xr-x 1 root root    114 Jan 29 17:59 .
+drwxr-xr-x 1 root root 159552 Jan 29 22:39 ..
+drwxr-xr-x 1 root root     10 Jan 29 17:59 6.6.14-1-lts
+drwxr-xr-x 1 root root     12 Jan 29 17:59 6.7.0-zen3-1-zen
+drwxr-xr-x 1 root root    494 Jan 29 17:59 6.7.2-arch1-1
+drwxr-xr-x 1 root root    494 Jan 31 21:54 6.7.2-zen1-1-zen
+```
+
+You want to find headers that match your kernel as represented by
+
+```
+uname -r
+```
+
+On an arch based distro you list the available headers with
+
+```
+sudo pacman -Ss linux headers
+```
