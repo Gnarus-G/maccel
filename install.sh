@@ -19,7 +19,7 @@ install_cli() {
   curl -fsSL https://github.com/Gnarus-G/maccel/releases/download/$VERSION/maccel-cli.tar.gz -o maccel-cli.tar.gz
   tar -zxvf maccel-cli.tar.gz maccel_$VERSION/maccel 
   sudo install -m 755 maccel_$VERSION/maccel bin
-  sudo ln -s bin/maccel /usr/local/bin/maccel
+  sudo ln -vfs `pwd`/bin/maccel /usr/local/bin/maccel
 }
 
 install_udev_rules() {
