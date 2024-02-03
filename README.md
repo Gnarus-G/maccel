@@ -81,12 +81,12 @@ Here is [Breakdown of why and how I ended up making this](https://www.bytin.tech
 
 The version matters, it must match the version with which the kernel was built.
 
-For example you might such an error:
+For example you might encounter such an error:
 
 ![image](https://github.com/Gnarus-G/maccel/assets/37311893/6147e20a-a132-4132-a45e-2af3dc035552)
 
 And you'll have to find a version of `gcc` that matches. This will be more or less annoying
-depending on your distro and/or how familiar you're familiar with it.
+depending on your distro and/or how familiar you are with it.
 
 ### linux headers
 
