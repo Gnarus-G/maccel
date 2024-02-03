@@ -1,6 +1,8 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Why from "../WHY.md"
+
+const installUrl = new URL("install.sh", Astro.site);
 ---
 
 <Layout title="maccel">
@@ -17,9 +19,9 @@ import Why from "../WHY.md"
               A linear mouse acceleration driver, and easy TUI to play with the parameters. Install now and enhance your aim.
             </p>
           </div>
-          <!-- <div class="w-full max-w-md p-4 bg-gray-900 text-gray-50 rounded-md"> -->
-          <!--   <code class="text-sm text-gray-200">sudo apt-get install linux-driver</code> -->
-          <!-- </div> -->
+          <div class="w-full max-w-lg p-4 bg-gray-950 text-gray-50 rounded-md border border-solid border-amber-800">
+            <code class="text-sm text-gray-400">curl -fsSL {installUrl} | sudo sh</code>
+          </div>
         </div>
       </section>
       <section id="links" class="flex justify-center py-8">
