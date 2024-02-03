@@ -6,36 +6,63 @@ const installUrl = new URL("install.sh", Astro.site);
 ---
 
 <Layout title="maccel">
+  <header class="flex justify-between items-center p-5 bg-gray-900">
+    <img class="object-cover rounded-full" width="32" src="/favicon.png" alt=""/>
+    <section id="links" class="flex justify-center">
+      <a class="text-slate-100 hover:text-slate-500" href="https://github.com/Gnarus-G/maccel" target="_blank">
+        <span class="sr-only">Go see the project on github</span>
+        <svg viewBox="0 0 16 16" aria-hidden="true" width="32" height="32" astro-icon="social/github"
+          ><path
+            fill="currentColor"
+            d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"
+          ></path></svg
+        >
+      </a>
+    </section>
+  </header>
 	<main>
     <div>
-      <section id="cta" class="w-full py-12 md:py-24 lg:py-32 bg-gray-900">
-        <div class="flex flex-col justify-center items-center space-y-4 text-center">
-          <div class="space-y-2 flex flex-col gap-2 items-center">
+      <section id="cta" class="w-full px-3 py-12 md:py-24 lg:py-32 bg-gray-900">
+        <div class="container mx-auto max-w-[65ch] space-y-4">
+          <div class="space-y-2"> 
             <h1 class="text-gray-100 text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
               maccel
             </h1>
-            <img class="object-cover rounded-full" width="100" src="/favicon.png" alt=""/>
-            <p class="mx-auto max-w-[700px] text-gray-300 md:text-xl">
-              A linear mouse acceleration driver, and easy TUI to play with the parameters. Install now and enhance your aim.
+            <p class="max-w-lg text-gray-300 md:text-xl">
+              A linear mouse <strong>acceleration</strong> driver, and easy <strong>TUI</strong> to play with the <strong>parameters</strong>. 
+              Install now and enhance your aim.
             </p>
           </div>
-          <div class="w-full max-w-lg p-4 bg-gray-950 text-gray-50 rounded-md border border-solid border-amber-800">
-            <code class="text-sm text-gray-400">curl -fsSL {installUrl} | sudo sh</code>
+          <div>
+            <div class="w-full p-4 bg-gray-950 text-gray-50 rounded-md border border-solid border-amber-800">
+              <code class="flex items-center gap-5 text-sm text-gray-400">
+                <a title="Make sure your system has some things installed." href="#install-dependencies">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="h-5 w-5 text-yellow-500"
+                  >
+                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                    <path d="M12 9v4"></path>
+                    <path d="M12 17h.01"></path>
+                  </svg>
+                </a>
+              curl -fsSL {installUrl} | sudo sh</code>
+            </div>
+            <div class="flex justify-end">
+              <a class="text-slate-500" href="/install.sh">View source</a>
+            </div>
           </div>
         </div>
       </section>
-      <section id="links" class="flex justify-center py-8">
-        <a class="hover:text-slate-500" href="https://github.com/Gnarus-G/maccel" target="_blank">
-          <span class="sr-only">Go see the project on github</span>
-          <svg viewBox="0 0 16 16" aria-hidden="true" width="32" height="32" astro-icon="social/github"
-            ><path
-              fill="currentColor"
-              d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"
-            ></path></svg
-          >
-        </a>
-      </section>
-      <section id="why" class="w-full py-12 md:py-24 lg:py-32">
+      <section id="why" class="w-full px-3 py-12 md:py-24 lg:py-32">
         <div class="container mx-auto prose lg:prose-xl prose-invert">
           <Why/>
         </div>
