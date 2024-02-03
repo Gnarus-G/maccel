@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import CopyButton from '../components/CopyButton.astro';
 import Why from "../WHY.md"
 
 const installUrl = new URL("install.sh", Astro.site);
@@ -35,7 +36,7 @@ const installUrl = new URL("install.sh", Astro.site);
           </div>
           <div>
             <div class="w-full p-4 bg-gray-950 text-gray-50 rounded-md border border-solid border-amber-800">
-              <code class="flex items-center gap-5 text-sm text-gray-400">
+              <code class="relative flex items-center gap-5 text-sm text-gray-400">
                 <a title="Make sure your system has some things installed." href="#install-dependencies">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -54,7 +55,9 @@ const installUrl = new URL("install.sh", Astro.site);
                     <path d="M12 17h.01"></path>
                   </svg>
                 </a>
-              curl -fsSL {installUrl} | sudo sh</code>
+                curl -fsSL {installUrl} | sudo sh
+                <CopyButton />
+              </code>
             </div>
             <div class="flex justify-end">
               <a class="text-slate-500" href="/install.sh">View source</a>
