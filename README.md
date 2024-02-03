@@ -22,7 +22,7 @@ Make sure to have these dependencies installed on your machine:
 `curl`, `git`, `make`, `gcc`, and the linux headers in `/lib/modules/`
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/Gnarus-G/maccel/main/install.sh | sudo sh
+curl -fsSL https://www.maccel.org/install.sh | sudo sh
 ```
 
 ## Uninstall
@@ -34,7 +34,7 @@ sh /opt/maccel/uninstall.sh
 Or
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/Gnarus-G/maccel/main/uninstall.sh | sudo sh
+curl -fsSL https://www.maccel.org/uninstall.sh | sudo sh
 ```
 
 ## CLI Usage
