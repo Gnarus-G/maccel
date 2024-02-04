@@ -1,4 +1,4 @@
-name: Test CLI
+name: Tests
 
 on:
   push:
@@ -7,7 +7,15 @@ on:
     branches: ["main"]
 
 jobs:
-  build:
+  test_core_function:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Test acceleration function
+        run: cd driver && make test
+
+  test_installation_and_cli:
     runs-on: ubuntu-latest
 
     steps:
