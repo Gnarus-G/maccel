@@ -8,6 +8,7 @@ default:
 	$(MAKE) CC=$(CC) -C $(KDIR) M=$(DRIVERDIR)
 
 install: default
+	@mkdir -p $(MODULEDIR)
 	@sudo cp -v $(DRIVERDIR)/*.ko $(MODULEDIR);
 	@sudo chown -v root:root $(MODULEDIR)/*.ko;
 	@sudo insmod $(MODULEDIR)/*.ko;

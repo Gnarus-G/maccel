@@ -8,7 +8,8 @@ RUN apt-get update && \
   build-essential \
   curl \
   git \
-  sudo \
+  sudo install \
+  insmod rmmod \
   linux-headers-$(uname -r) \
   && rm -rf /var/lib/apt/lists/*
 
