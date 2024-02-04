@@ -15,10 +15,18 @@ jobs:
       - name: Test acceleration function
         run: cd driver && make test
 
-  test_installation_and_cli:
+  test_cli_ubuntu:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
-      - name: Test in the docker image
+      - name: Test in ubuntu
         run: docker build -f Dockerfile.ubuntu .
+
+  test_cli_manjaro:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Test in manjaro
+        run: docker build -f Dockerfile.manjaro .

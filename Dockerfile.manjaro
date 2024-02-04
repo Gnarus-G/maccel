@@ -1,0 +1,28 @@
+FROM manjarolinux/build
+
+RUN uname -r
+
+
+# Install essential tools and dependencies for Rust
+RUN pacman -Syu --noconfirm && \
+  pacman -S --noconfirm base-devel git sudo && \
+  pacman -Ss --noconfirm linux headers && \
+  pacman -Scc --noconfirm
+
+RUN ls -a /lib/modules/*
+
+# Install Rust using Rustup
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
+# Set the environment variables for Rust
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+WORKDIR /app
+
+COPY . .
+
+RUN sudo sh ./install.sh
+
+WORKDIR /app/cli
+
+RUN cargo test
