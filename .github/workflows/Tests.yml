@@ -1,0 +1,36 @@
+name: Tests
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  test_core_function:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Test acceleration function
+        run: cd driver && make test
+
+  test_installation_and_cli:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install dependencies
+        run: apt-get update && \
+          apt-get install -y \
+          build-essential \
+          curl \
+          git \
+          linux-headers-$(uname -r) \
+          && rm -rf /var/lib/apt/lists/*
+      - name: Check /lib/modules/
+        run: ls -a /lib/modules/*
+      - uses: actions/checkout@v3
+      - name: Install Driver
+        run: sh ./install.sh
+      - name: Run Tests
+        run: cargo test
