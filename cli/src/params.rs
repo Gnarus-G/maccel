@@ -1,4 +1,4 @@
-use crate::libmaccel::fixedptc::{fixedpt, Fixedpt};
+use crate::libmaccel::fixedptc::Fixedpt;
 use std::{
     fs::File,
     io::Read,
@@ -20,7 +20,7 @@ pub enum Param {
 
 impl Param {
     pub fn set(&self, value: f32) -> anyhow::Result<()> {
-        let value = fixedpt(value);
+        let value: Fixedpt = value.into();
 
         let mut file = File::create(self.path()?)
             .context("failed to open the parameter's file for writing")?;
@@ -94,5 +94,42 @@ impl Param {
         }
 
         return Ok(params_path);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+
+    use crate::libmaccel::fixedptc::Fixedpt;
+
+    use super::Param;
+
+    fn test(param: Param) {
+        param.set(3.0).unwrap();
+        assert_eq!(param.get().unwrap(), Fixedpt(768));
+
+        param.set(4.0).unwrap();
+        assert_eq!(param.get().unwrap(), Fixedpt(1024));
+
+        param.set(4.5).unwrap();
+        assert_eq!(param.get().unwrap(), (4.5).into());
+
+        let save_script = PathBuf::from(format!(
+            "/var/opt/maccel/resets/set_last_{}_value.sh",
+            param.name()
+        ));
+
+        assert!(save_script.exists());
+    }
+
+    #[test]
+    fn getters_setters_work() {
+        use Param::*;
+
+        test(SensMult);
+        test(Accel);
+        test(Offset);
+        test(OutputCap);
     }
 }

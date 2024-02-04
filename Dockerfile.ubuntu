@@ -1,0 +1,30 @@
+FROM ubuntu:latest
+
+RUN uname -r
+
+# Install essential tools and dependencies
+RUN apt-get update && \
+  apt-get install -y \
+  build-essential \
+  curl \
+  git \
+  linux-headers-generic \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN ls -a /lib/modules/*
+
+# Install Rust using Rustup
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
+# Set the environment variables for Rust
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+WORKDIR /app
+
+COPY . .
+
+RUN sh ./install.sh
+
+WORKDIR /app/cli
+
+RUN cargo test
