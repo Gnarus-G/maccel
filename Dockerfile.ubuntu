@@ -8,7 +8,7 @@ RUN apt-get update && \
   build-essential \
   curl \
   git \
-  linux-headers-generic \
+  linux-headers-6.2.0-1019-azure \
   && rm -rf /var/lib/apt/lists/*
 
 RUN ls -a /lib/modules/*
