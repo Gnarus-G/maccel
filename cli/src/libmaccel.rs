@@ -34,7 +34,7 @@ impl Params {
 
 /// Ratio of Output speed to Input speed
 pub fn sensitivity(s_in: f32, params: Params) -> f64 {
-    let s_in = fixedptc::fixedpt(s_in);
+    let s_in: Fixedpt = s_in.into();
     let a_factor = unsafe {
         c_lib::sensitivity(
             s_in.0,
@@ -84,13 +84,6 @@ pub mod fixedptc {
 
         fn try_from(value: &'a Fixedpt) -> Result<Self, Self::Error> {
             return fixedpt_as_str(&value.0);
-        }
-    }
-
-    pub fn fixedpt(num: f32) -> Fixedpt {
-        unsafe {
-            let i = c_lib::fixedpt_from_float(num);
-            return Fixedpt(i);
         }
     }
 }

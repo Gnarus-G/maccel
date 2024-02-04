@@ -1,4 +1,4 @@
-use crate::libmaccel::fixedptc::{fixedpt, Fixedpt};
+use crate::libmaccel::fixedptc::Fixedpt;
 use std::{
     fs::File,
     io::Read,
@@ -20,7 +20,7 @@ pub enum Param {
 
 impl Param {
     pub fn set(&self, value: f32) -> anyhow::Result<()> {
-        let value = fixedpt(value);
+        let value: Fixedpt = value.into();
 
         let mut file = File::create(self.path()?)
             .context("failed to open the parameter's file for writing")?;
