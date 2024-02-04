@@ -19,6 +19,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Install dependencies
+        run: apt-get update && \
+          apt-get install -y \
+          build-essential \
+          curl \
+          git \
+          linux-headers-$(uname -r) \
+          && rm -rf /var/lib/apt/lists/*
+      - name: Check /lib/modules/
+        run: ls -a /lib/modules/*
       - uses: actions/checkout@v3
-      - name: Build the Docker image
-        run: docker build . --file Dockerfile.ubuntu
+      - name: Install Driver
+        run: sh ./install.sh
+      - name: Run Tests
+        run: cargo test
