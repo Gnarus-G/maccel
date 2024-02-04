@@ -62,6 +62,7 @@ pub mod fixedptc {
         }
     }
 
+    #[derive(Debug, PartialEq)]
     pub struct Fixedpt(pub i32);
 
     impl From<Fixedpt> for f32 {

@@ -96,3 +96,40 @@ impl Param {
         return Ok(params_path);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+
+    use crate::libmaccel::fixedptc::Fixedpt;
+
+    use super::Param;
+
+    fn test(param: Param) {
+        param.set(3.0).unwrap();
+        assert_eq!(param.get().unwrap(), Fixedpt(768));
+
+        param.set(4.0).unwrap();
+        assert_eq!(param.get().unwrap(), Fixedpt(1024));
+
+        param.set(4.5).unwrap();
+        assert_eq!(param.get().unwrap(), (4.5).into());
+
+        let save_script = PathBuf::from(format!(
+            "/var/opt/maccel/resets/set_last_{}_value.sh",
+            param.name()
+        ));
+
+        assert!(save_script.exists());
+    }
+
+    #[test]
+    fn getters_setters_work() {
+        use Param::*;
+
+        test(SensMult);
+        test(Accel);
+        test(Offset);
+        test(OutputCap);
+    }
+}
