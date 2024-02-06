@@ -343,8 +343,9 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
         .bounds(bounds)
         .labels(labels);
 
-    let data: Vec<_> = (0..100)
+    let data: Vec<_> = (0..800)
         .map(|x| x as f32)
+        .map(|x| x * 0.1)
         .map(|x| (x as f64, sensitivity(x, Params::new())))
         .collect();
 
