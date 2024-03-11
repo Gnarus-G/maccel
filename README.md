@@ -3,7 +3,7 @@
 Linear mouse acceleration.
 ![image](https://github.com/Gnarus-G/maccel/assets/37311893/f45bc4bc-f7a0-43b0-9e8c-b3f6fb958d4c)
 
-## Acceleration Funcion
+## Acceleration Function
 
 $$V = \frac{\sqrt{dx_0^2 + dy_0^2}}{i}$$
 
@@ -40,7 +40,7 @@ curl -fsSL https://www.maccel.org/uninstall.sh | sudo sh
 ## CLI Usage
 
 ```
-CLI to control the paramters for the maccel driver, and manage mice bindings
+CLI to control the parameters for the maccel driver, and manage mice bindings
 
 Usage: maccel <COMMAND>
 
