@@ -64,7 +64,7 @@ impl Param {
         let value: i32 = buf
             .trim()
             .parse()
-            .context(format!("couldn't interpert the parameter's value {}", buf))?;
+            .context(format!("couldn't interpret the parameter's value {}", buf))?;
 
         return Ok(Fixedpt(value));
     }
@@ -73,7 +73,7 @@ impl Param {
         return format!("{:?}", self);
     }
 
-    /// The cannonical name of parameter, exactly what can be read from /sys/module/maccel/parameters
+    /// The canonical name of parameter, exactly what can be read from /sys/module/maccel/parameters
     fn name(&self) -> &'static str {
         let param_name = match self {
             Param::SensMult => "SENS_MULT",

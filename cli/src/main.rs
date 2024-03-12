@@ -13,7 +13,7 @@ use tui::run_tui;
 
 #[derive(Parser)]
 #[clap(author, about, version)]
-/// CLI to control the paramters for the maccel driver, and manage mice bindings
+/// CLI to control the parameters for the maccel driver, and manage mice bindings
 struct Cli {
     #[clap(subcommand)]
     command: Option<ParamsCommand>,
