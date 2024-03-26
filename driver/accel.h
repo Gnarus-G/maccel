@@ -1,3 +1,4 @@
+#include "dbg.h"
 #include "fixedptc.h"
 
 typedef signed char s8;
@@ -18,6 +19,8 @@ static const fixedpt FIXEDPT_ZERO = fixedpt_rconst(0.0);
 extern inline fixedpt sensitivity(fixedpt input_speed, fixedpt param_sens_mult,
                                   fixedpt param_accel, fixedpt param_offset,
                                   fixedpt param_output_cap) {
+
+  dbg("input speed %s", fixedpt_cstr(input_speed, 5));
 
   input_speed = fixedpt_sub(input_speed, param_offset);
 
@@ -50,6 +53,8 @@ static inline AccelResult f_accelerate(s8 x, s8 y, u32 polling_interval,
 
   fixedpt dx = fixedpt_fromint(x);
   fixedpt dy = fixedpt_fromint(y);
+
+  dbg("[MOUSE_MOVE] (%s, %s)", fixedpt_cstr(dx, 5), fixedpt_cstr(dy, 5));
 
   fixedpt distance =
       fixedpt_sqrt(fixedpt_add(fixedpt_mul(dx, dx), fixedpt_mul(dy, dy)));
