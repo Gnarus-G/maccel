@@ -54,7 +54,7 @@ impl From<Param> for ParameterInput {
 
 impl ParameterInput {
     fn update_value(&mut self) {
-        match self
+        let value = self
             .input
             .value()
             .parse()
@@ -62,7 +62,9 @@ impl ParameterInput {
             .and_then(|value| {
                 self.param.set(value)?;
                 Ok(value)
-            }) {
+            });
+
+        match value {
             Ok(value) => {
                 self.value = value as f64;
                 self.error = None;

@@ -69,6 +69,9 @@ void on_complete(struct urb *u) {
   struct input_dev *dev = ctx->input_dev;
   s8 *data = ctx->data_buf;
 
+  dbg("name: %s", ctx->name);
+  dbg("phys: %s", ctx->phys);
+
   switch (u->status) {
   case 0:
     break;

@@ -4,8 +4,15 @@ KDIR?=/lib/modules/`uname -r`/build
 
 MODULEDIR?=/lib/modules/`uname -r`/kernel/drivers/usb
 
-default: 
-	$(MAKE) CC=$(CC) -C $(KDIR) M=$(DRIVERDIR)
+default: build
+
+debug: EXTRA_CFLAGS := -DDEBUG
+debug: default
+
+build:
+	$(MAKE) CC=$(CC) EXTRA_CFLAGS=$(EXTRA_CFLAGS) -C $(KDIR) M=$(DRIVERDIR)
+
+debug_install: debug install
 
 install: default
 	@mkdir -p $(MODULEDIR)
