@@ -52,7 +52,9 @@ static inline AccelResult f_accelerate(s8 x, s8 y, u32 polling_interval,
   fixedpt dx = fixedpt_fromint(x);
   fixedpt dy = fixedpt_fromint(y);
 
-  dbg("[MOUSE_MOVE] (%s, %s)", fixedpt_cstr(dx, 5), fixedpt_cstr(dy, 5));
+  dbg("[MOUSE_MOVE] input              (%d, %d)", x, y);
+  dbg("[MOUSE_MOVE] fixedpt conversion (%s, %s)", fixedpt_cstr(dx, 5),
+      fixedpt_cstr(dy, 5));
 
   fixedpt distance =
       fixedpt_sqrt(fixedpt_add(fixedpt_mul(dx, dx), fixedpt_mul(dy, dy)));
