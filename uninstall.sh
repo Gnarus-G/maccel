@@ -5,7 +5,6 @@ delete_module() {
 	sudo rm -vf $MODULEDIR/maccel.ko
 }
 
-
 udev_uninstall() {
 	sudo maccel unbindall
 

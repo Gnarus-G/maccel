@@ -5,6 +5,7 @@ mod libmaccel;
 mod params;
 mod tui;
 
+use anyhow::{anyhow, Context};
 use binder::{bind_device, disabling_udev_rules, unbind_device};
 use clap::{builder::OsStr, CommandFactory, Parser};
 use glob::glob;
@@ -59,6 +60,9 @@ fn main() -> anyhow::Result<()> {
             println!("{}", string_value);
         }
         ParamsCommand::Bind { device_id } => {
+            if let Ok(name) = get_device_name_by_id(&device_id) {
+                eprintln!("[INFO] device to bind: {name}");
+            };
             bind_device(&device_id)?;
         }
         ParamsCommand::Bindall => {
@@ -86,14 +90,19 @@ fn main() -> anyhow::Result<()> {
                         let device_id = basename.unwrap().to_str().expect(
                         "basename of the /sys/*/drivers/usbhid device_id paths should be strings",
                     );
-                        eprintln!("[INFO] found device to bind, id: {}", device_id);
+                        eprint_device_name(device_id);
                         bind_device(device_id)?;
-                        eprintln!()
                     }
                 }
             }
         }
-        ParamsCommand::Unbind { device_id } => disabling_udev_rules(|| unbind_device(&device_id))?,
+        ParamsCommand::Unbind { device_id } => {
+            if let Ok(name) = get_device_name_by_id(&device_id) {
+                eprintln!("[INFO] device to unbind: {name}");
+            };
+
+            disabling_udev_rules(|| unbind_device(&device_id))?;
+        }
         ParamsCommand::Unbindall => {
             eprintln!("[INFO] looking for all devices bound to maccel");
 
@@ -107,9 +116,8 @@ fn main() -> anyhow::Result<()> {
                         let device_id = basename.unwrap().to_str().expect(
                         "basename of the /sys/*/drivers/maccel device_id paths should be strings",
                     );
-                        eprintln!("[INFO] found device to unbind, id: {}", device_id);
+                        eprint_device_name(device_id);
                         unbind_device(device_id)?;
-                        eprintln!()
                     }
                 }
 
@@ -123,4 +131,50 @@ fn main() -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+fn eprint_device_name(device_id: &str) {
+    match get_device_name_by_id(device_id) {
+        Ok(name) => {
+            eprintln!(
+                "[INFO] found device to unbind, id: {}, name: {}",
+                device_id, name
+            );
+        }
+        Err(err) => {
+            eprintln!("[INFO] found device to unbind, id: {}", device_id);
+            eprintln!(
+                "[ERROR] failed to get name of device, id: {} -> {:#}",
+                device_id, err
+            );
+        }
+    }
+}
+
+fn get_device_name_by_id(id: &str) -> anyhow::Result<String> {
+    let pattern = &format!("/sys/bus/usb/devices/{id}/input/*/name");
+    let pattern2 = &format!("/sys/bus/usb/devices/{id}/*/input/*/name");
+    // eprintln!("[DEBUG] looking for device names with pattern: {}", pattern);
+    let paths = glob(pattern).expect("invalid glob pattern, shouldn't happen");
+    // eprintln!(
+    //     "[DEBUG] looking for device names with pattern: {}",
+    //     pattern2
+    // );
+    let paths2 = glob(pattern2).expect("invalid glob pattern, shouldn't happen");
+
+    let name = paths
+        .chain(paths2)
+        .next()
+        .ok_or(anyhow!(
+            "no paths found by either of the patterns: '{}' or '{}'",
+            pattern,
+            pattern2
+        ))
+        .and_then(|p| p.context("bad path"))
+        .and_then(|p| {
+            // eprintln!("[DEBUG] found path to read device name: {}", p.display());
+            std::fs::read_to_string(p).context("failed to read name of device from path")
+        })?;
+
+    Ok(name.trim().to_string())
 }
