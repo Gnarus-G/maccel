@@ -113,3 +113,14 @@ On an arch based distro you list the available headers with
 ```
 sudo pacman -Ss linux headers
 ```
+
+## Troubleshooting Driver
+
+If you notice any weird behavior and are looking to investigate it,
+then try a debug build of the driver. Run this modified install command.
+
+```sh
+curl -fsSL https://www.maccel.org/install.sh | sudo MACCEL_DEBUG_INSTALL=1 sh
+```
+
+This debugging experience might be lacking still. Feel free to report any issues.

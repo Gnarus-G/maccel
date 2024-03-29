@@ -1,3 +1,5 @@
+# MACCEL_DEBUG_INSTALL=0
+
 set -e
 
 setup_dirs() {
@@ -8,9 +10,13 @@ setup_dirs() {
 
 install_driver() {
   make uninstall || true
-  make install
+  if [ $MACCEL_DEBUG_INSTALL -eq 1 ]; then
+    echo "Will do a debug install as requested, MACCEL_DEBUG_INSTALL=1"
+    make debug_install
+  else
+    make install
+  fi
 }
-
 
 install_cli() {
   export VERSION=$(wget -qO- https://github.com/Gnarus-G/maccel/releases/latest | grep -oP 'v\d+\.\d+\.\d+' | tail -n 1);
