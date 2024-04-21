@@ -1,0 +1,66 @@
+* What?
+  This is my attempt to parse a HID report descriptor for a pointer device.
+  We are only interested in BUTTON, X, Y, and WHEEL inputs.
+
+  The parser is very crude and one =should definitely not use it= and rather use the code in =hid-core= of the linux kernel source.
+  However, right now, my understanding of =hid-core= is very limited, so I rather use this quick-and-dirty hack right now.
+  Feel free to contribute and fix this driver, so it uses the =hid= backend.
+
+  Right now, this parser has been successfully tested against several different mice with very different report descriptor responses.
+
+  In order to test this script, add a custom HEX report descriptor to the to =hid_parser.h= like
+  #+begin_src cpp
+  #define STEELSERIES_RIVAL_600 \
+  0x05, 0x01, 0x09, 0x02, 0xA1, 0x01, 0x09, 0x01, 0xA1, 0x00, 0xA1, 0x02, 0x05, 0x09, 0x19, 0x01, \
+  0x29, 0x08, 0x15, 0x00, 0x25, 0x01, 0x95, 0x08, 0x75, 0x01, 0x81, 0x02, 0x05, 0x01, 0x09, 0x30, \
+  0x09, 0x31, 0x16, 0x01, 0x80, 0x26, 0xFF, 0x7F, 0x75, 0x10, 0x95, 0x02, 0x81, 0x06, 0x09, 0x38, \
+  0x15, 0x81, 0x25, 0x7F, 0x75, 0x08, 0x95, 0x01, 0x81, 0x06, 0xC0, 0xA1, 0x02, 0x05, 0x0C, 0x0A, \
+  0x38, 0x02, 0x15, 0x81, 0x25, 0x7F, 0x75, 0x08, 0x95, 0x01, 0x81, 0x06, 0xC0, 0xA1, 0x02, 0x06, \
+  0xC1, 0xFF, 0x15, 0x00, 0x26, 0xFF, 0x00, 0x75, 0x08, 0x09, 0xF0, 0x95, 0x02, 0x81, 0x02, 0xC0, \
+  0xC0, 0xC0
+  #+end_src
+
+  To test the parsing of the descriptor, activate it in =hid_parser.cpp=.
+  #+begin_src cpp
+  unsigned char desc[] = {
+    STEELSERIES_RIVAL_600
+  }
+  #+end_src
+
+  Then just compile the code and compare the output (offset in bits and size in bits) with the data retrieve via =usb-hiddump= and [[https://eleccelerator.com/usbdescreqparser/][this website/parser]]
+  #+begin_src sh
+  g++ hid_parser.cpp && ./a.out
+  #+end_src
+
+  The output should look similar to
+  #+begin_src cfg
+  Is tagged with report ID: No
+  BTN     (0): Offset 0   Size 8  Signed 0
+  X       (0): Offset 8   Size 16 Signed 1
+  Y       (0): Offset 24  Size 16 Signed 1
+  WHL     (0): Offset 40  Size 8  Signed 1
+  #+end_src
+
+  The program also can parse raw USB packets. Simply add a raw USB packet to =hid_parser.cpp= like
+  #+begin_src sh
+  unsigned char packet[] = {
+    //### Steelseries Rival 600
+    0x00, 0xff, 0xff, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+  };
+  #+end_src
+  
+  You can get the corresponding report descriptor for your mouse via =usb-hiddump.= See this [[../Readme.org][Readme]] for more instructions on how to get the report descriptor.
+
+  In order to get a raw packet, you can intercept them via the leetmouse driver, by commenting out the =printk= lines in =util.c:extract_mouse_events=  (needs manual compilation). The code there looks like this
+  #+begin_src cpp
+  int i;
+  printk(KERN_CONT "Raw: ");
+  for(i = 0; i<buffer_len;i++){
+      printk(KERN_CONT "%x ", (int) buffer[i]);
+  }
+  printk(KERN_CONT "\n");
+  #+end_src
+
+  This will spam your kernel log (check with =dmesg -w=) with all packets from your mouse.
+
+  Alternatively, you can use wireshark for intercepting USB packets. But I did not test this myself!
