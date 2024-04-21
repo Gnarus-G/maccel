@@ -1,5 +1,5 @@
 # Makefile structure blatently "stolen" from OpenRazer 3.0.0 and adapted for leetmouse
-
+CC=gcc
 # DESTDIR is used to install into a different root directory
 DESTDIR?=/
 # Specify the kernel directory to use
@@ -23,7 +23,7 @@ driver:
 	@echo -e "\n::\033[32m Compiling leetmouse kernel module\033[0m"
 	@echo "========================================"
 	cp -n $(DRIVERDIR)/config.sample.h $(DRIVERDIR)/config.h
-	$(MAKE) -C $(KERNELDIR) M=$(DRIVERDIR) modules
+	$(MAKE) CC=$(CC) -C $(KERNELDIR) M=$(DRIVERDIR) modules
 
 
 driver_clean:
