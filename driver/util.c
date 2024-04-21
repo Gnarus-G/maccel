@@ -237,11 +237,11 @@ inline int extract_at(unsigned char *data, int data_len,
     __u8 raw[4]; // Raw buffer of individual bytes. Must be of same length as
                  // "init" and at least 2 bytes bigger than the biggest datatype
                  // you want to handle in here
-    __u32 init; // Continous buffer of aboves bytes (used for initialization)
-    __s8 s8;    // Return value
-    __s16 s16;  // Return value
-    __u8 u8;    // Return value
-    __u16 u16;  // Return value
+    __u32 init;  // Continous buffer of aboves bytes (used for initialization)
+    __s8 s8;     // Return value
+    __s16 s16;   // Return value
+    __u8 u8;     // Return value
+    __u16 u16;   // Return value
   } buffer;
 
   // Data structure to read is bigger than a clear multiple of 8 bits. Read one
