@@ -124,3 +124,13 @@ curl -fsSL https://www.maccel.org/install.sh | sudo MACCEL_DEBUG_INSTALL=1 sh
 ```
 
 This debugging experience might be lacking still. Feel free to report any issues.
+
+## Limitations
+
+This might not work for some mice.
+For all intents and purposes this is a bug.
+See this [issue](https://github.com/Gnarus-G/maccel/issues/9).
+
+Notably, I am using this (it is working) on:
+Razer Viper
+Razer Deathadder V2
