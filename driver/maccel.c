@@ -1,6 +1,7 @@
 #include "accel.h"
 #include "linux/ktime.h"
 #include "params.h"
+#include "util.h"
 #include <linux/hid.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
@@ -12,7 +13,8 @@ MODULE_AUTHOR("Gnarus-G");
 MODULE_DESCRIPTION("Mouse acceleration driver.");
 
 #define TRANSFER_BUFFER_LEN                                                    \
-  8 // When this was 16, sometimes clicks would fail to register, 8 is how it is
+  8 // When this was 16, sometimes clicks would fail to register, 8 is how it
+    // is
     // in the linux usbhid driver so it's probably better
 
 typedef struct {
@@ -22,6 +24,8 @@ typedef struct {
 
   struct input_dev *input_dev;
   struct urb *urb;
+
+  struct report_positions *data_pos;
 } maccel_ctx;
 
 static int usb_mouse_open(struct input_dev *dev) {
@@ -86,17 +90,22 @@ static void on_complete(struct urb *u) {
     goto resubmit;
   }
 
-  input_report_key(dev, BTN_LEFT, data[0] & 0x01);
-  input_report_key(dev, BTN_RIGHT, data[0] & 0x02);
-  input_report_key(dev, BTN_MIDDLE, data[0] & 0x04);
-  input_report_key(dev, BTN_SIDE, data[0] & 0x08);
-  input_report_key(dev, BTN_EXTRA, data[0] & 0x10);
+  signed int btn, x, y, wheel; // Leetmouse Mod
 
-  AccelResult result = accelerate(data[1], data[2]);
+  if (!extract_mouse_events(data, TRANSFER_BUFFER_LEN, ctx->data_pos, &btn, &x,
+                            &y, &wheel)) {
+    input_report_key(dev, BTN_LEFT, btn & 0x01);
+    input_report_key(dev, BTN_RIGHT, btn & 0x02);
+    input_report_key(dev, BTN_MIDDLE, btn & 0x04);
+    input_report_key(dev, BTN_SIDE, btn & 0x08);
+    input_report_key(dev, BTN_EXTRA, btn & 0x10);
 
-  input_report_rel(dev, REL_X, result.x);
-  input_report_rel(dev, REL_Y, result.y);
-  input_report_rel(dev, REL_WHEEL, data[3]);
+    AccelResult result = accelerate(x, y);
+
+    input_report_rel(dev, REL_X, result.x);
+    input_report_rel(dev, REL_Y, result.y);
+    input_report_rel(dev, REL_WHEEL, wheel);
+  }
 
   input_sync(dev);
 
@@ -107,8 +116,24 @@ resubmit:
   }
 }
 
+static int hid_get_class_descriptor(struct usb_device *dev, int ifnum,
+                                    unsigned char type, void *buf, int size) {
+  int result, retries = 4;
+
+  memset(buf, 0, size);
+
+  do {
+    result =
+        usb_control_msg(dev, usb_rcvctrlpipe(dev, 0), USB_REQ_GET_DESCRIPTOR,
+                        USB_RECIP_INTERFACE | USB_DIR_IN, (type << 8), ifnum,
+                        buf, size, USB_CTRL_GET_TIMEOUT);
+    retries--;
+  } while (result < size && retries);
+  return result;
+}
+
 static int probe(struct usb_interface *intf, const struct usb_device_id *id) {
-  int err = -ENOMEM;
+  int ret = -ENOMEM;
   struct usb_device *usb_dev = interface_to_usbdev(intf);
   struct urb *urb = usb_alloc_urb(0, GFP_KERNEL);
   struct usb_endpoint_descriptor *endpoint =
@@ -171,9 +196,78 @@ static int probe(struct usb_interface *intf, const struct usb_device_id *id) {
 
     ctx->input_dev = input_dev;
 
-    err = input_register_device(ctx->input_dev);
+    ret = input_register_device(ctx->input_dev);
 
     input_set_drvdata(ctx->input_dev, ctx);
+  }
+
+  {
+    // Leetmouse Mod Begin: Hid report descriptor parsing
+    struct hid_descriptor *hdesc;
+    struct report_positions *rpos;
+    unsigned int rsize = 0;
+    int num_descriptors;
+    char *rdesc;
+    unsigned int n = 0;
+    size_t offset = offsetof(struct hid_descriptor, desc);
+    struct usb_host_interface *interface;
+
+    interface = intf->cur_altsetting;
+
+    if (usb_get_extra_descriptor(interface, HID_DT_HID, &hdesc) &&
+        (!interface->desc.bNumEndpoints ||
+         usb_get_extra_descriptor(&interface->endpoint[0], HID_DT_HID,
+                                  &hdesc))) {
+      dbg_hid("class descriptor not present\n");
+      ret = -ENODEV;
+      goto err_free_input_dev;
+    }
+
+    if (hdesc->bLength < sizeof(struct hid_descriptor)) {
+      dbg_hid("hid descriptor is too short\n");
+      ret = -EINVAL;
+      goto err_free_input_dev;
+    }
+
+    num_descriptors =
+        min_t(int, hdesc->bNumDescriptors,
+              (hdesc->bLength - offset) / sizeof(struct hid_class_descriptor));
+
+    for (n = 0; n < num_descriptors; n++)
+      if (hdesc->desc[n].bDescriptorType == HID_DT_REPORT)
+        rsize = le16_to_cpu(hdesc->desc[n].wDescriptorLength);
+
+    if (!rsize || rsize > HID_MAX_DESCRIPTOR_SIZE) {
+      dbg_hid("weird size of report descriptor (%u)\n", rsize);
+      ret = -EINVAL;
+      goto err_free_input_dev;
+    }
+
+    rdesc = kmalloc(rsize, GFP_KERNEL);
+    if (!rdesc)
+      goto err_free_input_dev;
+
+    ret = hid_get_class_descriptor(usb_dev, interface->desc.bInterfaceNumber,
+                                   HID_DT_REPORT, rdesc, rsize);
+    if (ret < 0) {
+      dbg_hid("reading report descriptor failed\n");
+      kfree(rdesc);
+      goto err_free_input_dev;
+    }
+
+    rpos = kmalloc(sizeof(struct report_positions), GFP_KERNEL);
+    if (!rpos) {
+      kfree(rdesc);
+      goto err_free_input_dev;
+    }
+    ctx->data_pos = rpos;
+
+    // Parse the descriptor and delete it
+    ret = parse_report_desc(rdesc, rsize, rpos);
+    kfree(rdesc);
+    if (ret < 0)
+      goto err_free_report_desc;
+    // Leetmouse Mod END
   }
 
   ctx->data_buf =
@@ -183,7 +277,7 @@ static int probe(struct usb_interface *intf, const struct usb_device_id *id) {
   usb_fill_int_urb(urb, usb_dev, pipe, ctx->data_buf, TRANSFER_BUFFER_LEN,
                    on_complete, ctx, endpoint->bInterval);
 
-  if (!ctx->data_buf || err) {
+  if (!ctx->data_buf || ret) {
     goto err_free_urb_transfer_data;
   }
 
@@ -198,13 +292,16 @@ static int probe(struct usb_interface *intf, const struct usb_device_id *id) {
 err_free_urb_transfer_data:
   usb_free_coherent(usb_dev, 8, ctx->data_buf, urb->transfer_dma);
 
+err_free_report_desc:
+  kfree(ctx->data_pos);
+
 err_free_input_dev:
   input_free_device(input_dev);
 
 err_free_ctx_and_urb:
   usb_free_urb(urb);
   kfree(ctx);
-  return err;
+  return ret;
 }
 
 static void disconnect(struct usb_interface *intf) {
