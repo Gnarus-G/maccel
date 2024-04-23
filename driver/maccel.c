@@ -270,11 +270,14 @@ static int probe(struct usb_interface *intf, const struct usb_device_id *id) {
     // Leetmouse Mod END
   }
 
-  ctx->data_buf =
-      usb_alloc_coherent(usb_dev, 8, GFP_ATOMIC, &urb->transfer_dma);
+  int maxp = usb_maxpacket(usb_dev, pipe);
+
+  ctx->data_buf = usb_alloc_coherent(usb_dev, TRANSFER_BUFFER_LEN, GFP_ATOMIC,
+                                     &urb->transfer_dma);
   urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
 
-  usb_fill_int_urb(urb, usb_dev, pipe, ctx->data_buf, TRANSFER_BUFFER_LEN,
+  usb_fill_int_urb(urb, usb_dev, pipe, ctx->data_buf,
+                   (maxp > TRANSFER_BUFFER_LEN ? TRANSFER_BUFFER_LEN : maxp),
                    on_complete, ctx, endpoint->bInterval);
 
   if (!ctx->data_buf || ret) {
@@ -290,7 +293,8 @@ static int probe(struct usb_interface *intf, const struct usb_device_id *id) {
   return 0;
 
 err_free_urb_transfer_data:
-  usb_free_coherent(usb_dev, 8, ctx->data_buf, urb->transfer_dma);
+  usb_free_coherent(usb_dev, TRANSFER_BUFFER_LEN, ctx->data_buf,
+                    urb->transfer_dma);
 
 err_free_report_desc:
   kfree(ctx->data_pos);
@@ -309,8 +313,8 @@ static void disconnect(struct usb_interface *intf) {
   usb_set_intfdata(intf, NULL);
   if (ctx) {
     input_unregister_device(ctx->input_dev);
-    usb_free_coherent(interface_to_usbdev(intf), 8, ctx->data_buf,
-                      ctx->urb->transfer_dma);
+    usb_free_coherent(interface_to_usbdev(intf), TRANSFER_BUFFER_LEN,
+                      ctx->data_buf, ctx->urb->transfer_dma);
     usb_kill_urb(ctx->urb);
     usb_free_urb(ctx->urb);
     kfree(ctx);
