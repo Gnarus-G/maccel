@@ -69,6 +69,8 @@ static inline AccelResult f_accelerate(s8 x, s8 y, u32 polling_interval,
   fixedpt sens = sensitivity(speed_in, param_sens_mult, param_accel,
                              param_offset, param_output_cap);
 
+  dbg("final sensitivity %s", fixedpt_cstr(sens, 5));
+
   fixedpt dx_out = fixedpt_mul(dx, sens);
   fixedpt dy_out = fixedpt_mul(dy, sens);
 

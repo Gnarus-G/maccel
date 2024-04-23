@@ -101,6 +101,8 @@ static void on_complete(struct urb *u) {
 
     AccelResult result = accelerate(x, y);
 
+    dbg("[MOUSE_MOVE] output             (%d, %d)", x, y);
+
     input_report_rel(dev, REL_X, result.x);
     input_report_rel(dev, REL_Y, result.y);
     input_report_rel(dev, REL_WHEEL, wheel);
