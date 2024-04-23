@@ -13,9 +13,8 @@ MODULE_AUTHOR("Gnarus-G");
 MODULE_DESCRIPTION("Mouse acceleration driver.");
 
 #define TRANSFER_BUFFER_LEN                                                    \
-  8 // When this was 16, sometimes clicks would fail to register, 8 is how it
-    // is
-    // in the linux usbhid driver so it's probably better
+  16 // linux's usbmouse driver has this set to 8
+     // but leetmouse has it set 16 to better support some mice.
 
 typedef struct {
   s8 *data_buf;
