@@ -128,9 +128,10 @@ This debugging experience might be lacking still. Feel free to report any issues
 ## Limitations
 
 This might not work for some mice.
-For all intents and purposes this is a bug.
-See this [issue](https://github.com/Gnarus-G/maccel/issues/9).
+For all intents and purposes this is a bug.  
+See [this issue](https://github.com/Gnarus-G/maccel/issues/9).  
+If you're having an issue like this, it may help to install `maccel` from a [different branch](https://github.com/Gnarus-G/maccel/issues/9#issuecomment-2068290121).
 
-Notably, I am using this (it is working) on:
+Notably, I am using this (it is working) on:  
 Razer Viper
 Razer Deathadder V2
