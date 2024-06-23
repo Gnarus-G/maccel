@@ -30,9 +30,8 @@ uninstall:
 	@sudo rmmod maccel
 	@sudo rm -fv $(MODULEDIR)/maccel.ko
 
-update: 
-	make uninstall || true
-	make install
+refresh: default uninstall
+	@sudo make debug_install
 
 build_cli:
 	cargo build --release --manifest-path=cli/Cargo.toml
