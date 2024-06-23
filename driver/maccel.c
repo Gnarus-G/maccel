@@ -63,7 +63,7 @@ static AccelResult inline accelerate(s8 x, s8 y) {
                       PARAM_OUTPUT_CAP);
 }
 
-void on_complete(struct urb *u) {
+static void on_complete(struct urb *u) {
   s32 status = 0;
   maccel_ctx *ctx = u->context;
   struct input_dev *dev = ctx->input_dev;
@@ -107,7 +107,7 @@ resubmit:
   }
 }
 
-int probe(struct usb_interface *intf, const struct usb_device_id *id) {
+static int probe(struct usb_interface *intf, const struct usb_device_id *id) {
   int err = -ENOMEM;
   struct usb_device *usb_dev = interface_to_usbdev(intf);
   struct urb *urb = usb_alloc_urb(0, GFP_KERNEL);
@@ -207,7 +207,7 @@ err_free_ctx_and_urb:
   return err;
 }
 
-void disconnect(struct usb_interface *intf) {
+static void disconnect(struct usb_interface *intf) {
   maccel_ctx *ctx = usb_get_intfdata(intf);
   usb_set_intfdata(intf, NULL);
   if (ctx) {
