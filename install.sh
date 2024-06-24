@@ -1,4 +1,5 @@
 # MACCEL_DEBUG_INSTALL=0
+# MACCEL_LEETMOUSE_HID_PARSER=0
 
 print_bold() {
   printf "\e[1m$1\e[22m"
@@ -25,7 +26,14 @@ set -e
 setup_dirs() {
   rm -rf /opt/maccel && mkdir -p /opt/maccel
   cd /opt/maccel
-  git clone --depth 1 https://github.com/Gnarus-G/maccel.git .
+
+  if [[ $MACCEL_LEETMOUSE_HID_PARSER -eq 1 ]]; then
+    print_bold "Will do an install, using leetmouse HID parser, as requested, MACCEL_LEETMOUSE_HID_PARSER=1\n"
+    git clone --depth 1 --no-single-branch https://github.com/Gnarus-G/maccel.git .
+    git switch feat/leetmouse-hid-parser
+  else
+    git clone --depth 1 https://github.com/Gnarus-G/maccel.git .
+  fi
 }
 
 version_update_warning() {
@@ -63,8 +71,8 @@ version_update_warning() {
 
 install_driver() {
   make uninstall || true
-  if [ $MACCEL_DEBUG_INSTALL -eq 1 ]; then
-    echo "Will do a debug install as requested, MACCEL_DEBUG_INSTALL=1"
+  if [[ $MACCEL_DEBUG_INSTALL -eq 1 ]]; then
+    print_bold "Will do a debug install as requested, MACCEL_DEBUG_INSTALL=1\n"
     make debug_install
   else
     make install
