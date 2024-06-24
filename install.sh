@@ -30,7 +30,7 @@ setup_dirs() {
   if [[ $MACCEL_LEETMOUSE_HID_PARSER -eq 1 ]]; then
     print_bold "Will do an install, using leetmouse HID parser, as requested, MACCEL_LEETMOUSE_HID_PARSER=1\n"
     git clone --depth 1 --no-single-branch https://github.com/Gnarus-G/maccel.git .
-    git switch feat/leetmouse-hid-parser
+    git switch with-leetmouse-hid-parser
   else
     git clone --depth 1 https://github.com/Gnarus-G/maccel.git .
   fi
