@@ -44,9 +44,9 @@ version_update_warning() {
     print_yellow "The precision for the processed values has been updated since version '$CURR_VERSION';\n"
     EMPHASIS=$(print_bold "MUST re-enter your parameter values in maccel")
     print_yellow "This means that you $EMPHASIS.\n"
-    print_yellow "Otherwise your curve and mouse movement won't work as expected.\n"
+    print_yellow "Otherwise your curve and mouse movement won't behave as expected.\n"
 
-    printf "\nHere are your values as maccel understands them now:\n"
+    printf "\nHere were your values as maccel understands them in '$CURR_VERSION':\n"
 
     print_bold "SENS MULT:  "
     maccel get sens-mult
@@ -90,7 +90,7 @@ trigger_udev_rules() {
   udevadm trigger --subsystem-match=usb --subsystem-match=input --subsystem-match=hid --attr-match=bInterfaceClass=03 --attr-match=bInterfaceSubClass=01 --attr-match=bInterfaceProtocol=02
 }
 
-version_update_warning
+ATTENTION=$(version_update_warning)
 
 underline_start
 print_bold "\nFetching the maccel github repo"
@@ -121,3 +121,5 @@ print_bold $(print_green "[Recommended]")
 print_bold ' Add yourself to the "maccel" group\n'
 print_bold $(print_green "[Recommended]")
 print_bold ' usermod -aG maccel $$USER\n'
+
+printf "\n$ATTENTION\n"
