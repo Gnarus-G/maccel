@@ -66,15 +66,6 @@ One should disable the acceleration done by default in some distros, e.g. by `xs
 
 Here is [Breakdown of why and how I ended up making this](https://www.bytin.tech/blog/maccel/)
 
-## References
-
-- https://lwn.net/Kernel/LDD3/
-- https://github.com/torvalds/linux/blob/master/drivers/hid/usbhid/usbmouse.c
-- https://www.kernel.org/doc/html/latest/input/index.html
-- https://github.com/a1xd/rawaccel/blob/master/doc/Guide.md
-- https://github.com/Skyl3r/leetmouse/blob/master/driver/accel.c
-- https://sourceforge.net/p/fixedptc/code/ci/default/tree/
-
 ## Troubleshooting Install
 
 ### gcc
@@ -135,3 +126,12 @@ If you're having an issue like this, it may help to install `maccel` from a [dif
 Notably, I am using this (it is working) on:  
 Razer Viper,
 Razer Deathadder V2
+
+## References
+
+- https://lwn.net/Kernel/LDD3/
+- https://github.com/torvalds/linux/blob/master/drivers/hid/usbhid/usbmouse.c
+- https://www.kernel.org/doc/html/latest/input/index.html
+- https://github.com/a1xd/rawaccel/blob/master/doc/Guide.md
+- https://github.com/Skyl3r/leetmouse/blob/master/driver/accel.c
+- https://sourceforge.net/p/fixedptc/code/ci/default/tree/
