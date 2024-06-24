@@ -31,7 +31,6 @@ setup_dirs() {
 version_update_warning() {
 
   if ! which maccel &>/dev/null; then
-    print_yellow "BAD"
     return
   fi
 
