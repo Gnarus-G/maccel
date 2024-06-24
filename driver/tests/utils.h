@@ -112,15 +112,15 @@ static int test_acceleration(const char *filename, fixedpt param_sens_mult,
                              fixedpt param_accel, fixedpt param_offset,
                              fixedpt param_output_cap) {
   const s8 LINE_LEN = 26;
-  const s8 X_RANGE = 127;
-  const s8 Y_RANGE = 127;
+  const s8 MIN = -128;
+  const s8 MAX = 127;
 
-  char content[(X_RANGE * Y_RANGE) * LINE_LEN + 1];
+  char content[256 * 256 * LINE_LEN + 1];
   strcpy(content, ""); // initialize as an empty string
 
   AccelResult result;
-  for (s8 x = 0; x < X_RANGE; x++) {
-    for (s8 y = 0; y < Y_RANGE; y++) {
+  for (s8 x = MIN; x < MAX; x++) {
+    for (s8 y = MIN; y < MAX; y++) {
 
       result = f_accelerate(x, y, 1, param_sens_mult, param_accel, param_offset,
                             param_output_cap);
