@@ -322,7 +322,7 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
 
     // Done with parameter inputs, now on to the graph
 
-    let (bounds, labels) = bounds_and_labels([0.0, 80.0], 8);
+    let (bounds, labels) = bounds_and_labels([0.0, 128.0], 16);
     let x_axis = Axis::default()
         .title("Speed_in".magenta())
         .style(Style::default().white())
@@ -330,24 +330,33 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
         .labels(labels);
 
     // To make the y axis bounds and labels scale with our sensitivity multiplier
-    let mut y_bounds = [0.0, 5.0];
-    y_bounds[1] *= app
-        .parameters
-        .iter()
-        .find(|&p| p.param == Param::SensMult)
-        .expect("we should include the Sensitivity multiplier param in the list")
-        .value;
+    let auto_scaled_y_bounds = {
+        let mut out_cap = app
+            .parameters
+            .iter()
+            .find(|&p| p.param == Param::OutputCap)
+            .expect("we should include the Output cap param in the list")
+            .value;
+        out_cap = out_cap.max(1.0);
 
-    let (bounds, labels) = bounds_and_labels(y_bounds, 5);
+        let sens_mult = app
+            .parameters
+            .iter()
+            .find(|&p| p.param == Param::SensMult)
+            .expect("we should include the Sensitivity multiplier param in the list")
+            .value;
+        [0.0, sens_mult * out_cap * 2.0]
+    };
+
+    let (bounds, labels) = bounds_and_labels(auto_scaled_y_bounds, 5);
     let y_axis = Axis::default()
         .title("Sensitivity".magenta())
         .style(Style::default().white())
         .bounds(bounds)
         .labels(labels);
 
-    let data: Vec<_> = (0..800)
-        .map(|x| x as f32)
-        .map(|x| x * 0.1)
+    let data: Vec<_> = (0..1000)
+        .map(|x| (x as f32) * 0.1375)
         .map(|x| (x as f64, sensitivity(x, Params::new())))
         .collect();
 
