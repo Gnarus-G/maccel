@@ -127,6 +127,6 @@ install_cli
 print_bold $(print_green "[Recommended]")
 print_bold ' Add yourself to the "maccel" group\n'
 print_bold $(print_green "[Recommended]")
-print_bold ' usermod -aG maccel $$USER\n'
+print_bold ' usermod -aG maccel $USER\n'
 
 printf "\n$ATTENTION\n"
