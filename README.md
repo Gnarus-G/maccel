@@ -99,7 +99,7 @@ You want to find headers that match your kernel as represented by
 uname -r
 ```
 
-On an arch based distro you list the available headers with
+On an arch based distro you search for the available headers with
 
 ```
 sudo pacman -Ss linux headers
