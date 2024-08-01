@@ -25,8 +25,8 @@ install: default
 	ls -l /sys/module/maccel/parameters/*
 
 uninstall:
-	@sudo rmmod maccel
 	@sudo rm -fv $(MODULEDIR)/maccel.ko
+	@sudo rmmod maccel
 
 refresh: default uninstall
 	@sudo make debug_install
