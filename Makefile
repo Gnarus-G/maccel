@@ -15,10 +15,10 @@ build:
 debug_install: debug install
 
 install: default
+	@sudo insmod $(DRIVERDIR)/*.ko;
 	@mkdir -p $(MODULEDIR)
 	@sudo cp -v $(DRIVERDIR)/*.ko $(MODULEDIR);
 	@sudo chown -v root:root $(MODULEDIR)/*.ko;
-	@sudo insmod $(MODULEDIR)/*.ko;
 	sudo groupadd -f maccel;
 	sudo depmod; 
 	sudo chown -v :maccel /sys/module/maccel/parameters/*;
@@ -26,9 +26,13 @@ install: default
 
 uninstall:
 	@sudo rm -fv $(MODULEDIR)/maccel.ko
+	@sudo rm -fv $(MODULEDIR)/maccel.ko
 	@sudo rmmod maccel
 
-refresh: default uninstall
+refresh: default uninstall clean
+	@sudo make install
+
+refresh-debug: default uninstall clean
 	@sudo make debug_install
 
 build_cli:
