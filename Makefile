@@ -25,7 +25,7 @@ install: default
 	ls -l /sys/module/maccel/parameters/*
 
 uninstall:
-	@sudo rm -fv $(MODULEDIR)/maccel.ko
+	@sudo rm -fv $(DRIVERDIR)/maccel.ko
 	@sudo rm -fv $(MODULEDIR)/maccel.ko
 	@sudo rmmod maccel
 
