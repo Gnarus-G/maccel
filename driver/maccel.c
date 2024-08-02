@@ -1,11 +1,14 @@
 #include "accel.h"
 #include "dbg.h"
 #include "linux/bits.h"
+#include "linux/gfp_types.h"
 #include "linux/input-event-codes.h"
+#include "linux/jiffies.h"
 #include "linux/kern_levels.h"
 #include "linux/ktime.h"
 #include "linux/mod_devicetable.h"
 #include "linux/printk.h"
+#include "linux/slab.h"
 #include "params.h"
 #include <linux/hid.h>
 #include <linux/input.h>
@@ -41,31 +44,61 @@ static AccelResult inline accelerate(s8 x, s8 y) {
                       PARAM_OUTPUT_CAP);
 }
 
-static bool maccel_filter(struct input_handle *handle, unsigned int type,
-                          unsigned int code, int value) {
+struct ctx {
+  unsigned long last_event_jiffies;
+};
+
+static void emit_accelerated_event(struct input_handle *handle,
+                                   unsigned int code, int value) {
+
   static int x_value = 0;
   static int y_value = 0;
 
+  AccelResult accelerated;
+
+  if (code == REL_X) {
+    x_value = value;
+    accelerated = accelerate(x_value, y_value);
+    /* input_inject_event(handle, EV_REL, code, accelerated.x); */
+
+    /* input_report_rel(handle->dev, code, accelerated.x); */
+  }
+
+  if (code == REL_Y) {
+    y_value = value;
+    accelerated = accelerate(x_value, y_value);
+    /* input_inject_event(handle, type, code, accelerated.y); */
+  }
+
+  printk(KERN_INFO pr_fmt("handled EV_REL: (%d, %d)"), accelerated.x,
+         accelerated.y);
+
+  /* input_sync(handle->dev); */
+}
+
+static bool maccel_filter(struct input_handle *handle, unsigned int type,
+                          unsigned int code, int value) {
   printk(KERN_INFO pr_fmt("Looking for: type %d, code %d (x) or code %d (y)"),
          EV_REL, REL_X, REL_Y);
   printk(KERN_INFO pr_fmt("Filter: type %d, code %d"), type, code);
 
-  /* if (type == EV_REL) { */
-  /*   AccelResult accelerated = accelerate(x_value, y_value); */
+  struct ctx *ctx = handle->private;
+
+  /* unsigned long curren_jiffies = jiffies; */
   /**/
-  /*   if (code == REL_X) { */
-  /*     x_value = value; */
-  /*     input_event(handle->dev, type, code, accelerated.x); */
-  /*   } */
+  /* printk(KERN_INFO pr_fmt("last jiffies: %lu"), ctx->last_event_jiffies); */
+  /* printk(KERN_INFO pr_fmt("curr jiffies: %lu"), curren_jiffies); */
+
+  /* if (time_after(curren_jiffies, ctx->last_event_jiffies)) { */
+  /*   ctx->last_event_jiffies = curren_jiffies; */
   /**/
-  /*   if (code == REL_Y) { */
-  /*     y_value = value; */
-  /*     input_event(handle->dev, type, code, accelerated.y); */
-  /*   } */
-  /**/
-  /*   return false; // since we handled this skip the following event handlers.
-   */
   /* } */
+
+  if (type == EV_REL) {
+    printk(pr_fmt("maccel handler received EV_REL"));
+    /* emit_accelerated_event(handle, code, value); */
+    return true;
+  }
 
   return false;
 }
@@ -78,46 +111,75 @@ static void maccel_event(struct input_handle *handle, unsigned int type,
 
 static bool maccel_match(struct input_handler *handler, struct input_dev *dev) {
   struct hid_device *hdev = to_hid_device(dev->dev.parent);
-  dbg("maccel handler found a mouse: %d", hdev->type == HID_TYPE_USBMOUSE);
+
+  printk(KERN_INFO "maccel handler found a pointer device named: %s",
+         hdev->name);
+  printk(KERN_INFO "maccel handler found a mouse? %s",
+         hdev->type == HID_TYPE_USBMOUSE ? "true" : "false");
+
   return hdev->type == HID_TYPE_USBMOUSE;
 }
 
 static int maccel_connect(struct input_handler *handler, struct input_dev *dev,
                           const struct input_device_id *id) {
   struct input_handle *handle;
+  struct ctx *ctx;
   int error;
 
   handle = kzalloc(sizeof(struct input_handle), GFP_KERNEL);
   if (!handle)
     return -ENOMEM;
 
+  ctx = kzalloc(sizeof(struct ctx), GFP_KERNEL);
+  if (!ctx) {
+    kfree(handle);
+    return -ENOMEM;
+  }
+
+  ctx->last_event_jiffies = 0;
+
   handle->dev = input_get_device(dev);
   handle->handler = handler;
   handle->name = "maccel";
+  handle->private = ctx;
 
   error = input_register_handle(handle);
-  if (error) {
-    kfree(handle);
-    return error;
-  }
+  if (error)
+    goto err_free_mem;
 
   error = input_open_device(handle);
-  if (error) {
-    input_unregister_handle(handle);
-    kfree(handle);
-    return error;
-  }
+  if (error)
+    goto err_unregister_handle;
+
+  error = input_grab_device(handle);
+  if (error)
+    goto err_close_dev;
 
   printk(KERN_INFO pr_fmt("maccel handler connecting device: %s (%s at %s)"),
          dev_name(&dev->dev), dev->name ?: "unknown", dev->phys ?: "unknown");
 
   return 0;
+
+err_close_dev:
+  input_close_device(handle);
+
+err_unregister_handle:
+  input_unregister_handle(handle);
+
+err_free_mem:
+  kfree(handle);
+  kfree(ctx);
+  return error;
 }
 
 static void maccel_disconnect(struct input_handle *handle) {
+  struct ctx *ctx = handle->private;
+
+  input_release_device(handle);
   input_close_device(handle);
   input_unregister_handle(handle);
   kfree(handle);
+  kfree(ctx);
 }
 
 static const struct input_device_id my_ids[] = {
