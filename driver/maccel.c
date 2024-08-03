@@ -50,18 +50,40 @@ struct maccel_data {
   int value;
 };
 
+static bool is_injecting = false;
 static void maccel_work(struct work_struct *work) {
   struct maccel_data *data = container_of(work, struct maccel_data, work);
 
-  // Inject the modified event
-  input_event(data->handle->dev, data->type, data->code, data->value * 2);
+  static int x, y = 0;
+  AccelResult acceled;
+
+  is_injecting = true;
+
+  if (data->code == REL_X) {
+    x = data->value;
+    acceled = accelerate(x, y);
+    input_event(data->handle->dev, data->type, data->code, acceled.x);
+  }
+
+  if (data->code == REL_Y) {
+    y = data->value;
+    acceled = accelerate(x, y);
+    input_event(data->handle->dev, data->type, data->code, acceled.y);
+  }
+
   input_sync(data->handle->dev);
+
+  is_injecting = false;
 
   kfree(data);
 }
 
 static bool maccel_filter(struct input_handle *handle, unsigned int type,
                           unsigned int code, int value) {
+  if (is_injecting) {
+    return false;
+  }
+
   if (type == EV_REL) {
     printk(KERN_INFO "Filter: type %d, code %d, value %d\n", type, code, value);
 
@@ -122,17 +144,10 @@ static int maccel_connect(struct input_handler *handler, struct input_dev *dev,
   if (error)
     goto err_unregister_handle;
 
-  /* error = input_grab_device(handle); */
-  /* if (error) */
-  /*   goto err_close_dev; */
-
   printk(KERN_INFO pr_fmt("maccel handler connecting device: %s (%s at %s)"),
          dev_name(&dev->dev), dev->name ?: "unknown", dev->phys ?: "unknown");
 
   return 0;
-
-  /* err_close_dev: */
-  /*   input_close_device(handle); */
 
 err_unregister_handle:
   input_unregister_handle(handle);
@@ -144,7 +159,6 @@ err_free_mem:
 
 static void maccel_disconnect(struct input_handle *handle) {
 
-  /* input_release_device(handle); */
   input_close_device(handle);
   input_unregister_handle(handle);
   kfree(handle);
