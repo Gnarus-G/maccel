@@ -8,8 +8,9 @@
   module_param_named(param, PARAM_##param, int, RW_USER_GROUP);                \
   MODULE_PARM_DESC(param, desc);
 
-PARAM(SENS_MULT, 1.0,
+PARAM(SENS_MULT, 0.09375,
       "A factor applied the sensitivity calculation after ACCEL is applied.");
-PARAM(ACCEL, 0.0, "Control the sensitivity calculation.");
-PARAM(OFFSET, 0.0, "Control the input speed past which to allow acceleration.");
-PARAM(OUTPUT_CAP, 0.0, "Control the maximum sensitivity.");
+PARAM(ACCEL, 0.05, "Control the sensitivity calculation.");
+PARAM(OFFSET, 21.333333,
+      "Control the input speed past which to allow acceleration.");
+PARAM(OUTPUT_CAP, 2.0, "Control the maximum sensitivity.");
