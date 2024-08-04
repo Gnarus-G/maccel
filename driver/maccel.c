@@ -1,6 +1,5 @@
 #include "accel.h"
 #include "linux/bits.h"
-#include "linux/fs.h"
 #include "linux/gfp_types.h"
 #include "linux/input-event-codes.h"
 #include "linux/kern_levels.h"
@@ -8,8 +7,6 @@
 #include "linux/mod_devicetable.h"
 #include "linux/printk.h"
 #include "linux/slab.h"
-#include "linux/spinlock.h"
-#include "linux/workqueue.h"
 #include "params.h"
 #include <linux/hid.h>
 #include <linux/input.h>
@@ -19,7 +16,7 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Gnarus-G");
 MODULE_DESCRIPTION("Mouse acceleration driver");
 
-static AccelResult inline accelerate(s8 x, s8 y) {
+static AccelResult inline accelerate(int x, int y) {
   static ktime_t last;
   static u64 last_ms = 1;
 
@@ -44,99 +41,49 @@ static AccelResult inline accelerate(s8 x, s8 y) {
 
 struct input_dev *virtual_input_dev;
 
-struct ctx {
-  spinlock_t lock;
-  struct workqueue_struct *wq;
-  unsigned long last_event_jiffies;
-};
-
-struct maccel_data {
-  struct work_struct work;
-  struct input_handle *handle;
-  unsigned int type;
-  unsigned int code;
-  int value;
-};
-
-static void maccel_work(struct work_struct *work) {
-  struct maccel_data *data = container_of(work, struct maccel_data, work);
-  static int x, y = 0;
-  struct input_handle *handle = data->handle;
-  unsigned int type = data->type;
-  unsigned int code = data->code;
-  int value = data->value;
-
-  if (type != EV_REL) {
-    /* input_inject_event(handle, type, code, value); */
-    kfree(data);
-    return;
-  }
-
-  printk(KERN_INFO "Event Before: type %d, code %d, value %d\n", type, code,
-         value);
-
-  AccelResult acceled;
-
-  if (code == REL_X) {
-    x = value;
-    acceled = accelerate(x, y);
-    /* input_inject_event(handle, EV_REL, code, acceled.x); */
-  }
-
-  if (code == REL_Y) {
-    y = value;
-    acceled = accelerate(x, y);
-    /* input_inject_event(handle, EV_REL, code, acceled.y); */
-  }
-  printk(KERN_INFO "accel: (%d, %d) -> (%d, %d)", x, y, acceled.x, acceled.y);
-  input_sync(handle->dev);
-
-  kfree(data);
-}
-
 static bool maccel_filter(struct input_handle *handle, unsigned int type,
 
                           unsigned int code, int value) {
-  struct ctx *ctx = handle->private;
+  bool is_mouse_move = type == EV_REL && (code == REL_X || code == REL_Y);
 
-  unsigned long flags;
-  spin_lock_irqsave(&ctx->lock, flags);
+  if (is_mouse_move) {
+    static int mouse_move[2] = {0};
+    static short occupancy = 0;
+    mouse_move[code] = value;
+    occupancy++;
 
-  unsigned long curr_jiffies = jiffies;
-  /* printk(KERN_INFO "jiffies, last %lu vs now %lu", ctx->last_event_jiffies,
-   */
-  /*        curr_jiffies); */
-  if (time_after(curr_jiffies, ctx->last_event_jiffies)) {
-    ctx->last_event_jiffies = curr_jiffies;
+    if (occupancy == 2) {
+      AccelResult accelerated = accelerate(mouse_move[0], mouse_move[1]);
 
-    struct maccel_data *data = kmalloc(sizeof(*data), GFP_ATOMIC);
-    if (!data) {
-      printk(KERN_ERR "Failed to allocate work data\n");
-      return false;
+      input_report_rel(virtual_input_dev, REL_X, accelerated.x);
+      input_report_rel(virtual_input_dev, REL_Y, accelerated.y);
+      input_sync(virtual_input_dev);
+
+      /* printk(KERN_INFO "accel: (%d, %d) -> (%d, %d)", mouse_move[0], */
+      /*        mouse_move[1], accelerated.x, accelerated.y); */
+
+      // Reset REL movement cache.
+      occupancy = 0;
+      mouse_move[0] = 0;
+      mouse_move[1] = 0;
     }
 
-    INIT_WORK(&data->work, maccel_work);
-    data->handle = handle;
-    data->type = type;
-    data->code = code;
-    data->value = value;
-    queue_work(ctx->wq, &data->work);
-
-    spin_unlock_irqrestore(&ctx->lock, flags);
-    return true;
+    return true; // so input system skips (filters out) this unaccelerated
+                 // mouse input.
   }
 
-  spin_unlock_irqrestore(&ctx->lock, flags);
   return false;
 }
 
 static bool maccel_match(struct input_handler *handler, struct input_dev *dev) {
+  if (dev->dev.parent == NULL) { // Probably our virtual driver;
+    return false;
+  }
   struct hid_device *hdev = to_hid_device(dev->dev.parent);
 
-  printk(KERN_INFO "maccel handler found a pointer device named: %s",
-         hdev->name);
-  printk(KERN_INFO "maccel handler found a mouse? %s",
-         hdev->type == HID_TYPE_USBMOUSE ? "true" : "false");
+  printk(KERN_INFO "maccel found a possible mouse: %s", hdev->name);
+  /* printk(KERN_INFO "is it a mouse? %s", */
+  /*        hdev->type == HID_TYPE_USBMOUSE ? "true" : "false"); */
 
   return hdev->type == HID_TYPE_USBMOUSE;
 }
@@ -144,42 +91,25 @@ static bool maccel_match(struct input_handler *handler, struct input_dev *dev) {
 static int maccel_connect(struct input_handler *handler, struct input_dev *dev,
                           const struct input_device_id *id) {
   struct input_handle *handle;
-  struct ctx *ctx;
   int error;
 
   handle = kzalloc(sizeof(struct input_handle), GFP_KERNEL);
   if (!handle)
     return -ENOMEM;
 
-  ctx = kzalloc(sizeof(struct input_handle), GFP_KERNEL);
-  if (!ctx) {
-    kfree(handle);
-    return -ENOMEM;
-  }
-
   handle->dev = input_get_device(dev);
   handle->handler = handler;
   handle->name = "maccel";
-  handle->private = ctx;
-  ctx->last_event_jiffies = 0;
-  spin_lock_init(&ctx->lock);
-
-  ctx->wq = create_singlethread_workqueue("maccel_event_queue");
-
-  if (!ctx->wq) {
-    error = -ENOMEM;
-    goto err_free_mem;
-  }
 
   error = input_register_handle(handle);
   if (error)
-    goto err_destroy_wq;
+    goto err_free_mem;
 
   error = input_open_device(handle);
   if (error)
     goto err_unregister_handle;
 
-  printk(KERN_INFO pr_fmt("maccel handler connecting device: %s (%s at %s)"),
+  printk(KERN_INFO pr_fmt("maccel connecting to device: %s (%s at %s)"),
          dev_name(&dev->dev), dev->name ?: "unknown", dev->phys ?: "unknown");
 
   return 0;
@@ -187,23 +117,14 @@ static int maccel_connect(struct input_handler *handler, struct input_dev *dev,
 err_unregister_handle:
   input_unregister_handle(handle);
 
-err_destroy_wq:
-  destroy_workqueue(ctx->wq);
-
 err_free_mem:
-  kfree(ctx);
   kfree(handle);
   return error;
 }
 
 static void maccel_disconnect(struct input_handle *handle) {
-  struct ctx *ctx = handle->private;
-  flush_workqueue(ctx->wq);
-  destroy_workqueue(ctx->wq);
-
   input_close_device(handle);
   input_unregister_handle(handle);
-  kfree(ctx);
   kfree(handle);
 }
 
@@ -234,8 +155,8 @@ static int create_virtual_device(void) {
 
   virtual_input_dev->name = "maccel [Virtual Mouse]";
   virtual_input_dev->id.bustype = BUS_USB;
-  virtual_input_dev->id.vendor = 0x1234;
-  virtual_input_dev->id.product = 0x5678;
+  /* virtual_input_dev->id.vendor = 0x1234; */
+  /* virtual_input_dev->id.product = 0x5678; */
   virtual_input_dev->id.version = 1;
 
   // Set the supported event types and codes for the virtual device

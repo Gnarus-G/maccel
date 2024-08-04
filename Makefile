@@ -16,17 +16,17 @@ debug_install: debug install
 
 install: default
 	@sudo insmod $(DRIVERDIR)/*.ko;
-	# @mkdir -p $(MODULEDIR)
-	# @sudo cp -v $(DRIVERDIR)/*.ko $(MODULEDIR);
-	# @sudo chown -v root:root $(MODULEDIR)/*.ko;
-	# sudo groupadd -f maccel;
-	# sudo depmod; 
-	# sudo chown -v :maccel /sys/module/maccel/parameters/*;
-	# ls -l /sys/module/maccel/parameters/*
+	@mkdir -p $(MODULEDIR)
+	@sudo cp -v $(DRIVERDIR)/*.ko $(MODULEDIR);
+	@sudo chown -v root:root $(MODULEDIR)/*.ko;
+	sudo groupadd -f maccel;
+	sudo depmod; 
+	sudo chown -v :maccel /sys/module/maccel/parameters/*;
+	ls -l /sys/module/maccel/parameters/*
 
 uninstall:
 	@sudo rm -fv $(DRIVERDIR)/maccel.ko
-	# @sudo rm -fv $(MODULEDIR)/maccel.ko
+	@sudo rm -fv $(MODULEDIR)/maccel.ko
 	@sudo rmmod maccel
 
 refresh: default uninstall clean
