@@ -42,6 +42,8 @@ static AccelResult inline accelerate(s8 x, s8 y) {
                       PARAM_OUTPUT_CAP);
 }
 
+struct input_dev *virtual_input_dev;
+
 struct ctx {
   spinlock_t lock;
   struct workqueue_struct *wq;
@@ -65,7 +67,7 @@ static void maccel_work(struct work_struct *work) {
   int value = data->value;
 
   if (type != EV_REL) {
-    input_inject_event(handle, type, code, value);
+    /* input_inject_event(handle, type, code, value); */
     kfree(data);
     return;
   }
@@ -78,13 +80,13 @@ static void maccel_work(struct work_struct *work) {
   if (code == REL_X) {
     x = value;
     acceled = accelerate(x, y);
-    input_inject_event(handle, EV_REL, code, acceled.x);
+    /* input_inject_event(handle, EV_REL, code, acceled.x); */
   }
 
   if (code == REL_Y) {
     y = value;
     acceled = accelerate(x, y);
-    input_inject_event(handle, EV_REL, code, acceled.y);
+    /* input_inject_event(handle, EV_REL, code, acceled.y); */
   }
   printk(KERN_INFO "accel: (%d, %d) -> (%d, %d)", x, y, acceled.x, acceled.y);
   input_sync(handle->dev);
@@ -220,11 +222,55 @@ static struct input_handler maccel_handler = {.filter = maccel_filter,
                                               .id_table = my_ids,
                                               .match = maccel_match};
 
+// Function to create the virtual input device
+static int create_virtual_device(void) {
+  int error;
+
+  virtual_input_dev = input_allocate_device();
+  if (!virtual_input_dev) {
+    printk(KERN_ERR "Failed to allocate virtual input device\n");
+    return -ENOMEM;
+  }
+
+  virtual_input_dev->name = "maccel [Virtual Mouse]";
+  virtual_input_dev->id.bustype = BUS_USB;
+  virtual_input_dev->id.vendor = 0x1234;
+  virtual_input_dev->id.product = 0x5678;
+  virtual_input_dev->id.version = 1;
+
+  // Set the supported event types and codes for the virtual device
+  set_bit(EV_KEY, virtual_input_dev->evbit);
+  set_bit(BTN_LEFT, virtual_input_dev->keybit);
+  set_bit(BTN_RIGHT, virtual_input_dev->keybit);
+
+  set_bit(EV_REL, virtual_input_dev->evbit);
+  set_bit(REL_X, virtual_input_dev->relbit);
+  set_bit(REL_Y, virtual_input_dev->relbit);
+
+  error = input_register_device(virtual_input_dev);
+  if (error) {
+    printk(KERN_ERR "Failed to register virtual input device\n");
+    input_free_device(virtual_input_dev);
+    return error;
+  }
+
+  return 0;
+}
+
 static int __init my_init(void) {
+  int error;
+  error = create_virtual_device();
+  if (error) {
+    return error;
+  }
   return input_register_handler(&maccel_handler);
 }
 
-static void __exit my_exit(void) { input_unregister_handler(&maccel_handler); }
+static void __exit my_exit(void) {
+  input_unregister_handler(&maccel_handler);
+  input_unregister_device(virtual_input_dev);
+  input_free_device(virtual_input_dev);
+}
 
 module_init(my_init);
 module_exit(my_exit);
