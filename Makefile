@@ -37,10 +37,12 @@ refresh-debug: default uninstall clean
 
 build_cli:
 	cargo build --release --manifest-path=cli/Cargo.toml
-	
-udev_install: build_cli
-	sudo install -m 644 -v -D `pwd`/udev_rules/99-maccel.rules /usr/lib/udev/rules.d/99-maccel.rules
+
+install_cli: build_cli
 	sudo install -m 755 `pwd`/cli/target/release/maccel /usr/local/bin/maccel
+	
+udev_install: install_cli
+	sudo install -m 644 -v -D `pwd`/udev_rules/99-maccel.rules /usr/lib/udev/rules.d/99-maccel.rules
 	sudo install -m 755 -v -D `pwd`/udev_rules/maccel_bind /usr/lib/udev/maccel_bind
 
 udev_uninstall:
