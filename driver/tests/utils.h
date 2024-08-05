@@ -34,7 +34,7 @@ static int diff(const char *content, const char *filename) {
     dup2(pipe_fd[0], STDIN_FILENO);
 
     // Execute a command (e.g., "wc -l")
-    execlp("diff", "diff", "-u", "--color", "-", filename, NULL);
+    execlp("diff", "diff", "-u", "--color", filename, "-", NULL);
 
     // If execlp fails
     perror("Exec failed");
@@ -111,16 +111,16 @@ static void assert_snapshot(const char *filename, const char *content) {
 static int test_acceleration(const char *filename, fixedpt param_sens_mult,
                              fixedpt param_accel, fixedpt param_offset,
                              fixedpt param_output_cap) {
-  const s8 LINE_LEN = 26;
-  const s8 MIN = -128;
-  const s8 MAX = 127;
+  const int LINE_LEN = 26;
+  const int MIN = -128;
+  const int MAX = 127;
 
   char content[256 * 256 * LINE_LEN + 1];
   strcpy(content, ""); // initialize as an empty string
 
   AccelResult result;
-  for (s8 x = MIN; x < MAX; x++) {
-    for (s8 y = MIN; y < MAX; y++) {
+  for (int x = MIN; x < MAX; x++) {
+    for (int y = MIN; y < MAX; y++) {
 
       result = f_accelerate(x, y, 1, param_sens_mult, param_accel, param_offset,
                             param_output_cap);

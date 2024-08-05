@@ -88,10 +88,13 @@ static inline AccelResult f_accelerate(int x, int y, u32 polling_interval,
   result.x = fixedpt_toint(dx_out);
   result.y = fixedpt_toint(dy_out);
 
-  dbg("out (int conversiont)     (%d, %d)", result.x, result.y);
+  dbg("out (int conversion)      (%d, %d)", result.x, result.y);
 
   carry_x = fixedpt_sub(dx_out, fixedpt_fromint(result.x));
   carry_y = fixedpt_sub(dy_out, fixedpt_fromint(result.y));
+
+  dbg("carry                     (%s, %s)", fixedpt_cstr(carry_x, 6),
+      fixedpt_cstr(carry_x, 6));
 
   return result;
 }
