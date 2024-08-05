@@ -38,6 +38,13 @@ enum ParamsCommand {
     Unbindall,
     /// Set the value for a parameter of the maccel driver
     Set { name: Param, value: f32 },
+    /// Set the values for all parameters in order
+    Setall {
+        sens_mult: f32,
+        accel: f32,
+        offset: f32,
+        output_cap: f32,
+    },
     /// Get the value for a parameter of the maccel driver
     Get { name: Param },
     /// Generate a completions file for a specified shell
@@ -127,6 +134,17 @@ fn main() -> anyhow::Result<()> {
         ParamsCommand::Tui => run_tui()?,
         ParamsCommand::Completion { shell } => {
             clap_complete::generate(shell, &mut Cli::command(), "maccel", &mut std::io::stdout())
+        }
+        ParamsCommand::Setall {
+            sens_mult,
+            accel,
+            offset,
+            output_cap,
+        } => {
+            Param::SensMult.set(sens_mult)?;
+            Param::Accel.set(accel)?;
+            Param::Offset.set(offset)?;
+            Param::OutputCap.set(output_cap)?;
         }
     }
 
