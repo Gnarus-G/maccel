@@ -21,14 +21,19 @@ pub enum Param {
 impl Param {
     pub fn set(&self, value: f32) -> anyhow::Result<()> {
         let value: Fixedpt = value.into();
-
-        let mut file = File::create(self.path()?)
-            .context("failed to open the parameter's file for writing")?;
+        let path = self.path()?;
+        let mut file = File::create(&path).context(anyhow!(
+            "failed to open the parameter's file for writing: {}",
+            path.display()
+        ))?;
 
         use std::io::Write;
 
         let value = value.0;
-        write!(file, "{}", value).context("failed to write to parameter file")?;
+        write!(file, "{}", value).context(anyhow!(
+            "failed to write to parameter file: {}",
+            path.display()
+        ))?;
         self.save_reset_script(value)?;
 
         Ok(())
@@ -53,8 +58,13 @@ impl Param {
     }
 
     pub fn get(&self) -> anyhow::Result<Fixedpt> {
-        let mut file =
-            File::open(self.path()?).context("failed to open the parameter's file for reading: this shouldn't happen unless the maccel kernel module is not installed.")?;
+        let path = self.path()?;
+        let mut file = File::open(&path)
+            .context(anyhow!(
+                "failed to open the parameter's file for reading: {}",
+                path.display()
+            ))
+            .context("this shouldn't happen unless the maccel kernel module is not installed.")?;
 
         let mut buf = String::new();
 
@@ -90,7 +100,8 @@ impl Param {
             .join(self.name());
 
         if !params_path.exists() {
-            return Err(anyhow!("no such parameter {:?}", self));
+            return Err(anyhow!("no such path: {}", params_path.display()))
+                .context(anyhow!("no such parameter {:?}", self));
         }
 
         return Ok(params_path);

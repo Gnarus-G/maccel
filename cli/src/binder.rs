@@ -7,13 +7,13 @@ pub fn bind_device(device_id: &str) -> anyhow::Result<()> {
     eprintln!("[INFO] unbinding from hid-generic");
     unbind_device_from_driver("usbhid", device_id)?;
     eprintln!("[INFO] binding to maccel");
-    bind_device_to_driver("maccel", device_id)?;
+    bind_device_to_driver("maccel_usbmouse", device_id)?;
     Ok(())
 }
 
 pub fn unbind_device(device_id: &str) -> anyhow::Result<()> {
     eprintln!("[INFO] unbinding from maccel");
-    unbind_device_from_driver("maccel", device_id)?;
+    unbind_device_from_driver("maccel_usbmouse", device_id)?;
     eprintln!("[INFO] binding to hid-generic");
     bind_device_to_driver("usbhid", device_id)?;
 
@@ -72,7 +72,7 @@ fn unbind_device_from_driver(driver: &str, device_id: &str) -> anyhow::Result<()
     Ok(())
 }
 
-/// Because our udev rules auto bind mice to maccel driver, use this while trying to unbind mice.
+/// Because our udev rules auto bind mice to maccel usbmouse driver, use this while trying to unbind mice.
 pub fn disabling_udev_rules<F: Fn() -> anyhow::Result<()>>(proc: F) -> anyhow::Result<()> {
     let udev_rules_path = "/usr/lib/udev/rules.d/99-maccel.rules";
 

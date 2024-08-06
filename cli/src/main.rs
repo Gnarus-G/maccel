@@ -114,14 +114,14 @@ fn main() -> anyhow::Result<()> {
             eprintln!("[INFO] looking for all devices bound to maccel");
 
             disabling_udev_rules(|| {
-                let dirs = std::fs::read_dir("/sys/bus/usb/drivers/maccel")?;
+                let dirs = std::fs::read_dir("/sys/bus/usb/drivers/maccel_usbmouse")?;
 
                 for d in dirs.flatten() {
                     let path = d.path();
                     let basename = path.file_name();
                     if path.is_dir() && basename != Some(&OsStr::from("module")) {
                         let device_id = basename.unwrap().to_str().expect(
-                        "basename of the /sys/*/drivers/maccel device_id paths should be strings",
+                        "basename of the /sys/**/drivers/maccel_usbmouse device_id paths should be strings",
                     );
                         eprint_device_name(device_id);
                         unbind_device(device_id)?;

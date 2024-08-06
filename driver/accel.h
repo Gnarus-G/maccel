@@ -1,3 +1,6 @@
+#ifndef _ACCEL_H_
+#define _ACCEL_H_
+
 #include "dbg.h"
 #include "fixedptc.h"
 
@@ -98,3 +101,5 @@ static inline AccelResult f_accelerate(int x, int y, u32 polling_interval,
 
   return result;
 }
+
+#endif
