@@ -5,7 +5,8 @@
 #include "./input_handler.h"
 #include "./usbmouse.h"
 
-// The virtual_input_dev is defined for/in the maccel_input_handler module
+// The virtual_input_dev is declared for/in the maccel_input_handler module.
+// This initializes it.
 static int create_virtual_device(void) {
   int error;
 
@@ -40,6 +41,11 @@ static int create_virtual_device(void) {
   return 0;
 }
 
+/*
+ * We initialize the virtual_input_dev for input_handler
+ * and the usb driver for the usb_mouse driver -
+ * Some may prefer to bind to this usbmouse driver if their mouse allows.
+ */
 static int __init my_init(void) {
   int error;
   error = create_virtual_device();

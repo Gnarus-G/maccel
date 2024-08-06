@@ -1,7 +1,9 @@
 #include "./accelk.h"
+#include "accel.h"
 #include <linux/hid.h>
 
 struct input_dev *virtual_input_dev;
+static int mouse_move[2] = {0};
 
 static bool maccel_filter(struct input_handle *handle, unsigned int type,
 
@@ -9,29 +11,27 @@ static bool maccel_filter(struct input_handle *handle, unsigned int type,
   bool is_mouse_move = type == EV_REL && (code == REL_X || code == REL_Y);
 
   if (is_mouse_move) {
-    static int mouse_move[2] = {0};
-    static short occupancy = 0;
+    dbg("EV_REL => code %s, value %d", code == REL_X ? "x" : "y", value);
     mouse_move[code] = value;
-    occupancy++;
-
-    if (occupancy == 2) {
-      AccelResult accelerated = accelerate(mouse_move[0], mouse_move[1]);
-
-      input_report_rel(virtual_input_dev, REL_X, accelerated.x);
-      input_report_rel(virtual_input_dev, REL_Y, accelerated.y);
-      input_sync(virtual_input_dev);
-
-      /* printk(KERN_INFO "accel: (%d, %d) -> (%d, %d)", mouse_move[0], */
-      /*        mouse_move[1], accelerated.x, accelerated.y); */
-
-      // Reset REL movement cache.
-      occupancy = 0;
-      mouse_move[0] = 0;
-      mouse_move[1] = 0;
-    }
-
     return true; // so input system skips (filters out) this unaccelerated
                  // mouse input.
+  }
+
+  if (type == EV_SYN) {
+    dbg("EV_SYN => code %d", code);
+    AccelResult accelerated = accelerate(mouse_move[0], mouse_move[1]);
+
+    // FIXME: might be doubling single REL events, dubious
+    input_report_rel(virtual_input_dev, REL_X, accelerated.x);
+    input_report_rel(virtual_input_dev, REL_Y, accelerated.y);
+
+    dbg(KERN_INFO "accel: (%d, %d) -> (%d, %d)", mouse_move[0], mouse_move[1],
+        accelerated.x, accelerated.y);
+
+    input_sync(virtual_input_dev);
+
+    mouse_move[0] = 0;
+    mouse_move[1] = 0;
   }
 
   return false;
