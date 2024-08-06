@@ -3,7 +3,10 @@
 #include <linux/hid.h>
 
 struct input_dev *virtual_input_dev;
-static int mouse_move[2] = {0};
+
+static int mouse_move[2] = {0}; // [x, y]
+static u8 num_ev_rel_events_before_syn_report = 0;
+static u8 last_ev_rel_code = 0;
 
 static bool maccel_filter(struct input_handle *handle, unsigned int type,
 
@@ -13,25 +16,37 @@ static bool maccel_filter(struct input_handle *handle, unsigned int type,
   if (is_mouse_move) {
     dbg("EV_REL => code %s, value %d", code == REL_X ? "x" : "y", value);
     mouse_move[code] = value;
+
+    num_ev_rel_events_before_syn_report++;
+    last_ev_rel_code = code;
     return true; // so input system skips (filters out) this unaccelerated
                  // mouse input.
   }
 
   if (type == EV_SYN) {
     dbg("EV_SYN => code %d", code);
+
+    dbg("event count %d, last code %d", num_ev_rel_events_before_syn_report,
+        last_ev_rel_code);
     AccelResult accelerated = accelerate(mouse_move[0], mouse_move[1]);
 
-    // FIXME: might be doubling single REL events, dubious
-    input_report_rel(virtual_input_dev, REL_X, accelerated.x);
-    input_report_rel(virtual_input_dev, REL_Y, accelerated.y);
+    if (num_ev_rel_events_before_syn_report == 2) {
+      input_report_rel(virtual_input_dev, REL_X, accelerated.x);
+      input_report_rel(virtual_input_dev, REL_Y, accelerated.y);
+    } else if (last_ev_rel_code == REL_X) {
+      input_report_rel(virtual_input_dev, REL_X, accelerated.x);
+    } else if (last_ev_rel_code == REL_Y) {
+      input_report_rel(virtual_input_dev, REL_Y, accelerated.y);
+    }
 
-    dbg(KERN_INFO "accel: (%d, %d) -> (%d, %d)", mouse_move[0], mouse_move[1],
+    dbg("accel: (%d, %d) -> (%d, %d)", mouse_move[0], mouse_move[1],
         accelerated.x, accelerated.y);
 
     input_sync(virtual_input_dev);
 
     mouse_move[0] = 0;
     mouse_move[1] = 0;
+    num_ev_rel_events_before_syn_report = 0;
   }
 
   return false;
