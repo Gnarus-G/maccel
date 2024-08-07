@@ -30,6 +30,19 @@ static int create_virtual_device(void) {
   set_bit(EV_REL, virtual_input_dev->evbit);
   set_bit(REL_X, virtual_input_dev->relbit);
   set_bit(REL_Y, virtual_input_dev->relbit);
+  set_bit(REL_Z, virtual_input_dev->relbit);
+  set_bit(REL_RX, virtual_input_dev->relbit);
+  set_bit(REL_RY, virtual_input_dev->relbit);
+  set_bit(REL_RZ, virtual_input_dev->relbit);
+  set_bit(REL_HWHEEL, virtual_input_dev->relbit);
+  set_bit(REL_DIAL, virtual_input_dev->relbit);
+  set_bit(REL_WHEEL, virtual_input_dev->relbit);
+  set_bit(REL_MISC, virtual_input_dev->relbit);
+  set_bit(REL_RESERVED, virtual_input_dev->relbit);
+  set_bit(REL_WHEEL_HI_RES, virtual_input_dev->relbit);
+  set_bit(REL_HWHEEL_HI_RES, virtual_input_dev->relbit);
+  set_bit(REL_MAX, virtual_input_dev->relbit);
+  set_bit(REL_CNT, virtual_input_dev->relbit);
 
   error = input_register_device(virtual_input_dev);
   if (error) {

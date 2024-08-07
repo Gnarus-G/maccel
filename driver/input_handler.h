@@ -4,53 +4,61 @@
 
 struct input_dev *virtual_input_dev;
 
-static int mouse_move[2] = {0}; // [x, y]
-static u8 num_ev_rel_events_before_syn_report = 0;
-static u8 last_ev_rel_code = 0;
+#define NONE_EVENT_VALUE 0
+static int relative_axis_events[REL_CNT] = { // [x, y, ..., wheel, ...]
+    NONE_EVENT_VALUE};
 
-static bool maccel_filter(struct input_handle *handle, unsigned int type,
+static bool maccel_filter(struct input_handle *handle, u32 type,
 
-                          unsigned int code, int value) {
+                          u32 code, int value) {
   /* printk(KERN_INFO "type %d, code %d, value %d", type, code, value); */
-  bool is_mouse_move = type == EV_REL && (code == REL_X || code == REL_Y);
 
-  if (is_mouse_move) {
-    dbg("EV_REL => code %s, value %d", code == REL_X ? "x" : "y", value);
-    mouse_move[code] = value;
-
-    num_ev_rel_events_before_syn_report++;
-    last_ev_rel_code = code;
+  switch (type) {
+  case EV_REL: {
+    dbg("EV_REL => code %d, value %d", code, value);
+    relative_axis_events[code] = value;
     return true; // so input system skips (filters out) this unaccelerated
                  // mouse input.
   }
+  case EV_SYN: {
+    int x = relative_axis_events[REL_X];
+    int y = relative_axis_events[REL_Y];
+    if (x || y) {
+      dbg("EV_SYN => code %d", code);
 
-  if (type == EV_SYN && num_ev_rel_events_before_syn_report > 0) {
-    dbg("EV_SYN => code %d", code);
+      AccelResult accelerated = accelerate(x, y);
 
-    dbg("event count %d, last code %d", num_ev_rel_events_before_syn_report,
-        last_ev_rel_code);
-    AccelResult accelerated = accelerate(mouse_move[0], mouse_move[1]);
+      if (x && y) {
+        input_report_rel(virtual_input_dev, REL_X, accelerated.x);
+        input_report_rel(virtual_input_dev, REL_Y, accelerated.y);
+      } else if (x) {
+        input_report_rel(virtual_input_dev, REL_X, accelerated.x);
+      } else if (y) {
+        input_report_rel(virtual_input_dev, REL_Y, accelerated.y);
+      }
 
-    if (num_ev_rel_events_before_syn_report == 2) {
-      input_report_rel(virtual_input_dev, REL_X, accelerated.x);
-      input_report_rel(virtual_input_dev, REL_Y, accelerated.y);
-    } else if (last_ev_rel_code == REL_X) {
-      input_report_rel(virtual_input_dev, REL_X, accelerated.x);
-    } else if (last_ev_rel_code == REL_Y) {
-      input_report_rel(virtual_input_dev, REL_Y, accelerated.y);
+      dbg("accel: (%d, %d) -> (%d, %d)", x, y, accelerated.x, accelerated.y);
+
+      relative_axis_events[REL_X] = NONE_EVENT_VALUE;
+      relative_axis_events[REL_Y] = NONE_EVENT_VALUE;
     }
 
-    dbg("accel: (%d, %d) -> (%d, %d)", mouse_move[0], mouse_move[1],
-        accelerated.x, accelerated.y);
+    for (u32 code = REL_Z; code < REL_CNT; code++) {
+      int value = relative_axis_events[code];
+      if (value != NONE_EVENT_VALUE) {
+        input_report_rel(virtual_input_dev, code, value);
+        relative_axis_events[code] = NONE_EVENT_VALUE;
+      }
+    }
 
     input_sync(virtual_input_dev);
 
-    mouse_move[0] = 0;
-    mouse_move[1] = 0;
-    num_ev_rel_events_before_syn_report = 0;
+    return false;
   }
 
-  return false;
+  default:
+    return false;
+  }
 }
 
 static bool maccel_match(struct input_handler *handler, struct input_dev *dev) {
