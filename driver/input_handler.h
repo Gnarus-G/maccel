@@ -11,6 +11,7 @@ static u8 last_ev_rel_code = 0;
 static bool maccel_filter(struct input_handle *handle, unsigned int type,
 
                           unsigned int code, int value) {
+  /* printk(KERN_INFO "type %d, code %d, value %d", type, code, value); */
   bool is_mouse_move = type == EV_REL && (code == REL_X || code == REL_Y);
 
   if (is_mouse_move) {
@@ -23,7 +24,7 @@ static bool maccel_filter(struct input_handle *handle, unsigned int type,
                  // mouse input.
   }
 
-  if (type == EV_SYN) {
+  if (type == EV_SYN && num_ev_rel_events_before_syn_report > 0) {
     dbg("EV_SYN => code %d", code);
 
     dbg("event count %d, last code %d", num_ev_rel_events_before_syn_report,
@@ -53,7 +54,7 @@ static bool maccel_filter(struct input_handle *handle, unsigned int type,
 }
 
 static bool maccel_match(struct input_handler *handler, struct input_dev *dev) {
-  if (dev->dev.parent == NULL) { // Probably our virtual driver;
+  if (dev == virtual_input_dev) {
     return false;
   }
   struct hid_device *hdev = to_hid_device(dev->dev.parent);
