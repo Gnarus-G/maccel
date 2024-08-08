@@ -23,26 +23,16 @@ static int create_virtual_device(void) {
   virtual_input_dev->id.version = 1;
 
   // Set the supported event types and codes for the virtual device
+  // and for some reason not setting some EV_KEY bits causes a noticeable
+  // difference in the values we operate on, leading to a different
+  // acceleration behavior than we expect.
   set_bit(EV_KEY, virtual_input_dev->evbit);
   set_bit(BTN_LEFT, virtual_input_dev->keybit);
-  set_bit(BTN_RIGHT, virtual_input_dev->keybit);
 
   set_bit(EV_REL, virtual_input_dev->evbit);
-  set_bit(REL_X, virtual_input_dev->relbit);
-  set_bit(REL_Y, virtual_input_dev->relbit);
-  set_bit(REL_Z, virtual_input_dev->relbit);
-  set_bit(REL_RX, virtual_input_dev->relbit);
-  set_bit(REL_RY, virtual_input_dev->relbit);
-  set_bit(REL_RZ, virtual_input_dev->relbit);
-  set_bit(REL_HWHEEL, virtual_input_dev->relbit);
-  set_bit(REL_DIAL, virtual_input_dev->relbit);
-  set_bit(REL_WHEEL, virtual_input_dev->relbit);
-  set_bit(REL_MISC, virtual_input_dev->relbit);
-  set_bit(REL_RESERVED, virtual_input_dev->relbit);
-  set_bit(REL_WHEEL_HI_RES, virtual_input_dev->relbit);
-  set_bit(REL_HWHEEL_HI_RES, virtual_input_dev->relbit);
-  set_bit(REL_MAX, virtual_input_dev->relbit);
-  set_bit(REL_CNT, virtual_input_dev->relbit);
+  for (u32 code = REL_X; code < REL_CNT; code++) {
+    set_bit(code, virtual_input_dev->relbit);
+  }
 
   error = input_register_device(virtual_input_dev);
   if (error) {
@@ -65,7 +55,7 @@ static int __init my_init(void) {
   if (error) {
     return error;
   }
-  error = usb_register_driver(&maccel_usb_driver, THIS_MODULE, KBUILD_MODNAME);
+  error = usb_register(&maccel_usb_driver);
   if (error) {
     input_unregister_device(virtual_input_dev);
     input_free_device(virtual_input_dev);
