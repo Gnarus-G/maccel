@@ -77,7 +77,9 @@ static int __init my_init(void) {
 
 static void __exit my_exit(void) {
   input_unregister_handler(&maccel_handler);
+
   usb_deregister(&maccel_usb_driver);
+
   input_unregister_device(virtual_input_dev);
   input_free_device(virtual_input_dev);
 }

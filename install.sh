@@ -1,3 +1,4 @@
+# MACCEL_ENABLE_USBMOUSE=0
 # MACCEL_DEBUG_INSTALL=0
 # MACCEL_LEETMOUSE_HID_PARSER=0
 
@@ -89,7 +90,12 @@ install_cli() {
 
 install_udev_rules() {
   sudo install -m 644 -v -D $(pwd)/udev_rules/99-maccel.rules /usr/lib/udev/rules.d/99-maccel.rules
-  sudo install -m 755 -v -D $(pwd)/udev_rules/maccel_bind /usr/lib/udev/maccel_bind
+  sudo install -m 755 -v -D $(pwd)/udev_rules/maccel_param_ownership_and_resets /usr/lib/udev/maccel_param_ownership_and_resets 
+
+  if [[ $MACCEL_ENABLE_USBMOUSE -eq 1 ]]; then
+    sudo install -m 755 -v -D $(pwd)/udev_rules/maccel_bind /usr/lib/udev/maccel_bind
+    sudo install -m 644 -v -D $(pwd)/udev_rules/99-maccel-bind.rules /usr/lib/udev/rules.d/99-maccel-bind.rules
+  fi
 }
 
 trigger_udev_rules() {
