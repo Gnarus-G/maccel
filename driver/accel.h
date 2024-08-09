@@ -1,12 +1,14 @@
+#ifndef _ACCEL_H_
+#define _ACCEL_H_
+
 #include "dbg.h"
 #include "fixedptc.h"
 
-typedef signed char s8;
 typedef unsigned int u32;
 
 typedef struct {
-  s8 x;
-  s8 y;
+  int x;
+  int y;
 } AccelResult;
 
 static const fixedpt FIXEDPT_ZERO = fixedpt_rconst(0.0);
@@ -44,7 +46,7 @@ extern inline fixedpt sensitivity(fixedpt input_speed, fixedpt param_sens_mult,
   return sens;
 }
 
-static inline AccelResult f_accelerate(s8 x, s8 y, u32 polling_interval,
+static inline AccelResult f_accelerate(int x, int y, u32 polling_interval,
                                        fixedpt param_sens_mult,
                                        fixedpt param_accel,
                                        fixedpt param_offset,
@@ -89,10 +91,15 @@ static inline AccelResult f_accelerate(s8 x, s8 y, u32 polling_interval,
   result.x = fixedpt_toint(dx_out);
   result.y = fixedpt_toint(dy_out);
 
-  dbg("out (int conversiont)     (%d, %d)", result.x, result.y);
+  dbg("out (int conversion)      (%d, %d)", result.x, result.y);
 
   carry_x = fixedpt_sub(dx_out, fixedpt_fromint(result.x));
   carry_y = fixedpt_sub(dy_out, fixedpt_fromint(result.y));
 
+  dbg("carry                     (%s, %s)", fixedpt_cstr(carry_x, 6),
+      fixedpt_cstr(carry_x, 6));
+
   return result;
 }
+
+#endif

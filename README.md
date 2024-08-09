@@ -140,3 +140,8 @@ Razer Deathadder V2
 - https://github.com/a1xd/rawaccel/blob/master/doc/Guide.md
 - https://github.com/Skyl3r/leetmouse/blob/master/driver/accel.c
 - https://sourceforge.net/p/fixedptc/code/ci/default/tree/
+- https://github.com/torvalds/linux/blob/master/drivers/input/evdev.c
+- https://github.com/freedesktop-unofficial-mirror/evtest/blob/master/evtest.c
+- https://docs.kernel.org/input/input-programming.html
+- https://www.kernel.org/doc/Documentation/input/input.txt
+- https://docs.kernel.org/driver-api/input.html

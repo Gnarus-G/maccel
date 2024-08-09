@@ -38,6 +38,13 @@ enum ParamsCommand {
     Unbindall,
     /// Set the value for a parameter of the maccel driver
     Set { name: Param, value: f32 },
+    /// Set the values for all parameters in order
+    Setall {
+        sens_mult: f32,
+        accel: f32,
+        offset: f32,
+        output_cap: f32,
+    },
     /// Get the value for a parameter of the maccel driver
     Get { name: Param },
     /// Generate a completions file for a specified shell
@@ -107,14 +114,14 @@ fn main() -> anyhow::Result<()> {
             eprintln!("[INFO] looking for all devices bound to maccel");
 
             disabling_udev_rules(|| {
-                let dirs = std::fs::read_dir("/sys/bus/usb/drivers/maccel")?;
+                let dirs = std::fs::read_dir("/sys/bus/usb/drivers/maccel_usbmouse")?;
 
                 for d in dirs.flatten() {
                     let path = d.path();
                     let basename = path.file_name();
                     if path.is_dir() && basename != Some(&OsStr::from("module")) {
                         let device_id = basename.unwrap().to_str().expect(
-                        "basename of the /sys/*/drivers/maccel device_id paths should be strings",
+                        "basename of the /sys/**/drivers/maccel_usbmouse device_id paths should be strings",
                     );
                         eprint_device_name(device_id);
                         unbind_device(device_id)?;
@@ -127,6 +134,17 @@ fn main() -> anyhow::Result<()> {
         ParamsCommand::Tui => run_tui()?,
         ParamsCommand::Completion { shell } => {
             clap_complete::generate(shell, &mut Cli::command(), "maccel", &mut std::io::stdout())
+        }
+        ParamsCommand::Setall {
+            sens_mult,
+            accel,
+            offset,
+            output_cap,
+        } => {
+            Param::SensMult.set(sens_mult)?;
+            Param::Accel.set(accel)?;
+            Param::Offset.set(offset)?;
+            Param::OutputCap.set(output_cap)?;
         }
     }
 
