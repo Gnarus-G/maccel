@@ -62,9 +62,11 @@ static bool maccel_filter(struct input_handle *handle, u32 type,
 }
 
 static bool maccel_match(struct input_handler *handler, struct input_dev *dev) {
-  if (dev == virtual_input_dev) {
+  if (dev == virtual_input_dev)
     return false;
-  }
+  if (!dev->dev.parent)
+    return false;
+
   struct hid_device *hdev = to_hid_device(dev->dev.parent);
 
   printk(KERN_INFO "maccel found a possible mouse: %s", hdev->name);
