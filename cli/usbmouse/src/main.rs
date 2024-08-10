@@ -92,7 +92,8 @@ fn main() -> anyhow::Result<()> {
             eprintln!("[INFO] looking for all devices bound to maccel");
 
             disabling_udev_rules(|| {
-                let dirs = std::fs::read_dir("/sys/bus/usb/drivers/maccel_usbmouse")?;
+                let dirs = std::fs::read_dir("/sys/bus/usb/drivers/maccel_usbmouse")
+                    .context("failed to read module driver")?;
 
                 for d in dirs.flatten() {
                     let path = d.path();

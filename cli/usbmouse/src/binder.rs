@@ -1,7 +1,7 @@
 use std::io::Write;
 use std::{fs::File, path::PathBuf};
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 
 pub fn bind_device(device_id: &str) -> anyhow::Result<()> {
     eprintln!("[INFO] unbinding from hid-generic");
@@ -24,16 +24,17 @@ fn bind_device_to_driver(driver: &str, device_id: &str) -> anyhow::Result<()> {
     let bind_path = PathBuf::from(format!("/sys/bus/usb/drivers/{}/bind", driver));
 
     let mut bind_file = File::create(&bind_path).with_context(|| {
-        format!(
+        anyhow!(
             "failed to open the bind path for writing: {}",
             bind_path.display()
         )
     })?;
 
     bind_file.write_all(device_id.as_bytes()).with_context(|| {
-        format!(
+        anyhow!(
             "failed to bind device '{}' to driver '{}'",
-            device_id, driver
+            device_id,
+            driver
         )
     })?;
 
@@ -54,7 +55,7 @@ fn unbind_device_from_driver(driver: &str, device_id: &str) -> anyhow::Result<()
     let unbind_path = PathBuf::from(format!("/sys/bus/usb/drivers/{}/unbind", driver));
 
     let mut unbind_file = File::create(&unbind_path).with_context(|| {
-        format!(
+        anyhow!(
             "failed to open the unbind path for writing: {}",
             unbind_path.display()
         )
@@ -63,9 +64,10 @@ fn unbind_device_from_driver(driver: &str, device_id: &str) -> anyhow::Result<()
     unbind_file
         .write_all(device_id.as_bytes())
         .with_context(|| {
-            format!(
+            anyhow!(
                 "failed to unbind device '{}' from driver '{}'",
-                device_id, driver
+                device_id,
+                driver
             )
         })?;
 
