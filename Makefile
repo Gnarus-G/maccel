@@ -15,35 +15,46 @@ build:
 debug_install: debug install
 
 install: default
+	@sudo insmod $(DRIVERDIR)/maccel.ko;
+	
 	@mkdir -p $(MODULEDIR)
 	@sudo cp -v $(DRIVERDIR)/*.ko $(MODULEDIR);
 	@sudo chown -v root:root $(MODULEDIR)/*.ko;
-	@sudo insmod $(MODULEDIR)/*.ko;
 	sudo groupadd -f maccel;
 	sudo depmod; 
 	sudo chown -v :maccel /sys/module/maccel/parameters/*;
 	ls -l /sys/module/maccel/parameters/*
 
-uninstall:
-	@sudo rmmod maccel
+uninstall: clean
 	@sudo rm -fv $(MODULEDIR)/maccel.ko
+	@sudo rmmod maccel
 
 refresh: default uninstall
+	@sudo make install
+
+refresh-debug: default uninstall
 	@sudo make debug_install
 
 build_cli:
 	cargo build --release --manifest-path=cli/Cargo.toml
-	
-udev_install: build_cli
-	sudo install -m 644 -v -D `pwd`/udev_rules/99-maccel.rules /usr/lib/udev/rules.d/99-maccel.rules
+	cargo build --release --manifest-path=cli/usbmouse/Cargo.toml
+
+install_cli: build_cli
 	sudo install -m 755 `pwd`/cli/target/release/maccel /usr/local/bin/maccel
-	sudo install -m 755 -v -D `pwd`/udev_rules/maccel_bind /usr/lib/udev/maccel_bind
+	sudo install -m 755 `pwd`/cli/usbmouse/target/release/maccel-driver-binder /usr/local/bin/maccel-driver-binder
+
+uninstall_cli:
+	@sudo rm -f /usr/local/bin/maccel
+	@sudo rm -f /usr/local/bin/maccel-driver-binder
+	
+udev_install: install_cli
+	sudo install -m 644 -v -D `pwd`/udev_rules/99-maccel.rules /usr/lib/udev/rules.d/99-maccel.rules
+	sudo install -m 755 -v -D `pwd`/udev_rules/maccel_param_ownership_and_resets /usr/lib/udev/maccel_param_ownership_and_resets 
 
 udev_uninstall:
-	@sudo rm -f /usr/lib/udev/rules.d/99-maccel.rules /usr/lib/udev/maccel_bind
+	@sudo rm -f /usr/lib/udev/rules.d/99-maccel*.rules /usr/lib/udev/maccel_*
 	sudo udevadm control --reload-rules
-	sudo /usr/local/bin/maccel unbindall
-	@sudo rm -f /usr/local/bin/maccel
+	sudo /usr/local/bin/maccel-driver-binder unbindall
 
 udev_trigger:
 	udevadm control --reload-rules

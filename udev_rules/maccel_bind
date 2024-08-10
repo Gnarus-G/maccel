@@ -5,12 +5,4 @@ PATH='/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin'
 LOG_DIR=/var/opt/maccel/logs
 mkdir -p $LOG_DIR
 
-maccel bind $1 &> $LOG_DIR/cli;
-chown -v :maccel /sys/module/maccel/parameters/* &> $LOG_DIR/chown;
-
-# For persisting parameters values across reboots
-RESET_SCRIPTS_DIR=/var/opt/maccel/resets
-mkdir -p $RESET_SCRIPTS_DIR
-chown -v :maccel $RESET_SCRIPTS_DIR 
-chmod -v g+w "$RESET_SCRIPTS_DIR" 
-ls $RESET_SCRIPTS_DIR/set_last_*_value.sh | xargs cat | sh &> $LOG_DIR/reset-scripts
+maccel-driver-binder bind $1 &> $LOG_DIR/cli;

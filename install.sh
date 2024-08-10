@@ -1,8 +1,19 @@
+# MACCEL_ENABLE_USBMOUSE=0
 # MACCEL_DEBUG_INSTALL=0
-# MACCEL_LEETMOUSE_HID_PARSER=0
+# MACCEL_BRANCH
+
+bold_start() {
+  printf "\e[1m"
+}
+
+bold_end() {
+  printf "\e[22m"
+}
 
 print_bold() {
-  printf "\e[1m$1\e[22m"
+  bold_start
+  printf "$1"
+  bold_end
 }
 
 print_yellow() {
@@ -21,30 +32,33 @@ underline_end() {
   printf "\e[24m\n"
 }
 
+get_current_version(){
+  if ! which maccel &>/dev/null; then
+    return
+  fi
+
+  maccel -V | awk '{ print $2 }'
+}
+
+CURR_VERSION=$(get_current_version)
+
 set -e
 
 setup_dirs() {
   rm -rf /opt/maccel && mkdir -p /opt/maccel
   cd /opt/maccel
 
-  if [[ $MACCEL_LEETMOUSE_HID_PARSER -eq 1 ]]; then
-    print_bold "Will do an install, using leetmouse HID parser, as requested, MACCEL_LEETMOUSE_HID_PARSER=1\n"
+  if [[ -n $MACCEL_BRANCH ]]; then
+    print_bold "Will do an install, using the branch: $MACCEL_BRANCH\n"
     git clone --depth 1 --no-single-branch https://github.com/Gnarus-G/maccel.git .
-    git switch with-leetmouse-hid-parser
+    git switch $MACCEL_BRANCH
   else
     git clone --depth 1 https://github.com/Gnarus-G/maccel.git .
   fi
 }
 
 version_update_warning() {
-
-  if ! which maccel &>/dev/null; then
-    return
-  fi
-
-  CURR_VERSION=$(maccel -V | awk '{ print $2 }')
-
-  if [[ "$CURR_VERSION" < "0.1.3" ]]; then
+  if [[ -n $CURR_VERSION && "$CURR_VERSION" < "0.1.3" ]]; then
     print_yellow $(print_bold "ATTENTION!")
     printf "\n\n"
 
@@ -81,21 +95,37 @@ install_driver() {
 
 install_cli() {
   export VERSION=$(wget -qO- https://github.com/Gnarus-G/maccel/releases/latest | grep -oP 'v\d+\.\d+\.\d+' | tail -n 1)
-  curl -fsSL https://github.com/Gnarus-G/maccel/releases/download/$VERSION/maccel-cli.tar.gz -o maccel-cli.tar.gz
-  tar -zxvf maccel-cli.tar.gz maccel_$VERSION/maccel
-  sudo install -m 755 -v -D maccel_$VERSION/maccel bin/maccel
-  sudo ln -vfs $(pwd)/bin/maccel /usr/local/bin/maccel
+
+  if [[ "$VERSION" > "v$CURR_VERSION" ]]; then
+    curl -fsSL https://github.com/Gnarus-G/maccel/releases/download/$VERSION/maccel-cli.tar.gz -o maccel-cli.tar.gz
+    tar -zxvf maccel-cli.tar.gz maccel_$VERSION/maccel
+    mkdir -p bin
+    sudo install -m 755 -v -D maccel_$VERSION/maccel* bin/
+    sudo ln -vfs $(pwd)/bin/maccel* /usr/local/bin/
+  else
+    printf "The latest version ($CURR_VERSION) of maccel is already installed\n"
+  fi
 }
 
 install_udev_rules() {
+	sudo rm -f /usr/lib/udev/rules.d/99-maccel*.rules /usr/lib/udev/maccel_*
+
   sudo install -m 644 -v -D $(pwd)/udev_rules/99-maccel.rules /usr/lib/udev/rules.d/99-maccel.rules
-  sudo install -m 755 -v -D $(pwd)/udev_rules/maccel_bind /usr/lib/udev/maccel_bind
+  sudo install -m 755 -v -D $(pwd)/udev_rules/maccel_param_ownership_and_resets /usr/lib/udev/maccel_param_ownership_and_resets 
+
+  # We must maintain the usbmouse driver with its binding rules if an old maccel version is installed.
+  if [[ -n "$CURR_VERSION" && "$CURR_VERSION" < "0.1.5" ]]; then 
+    sudo install -m 755 -v -D $(pwd)/udev_rules/maccel_bind /usr/lib/udev/maccel_bind
+    sudo install -m 644 -v -D $(pwd)/udev_rules/99-maccel-bind.rules /usr/lib/udev/rules.d/99-maccel-bind.rules
+  fi
 }
 
 trigger_udev_rules() {
   udevadm control --reload-rules
   udevadm trigger --subsystem-match=usb --subsystem-match=input --subsystem-match=hid --attr-match=bInterfaceClass=03 --attr-match=bInterfaceSubClass=01 --attr-match=bInterfaceProtocol=02
 }
+
+# ---- Install Process ----
 
 ATTENTION=$(version_update_warning)
 
@@ -112,21 +142,29 @@ underline_end
 install_driver
 
 underline_start
+print_bold "\nInstalling the CLI"
+underline_end
+
+install_cli
+
+underline_start
 print_bold "\nInstalling udev rules..."
 underline_end
 
 install_udev_rules
 trigger_udev_rules
 
-underline_start
-print_bold "\nInstalling the CLI"
-underline_end
-
-install_cli
-
 print_bold $(print_green "[Recommended]")
 print_bold ' Add yourself to the "maccel" group\n'
 print_bold $(print_green "[Recommended]")
 print_bold ' usermod -aG maccel $USER\n'
 
-printf "\n$ATTENTION\n"
+if [[ -n "$ATTENTION" ]]; then
+  printf "\n$ATTENTION\n"
+fi
+
+if [[ -n "$CURR_VERSION" && "$CURR_VERSION" < "0.1.5" ]]; then 
+  bold_start
+  print_yellow "\nNOTE: There are two drivers now, and the new (default) one has better compatibility. For more info, see https://github.com/Gnarus-G/maccel/blob/main/TWO_IMPLEMENTATIONS.md.md\n"
+  bold_end
+fi

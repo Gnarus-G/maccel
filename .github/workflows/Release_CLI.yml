@@ -21,23 +21,27 @@ jobs:
       - name: Compile
         id: compile
         run: |
-          set -x
-
-          cargo build --release --manifest-path=cli/Cargo.toml
-
           OUTPUT_DIR="built/output"
           mkdir -p "$OUTPUT_DIR"
           echo "BUILT_ARCHIVES=$OUTPUT_DIR" >> $GITHUB_OUTPUT
 
+          ARTIFACTS_FOLDER="${GITHUB_REPOSITORY#*/}_${GITHUB_REF_NAME}"
+          mkdir $ARTIFACTS_FOLDER
+
+          set -x
+
+          make build_cli
+
           BIN=maccel
           ARCHIVE=$BIN-cli.tar.gz
           BIN_PATH=cli/target/release/$BIN
+          BIN2_PATH=cli/usbmouse/target/release/$BIN
 
           strip $BIN_PATH;
+          strip $BIN2_PATH;
 
-          ARTIFACTS_FOLDER="${GITHUB_REPOSITORY#*/}_${GITHUB_REF_NAME}"
-          mkdir $ARTIFACTS_FOLDER
-          cp -r $BIN_PATH LICENSE $ARTIFACTS_FOLDER
+          cp -r $BIN_PATH $BIN2_PATH LICENSE $ARTIFACTS_FOLDER
+
           tar -caf $ARCHIVE $ARTIFACTS_FOLDER/*
 
           mv $ARCHIVE $OUTPUT_DIR

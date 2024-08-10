@@ -1,3 +1,6 @@
+#ifndef _PARAM_H_
+#define _PARAM_H_
+
 #include "fixedptc.h"
 #include "linux/moduleparam.h"
 
@@ -8,8 +11,10 @@
   module_param_named(param, PARAM_##param, int, RW_USER_GROUP);                \
   MODULE_PARM_DESC(param, desc);
 
-PARAM(SENS_MULT, 1.0,
+PARAM(SENS_MULT, 1,
       "A factor applied the sensitivity calculation after ACCEL is applied.");
-PARAM(ACCEL, 0.0, "Control the sensitivity calculation.");
-PARAM(OFFSET, 0.0, "Control the input speed past which to allow acceleration.");
-PARAM(OUTPUT_CAP, 0.0, "Control the maximum sensitivity.");
+PARAM(ACCEL, 0, "Control the sensitivity calculation.");
+PARAM(OFFSET, 0, "Control the input speed past which to allow acceleration.");
+PARAM(OUTPUT_CAP, 0, "Control the maximum sensitivity.");
+
+#endif // !_PARAM_H_

@@ -1,19 +1,19 @@
 use std::io::Write;
 use std::{fs::File, path::PathBuf};
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 
 pub fn bind_device(device_id: &str) -> anyhow::Result<()> {
     eprintln!("[INFO] unbinding from hid-generic");
     unbind_device_from_driver("usbhid", device_id)?;
     eprintln!("[INFO] binding to maccel");
-    bind_device_to_driver("maccel", device_id)?;
+    bind_device_to_driver("maccel_usbmouse", device_id)?;
     Ok(())
 }
 
 pub fn unbind_device(device_id: &str) -> anyhow::Result<()> {
     eprintln!("[INFO] unbinding from maccel");
-    unbind_device_from_driver("maccel", device_id)?;
+    unbind_device_from_driver("maccel_usbmouse", device_id)?;
     eprintln!("[INFO] binding to hid-generic");
     bind_device_to_driver("usbhid", device_id)?;
 
@@ -24,16 +24,17 @@ fn bind_device_to_driver(driver: &str, device_id: &str) -> anyhow::Result<()> {
     let bind_path = PathBuf::from(format!("/sys/bus/usb/drivers/{}/bind", driver));
 
     let mut bind_file = File::create(&bind_path).with_context(|| {
-        format!(
+        anyhow!(
             "failed to open the bind path for writing: {}",
             bind_path.display()
         )
     })?;
 
     bind_file.write_all(device_id.as_bytes()).with_context(|| {
-        format!(
+        anyhow!(
             "failed to bind device '{}' to driver '{}'",
-            device_id, driver
+            device_id,
+            driver
         )
     })?;
 
@@ -54,7 +55,7 @@ fn unbind_device_from_driver(driver: &str, device_id: &str) -> anyhow::Result<()
     let unbind_path = PathBuf::from(format!("/sys/bus/usb/drivers/{}/unbind", driver));
 
     let mut unbind_file = File::create(&unbind_path).with_context(|| {
-        format!(
+        anyhow!(
             "failed to open the unbind path for writing: {}",
             unbind_path.display()
         )
@@ -63,16 +64,17 @@ fn unbind_device_from_driver(driver: &str, device_id: &str) -> anyhow::Result<()
     unbind_file
         .write_all(device_id.as_bytes())
         .with_context(|| {
-            format!(
+            anyhow!(
                 "failed to unbind device '{}' from driver '{}'",
-                device_id, driver
+                device_id,
+                driver
             )
         })?;
 
     Ok(())
 }
 
-/// Because our udev rules auto bind mice to maccel driver, use this while trying to unbind mice.
+/// Because our udev rules auto bind mice to maccel usbmouse driver, use this while trying to unbind mice.
 pub fn disabling_udev_rules<F: Fn() -> anyhow::Result<()>>(proc: F) -> anyhow::Result<()> {
     let udev_rules_path = "/usr/lib/udev/rules.d/99-maccel.rules";
 
