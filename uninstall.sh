@@ -6,9 +6,9 @@ delete_module() {
 }
 
 udev_uninstall() {
-  sudo maccel unbindall
+  sudo maccel driver unbindall
 
-  sudo rm -vf /usr/lib/udev/rules.d/99-maccel.rules /usr/lib/udev/maccel_bind
+	sudo rm -vf /usr/lib/udev/rules.d/99-maccel*.rules /usr/lib/udev/maccel_*
   sudo udevadm control --reload-rules
 }
 

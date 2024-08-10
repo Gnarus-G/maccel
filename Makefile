@@ -37,16 +37,15 @@ refresh-debug: default uninstall
 
 build_cli:
 	cargo build --release --manifest-path=cli/Cargo.toml
+	cargo build --release --manifest-path=cli/usbmouse/Cargo.toml
 
 install_cli: build_cli
 	sudo install -m 755 `pwd`/cli/target/release/maccel /usr/local/bin/maccel
+	sudo install -m 755 `pwd`/cli/usbmouse/target/release/maccel-driver-binder /usr/local/bin/maccel-driver-binder
 	
 udev_install: install_cli
 	sudo install -m 644 -v -D `pwd`/udev_rules/99-maccel.rules /usr/lib/udev/rules.d/99-maccel.rules
 	sudo install -m 755 -v -D `pwd`/udev_rules/maccel_param_ownership_and_resets /usr/lib/udev/maccel_param_ownership_and_resets 
-
-	# sudo install -m 644 -v -D `pwd`/udev_rules/99-maccel-bind.rules /usr/lib/udev/rules.d/99-maccel-bind.rules
-	# sudo install -m 755 -v -D `pwd`/udev_rules/maccel_bind /usr/lib/udev/maccel_bind
 
 udev_uninstall:
 	@sudo rm -f /usr/lib/udev/rules.d/99-maccel*.rules /usr/lib/udev/maccel_*
