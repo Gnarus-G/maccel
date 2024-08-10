@@ -42,6 +42,10 @@ build_cli:
 install_cli: build_cli
 	sudo install -m 755 `pwd`/cli/target/release/maccel /usr/local/bin/maccel
 	sudo install -m 755 `pwd`/cli/usbmouse/target/release/maccel-driver-binder /usr/local/bin/maccel-driver-binder
+
+uninstall_cli:
+	@sudo rm -f /usr/local/bin/maccel
+	@sudo rm -f /usr/local/bin/maccel-driver-binder
 	
 udev_install: install_cli
 	sudo install -m 644 -v -D `pwd`/udev_rules/99-maccel.rules /usr/lib/udev/rules.d/99-maccel.rules
@@ -50,9 +54,7 @@ udev_install: install_cli
 udev_uninstall:
 	@sudo rm -f /usr/lib/udev/rules.d/99-maccel*.rules /usr/lib/udev/maccel_*
 	sudo udevadm control --reload-rules
-	sudo /usr/local/bin/maccel unbindall
-	# uninstall cli
-	@sudo rm -f /usr/local/bin/maccel
+	sudo /usr/local/bin/maccel-driver-binder unbindall
 
 udev_trigger:
 	udevadm control --reload-rules

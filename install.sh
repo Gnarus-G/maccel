@@ -103,7 +103,7 @@ install_cli() {
     sudo install -m 755 -v -D maccel_$VERSION/maccel* bin/
     sudo ln -vfs $(pwd)/bin/maccel* /usr/local/bin/
   else
-    printf "maccel $VERSION is already installed\n"
+    printf "The latest version ($CURR_VERSION) of maccel is already installed\n"
   fi
 }
 

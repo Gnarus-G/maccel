@@ -21,11 +21,11 @@ In exchange it has 'more' lag than the old driver. Inconsequentially more. See t
 We're talking microseconds here, so you have no reason to use the old driver.
 If, for some reason, you want to use the old driver and it supports your mouse. You can bind to it like so:
 ```sh
-sudo maccel bindall --install # --install makes it so it persists across boots
+sudo maccel driver bindall -- --install # --install makes it so it persists across boots
 ```
 and unbind like so:
 ```sh
-sudo maccel unbindall --uninstall # --uninstall makes it so it no longer rebinds across boots
+sudo maccel driver unbindall -- --uninstall # --uninstall makes it so it no longer rebinds across boots
 ```
 
 ### WARNING

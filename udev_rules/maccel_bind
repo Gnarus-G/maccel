@@ -5,4 +5,4 @@ PATH='/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin'
 LOG_DIR=/var/opt/maccel/logs
 mkdir -p $LOG_DIR
 
-maccel bind $1 &> $LOG_DIR/cli;
+maccel-driver-binder bind $1 &> $LOG_DIR/cli;
