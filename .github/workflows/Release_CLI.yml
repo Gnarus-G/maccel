@@ -35,12 +35,12 @@ jobs:
           BIN=maccel
           ARCHIVE=$BIN-cli.tar.gz
           BIN_PATH=cli/target/release/$BIN
-          BIN2_PATH=cli/usbmouse/target/release/$BIN
+          BIN2_PATH=cli/usbmouse/target/release/$BIN-driver-binder
 
           strip $BIN_PATH;
           strip $BIN2_PATH;
 
-          cp -r $BIN_PATH $BIN2_PATH LICENSE $ARTIFACTS_FOLDER
+          cp -r $BIN_PATH $BIN2_PATH LICENSE README.md TWO_IMPLEMENTATIONS.md $ARTIFACTS_FOLDER
 
           tar -caf $ARCHIVE $ARTIFACTS_FOLDER/*
 
