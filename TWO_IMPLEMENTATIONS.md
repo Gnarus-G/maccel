@@ -16,7 +16,7 @@ that your mouse has.
 The new driver has general compatibility with the mice that linux already supports. 
 In exchange it has 'more' lag than the old driver. Inconsequentially more. See the plot.
 
-![Screenshot_2024-08-10_02-47-37](https://github.com/user-attachments/assets/def3a9d0-2bf3-401e-960c-b299592d1658)
+![Screenshot_2024-08-10_21-18-10](https://github.com/user-attachments/assets/2775d411-a3bb-40bc-a33d-b364debb3ed0)
 
 We're talking microseconds here, so you have no reason to use the old driver.
 If, for some reason, you want to use the old driver and it supports your mouse. You can bind to it like so:
