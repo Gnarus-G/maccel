@@ -99,8 +99,9 @@ install_cli() {
   if [[ "$VERSION" > "v$CURR_VERSION" ]]; then
     curl -fsSL https://github.com/Gnarus-G/maccel/releases/download/$VERSION/maccel-cli.tar.gz -o maccel-cli.tar.gz
     tar -zxvf maccel-cli.tar.gz maccel_$VERSION/maccel
-    sudo install -m 755 -v -D maccel_$VERSION/maccel bin/maccel
-    sudo ln -vfs $(pwd)/bin/maccel /usr/local/bin/maccel
+    mkdir -p bin
+    sudo install -m 755 -v -D maccel_$VERSION/maccel* bin/
+    sudo ln -vfs $(pwd)/bin/maccel* /usr/local/bin/
   else
     printf "maccel $VERSION is already installed\n"
   fi
