@@ -2,8 +2,18 @@
 # MACCEL_DEBUG_INSTALL=0
 # MACCEL_BRANCH
 
+bold_start() {
+  printf "\e[1m"
+}
+
+bold_end() {
+  printf "\e[22m"
+}
+
 print_bold() {
-  printf "\e[1m$1\e[22m"
+  bold_start
+  printf "$1"
+  bold_end
 }
 
 print_yellow() {
@@ -150,4 +160,10 @@ print_bold ' usermod -aG maccel $USER\n'
 
 if [[ -n "$ATTENTION" ]]; then
   printf "\n$ATTENTION\n"
+fi
+
+if [[ -n "$CURR_VERSION" && "$CURR_VERSION" < "0.1.5" ]]; then 
+  bold_start
+  print_yellow "\nNOTE: There are two drivers now, and the new (default) one has better compatibility. For more info, see https://github.com/Gnarus-G/maccel/blob/main/TWO_IMPLEMENTATIONS.md.md\n"
+  bold_end
 fi

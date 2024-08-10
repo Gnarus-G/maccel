@@ -116,22 +116,6 @@ curl -fsSL https://www.maccel.org/install.sh | sudo MACCEL_DEBUG_INSTALL=1 sh
 
 This debugging experience might be lacking still. Feel free to report any issues.
 
-## Limitations
-
-This might not work for some mice.
-For all intents and purposes this is a bug.  
-See [this issue](https://github.com/Gnarus-G/maccel/issues/9).  
-If you're having an issue like this; there is a [different branch](https://github.com/Gnarus-G/maccel/issues/9#issuecomment-2068290121) with HID parser ported from `leetmouse` to support more devices. It might help.
-Install with the `leetmouse` HID parser:
-
-```sh
-curl -fsSL https://www.maccel.org/install.sh | sudo MACCEL_LEETMOUSE_HID_PARSER=1 sh
-```
-
-Notably, I am using this (it is working) on:  
-Razer Viper,
-Razer Deathadder V2
-
 ## References
 
 - https://lwn.net/Kernel/LDD3/

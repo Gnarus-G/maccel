@@ -32,7 +32,7 @@ int main(void) {
 
   int vfd_source = open(VIRTUAL_DEVICE, O_RDONLY);
   if (fd_source < 0) {
-    perror("Failed to open virtaul device");
+    perror("Failed to open virtual device");
     return 1;
   }
 
