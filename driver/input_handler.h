@@ -1,5 +1,6 @@
 #include "./accelk.h"
 #include "accel.h"
+#include "linux/input.h"
 #include <linux/hid.h>
 
 struct input_dev *virtual_input_dev;
@@ -27,17 +28,16 @@ static bool maccel_filter(struct input_handle *handle, u32 type,
       dbg("EV_SYN => code %d", code);
 
       AccelResult accelerated = accelerate(x, y);
-
-      if (x && y) {
-        input_report_rel(virtual_input_dev, REL_X, accelerated.x);
-        input_report_rel(virtual_input_dev, REL_Y, accelerated.y);
-      } else if (x) {
-        input_report_rel(virtual_input_dev, REL_X, accelerated.x);
-      } else if (y) {
-        input_report_rel(virtual_input_dev, REL_Y, accelerated.y);
-      }
-
       dbg("accel: (%d, %d) -> (%d, %d)", x, y, accelerated.x, accelerated.y);
+      x = accelerated.x;
+      y = accelerated.y;
+
+      if (x) {
+        input_report_rel(virtual_input_dev, REL_X, x);
+      }
+      if (y) {
+        input_report_rel(virtual_input_dev, REL_Y, y);
+      }
 
       relative_axis_events[REL_X] = NONE_EVENT_VALUE;
       relative_axis_events[REL_Y] = NONE_EVENT_VALUE;
@@ -52,7 +52,6 @@ static bool maccel_filter(struct input_handle *handle, u32 type,
     }
 
     input_sync(virtual_input_dev);
-
     return false;
   }
 
