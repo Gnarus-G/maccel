@@ -1,7 +1,7 @@
 //! Provides functions to allow us to get
 //! the last immediate input speed of the user's mouse movement.
 //!
-//! This is mainly to allow us to visually reprensent the user's current
+//! This is mainly to allow us to visually represent the user's current
 //! speed and applied sensitivity.
 
 use std::{fs, io::Read, thread};
