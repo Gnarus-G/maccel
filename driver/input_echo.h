@@ -14,8 +14,6 @@ static struct cdev device;
 static struct class *device_class;
 static dev_t device_number;
 
-static int open(struct inode *inode, struct file *file) { return 0; }
-
 /*
  * Convert an int into an array of four bytes, in big endian (MSB first)
  */
@@ -35,10 +33,6 @@ static ssize_t read(struct file *f, char __user *user_buffer, size_t size,
   signed char be_bytes_for_int[4] = {0};
   int_to_bytes(speed, be_bytes_for_int);
 
-  /* printk(KERN_INFO "maccel: reading from char dev: (%s) [%d, %d, %d, %d]", */
-  /*        fixedpt_cstr(speed, 6), be_bytes_for_int[0], be_bytes_for_int[1], */
-  /*        be_bytes_for_int[2], be_bytes_for_int[3]); */
-
   int err =
       copy_to_user(user_buffer, be_bytes_for_int, sizeof(be_bytes_for_int));
   if (err)
@@ -47,8 +41,7 @@ static ssize_t read(struct file *f, char __user *user_buffer, size_t size,
   return sizeof(be_bytes_for_int);
 }
 
-struct file_operations fops = {
-    .owner = THIS_MODULE, .open = open, .read = read};
+struct file_operations fops = {.owner = THIS_MODULE, .read = read};
 
 static int create_char_device(void) {
   int err;
