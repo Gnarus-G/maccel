@@ -17,6 +17,7 @@ use std::io::stdout;
 use tui_input::{backend::crossterm::EventHandler, Input};
 
 use crate::{
+    inputspeed,
     libmaccel::{sensitivity, Params},
     params::Param,
 };
@@ -116,6 +117,8 @@ pub fn run_tui() -> anyhow::Result<()> {
     terminal.clear()?;
 
     let mut app = AppState::new();
+
+    inputspeed::setup_input_speed_reader();
 
     loop {
         terminal.draw(|f| ui(f, &mut app))?;
@@ -360,16 +363,23 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
         .map(|x| (x as f64, sensitivity(x, Params::new())))
         .collect();
 
-    let chart = Chart::new(vec![Dataset::default()
-        .name(format!(
-            "f(x) = (1 + {}⋅x) ⋅ {}",
-            Param::Accel.display_name(),
-            Param::SensMult.display_name()
-        ))
-        .marker(symbols::Marker::Braille)
-        .graph_type(GraphType::Line)
-        .style(Style::default().green())
-        .data(&data)])
+    let highlight_point = &[inputspeed::read_input_speed_and_resolved_sens()];
+    let chart = Chart::new(vec![
+        Dataset::default()
+            .name(format!(
+                "f(x) = (1 + {}⋅x) ⋅ {}",
+                Param::Accel.display_name(),
+                Param::SensMult.display_name()
+            ))
+            .marker(symbols::Marker::Braille)
+            .graph_type(GraphType::Line)
+            .style(Style::default().green())
+            .data(&data),
+        Dataset::default() // current instance of acceleration
+            .marker(symbols::Marker::Braille)
+            .style(Style::default().red())
+            .data(highlight_point),
+    ])
     .x_axis(x_axis)
     .y_axis(y_axis);
 

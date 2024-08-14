@@ -1,9 +1,6 @@
-#include "linux/init.h"
-#include "linux/module.h"
-#include "linux/usb.h"
-
 #include "./input_handler.h"
 #include "./usbmouse.h"
+#include "input_echo.h"
 
 // The virtual_input_dev is declared for/in the maccel_input_handler module.
 // This initializes it.
@@ -56,17 +53,35 @@ static int __init my_init(void) {
     return error;
   }
   error = usb_register(&maccel_usb_driver);
-  if (error) {
-    input_unregister_device(virtual_input_dev);
-    input_free_device(virtual_input_dev);
-    return error;
-  }
+  if (error)
+    goto err_free_vdev;
 
-  return input_register_handler(&maccel_handler);
+  error = create_char_device();
+  if (error)
+    goto err_unregister_usb;
+
+  error = input_register_handler(&maccel_handler);
+  if (error)
+    goto err_free_chrdev;
+
+  return 0;
+
+err_free_chrdev:
+  destroy_char_device();
+
+err_unregister_usb:
+  usb_deregister(&maccel_usb_driver);
+
+err_free_vdev:
+  input_unregister_device(virtual_input_dev);
+  input_free_device(virtual_input_dev);
+  return error;
 }
 
 static void __exit my_exit(void) {
   input_unregister_handler(&maccel_handler);
+
+  destroy_char_device();
 
   usb_deregister(&maccel_usb_driver);
 
