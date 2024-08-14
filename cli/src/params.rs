@@ -79,8 +79,13 @@ impl Param {
         return Ok(Fixedpt(value));
     }
 
-    pub fn display_name(&self) -> String {
-        return format!("{:?}", self);
+    pub fn display_name(&self) -> &'static str {
+        return match self {
+            Param::SensMult => "Sens-Multiplier",
+            Param::Accel => "Accel",
+            Param::Offset => "Offset",
+            Param::OutputCap => "Output-Cap",
+        };
     }
 
     /// The canonical name of parameter, exactly what can be read from /sys/module/maccel/parameters

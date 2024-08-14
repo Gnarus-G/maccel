@@ -1,9 +1,8 @@
 #include "./accelk.h"
-#include "accel.h"
-#include "linux/input.h"
+#include "input_echo.h"
 #include <linux/hid.h>
 
-struct input_dev *virtual_input_dev;
+static struct input_dev *virtual_input_dev;
 
 #define NONE_EVENT_VALUE 0
 static int relative_axis_events[REL_CNT] = { // [x, y, ..., wheel, ...]
@@ -18,6 +17,12 @@ static bool maccel_filter(struct input_handle *handle, u32 type,
   case EV_REL: {
     dbg("EV_REL => code %d, value %d", code, value);
     relative_axis_events[code] = value;
+
+    // So we can relay the original speed of the mouse movement to userspace
+    // for visualization.
+    input_cache[0] = relative_axis_events[REL_X];
+    input_cache[1] = relative_axis_events[REL_Y];
+
     return true; // so input system skips (filters out) this unaccelerated
                  // mouse input.
   }
