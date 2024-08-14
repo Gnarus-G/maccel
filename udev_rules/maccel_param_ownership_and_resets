@@ -6,6 +6,8 @@ LOG_DIR=/var/opt/maccel/logs
 mkdir -p $LOG_DIR
 
 chown -v :maccel /sys/module/maccel/parameters/* &> $LOG_DIR/chown;
+chown -v :maccel /dev/maccel &> $LOG_DIR/chown;
+chmod g+r /dev/maccel &> $LOG_DIR/chmod;
 
 # For persisting parameters values across reboots
 RESET_SCRIPTS_DIR=/var/opt/maccel/resets
