@@ -26,14 +26,16 @@ pub fn setup_input_speed_reader() {
         let mut buffer = [0u8; 4];
 
         loop {
-            let _ = file
-                .read(&mut buffer)
+            file.read_exact(&mut buffer)
                 .expect("failed to read 4 bytes from /dev/maccel");
 
+            // The buffer, we expect, is just 4 bytes for a number (fixedpt)
             let num: f32 = Fixedpt(i32::from_be_bytes(buffer)).into();
 
             // Safety don't care about race conditions
             unsafe { INPUT_SPEED = num };
+
+            thread::sleep(std::time::Duration::from_nanos(500));
         }
     });
 }
