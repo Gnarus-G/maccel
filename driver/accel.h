@@ -33,9 +33,14 @@ static inline fixedpt motivity(fixedpt input_speed) {
     
     // Inner exponential expression  -  todo: fix the following line
     // fixedpt exp_term = fixedpt_exp(fixedpt_sub(fixedpt_mul(FIXEDPT_CONST(-0.4), input_speed), FIXEDPT_CONST(-6.0)));
-    
+
+    fixedpt x = fixedpt_rconst(-0.4);
+    fixedpt y = fixedpt_rconst(-6);
+
+    fixedpt exp_term = fixedpt_exp(fixedpt_sub(fixedpt_mul(x, input_speed), y));
+
     // And delete this line!
-    fixedpt exp_term = fixedpt_exp(FIXEDPT_ONE);
+    // fixedpt exp_term = fixedpt_exp(FIXEDPT_ONE);
     fixedpt denominator = fixedpt_add(FIXEDPT_ONE, exp_term);
     
     // Compute the motivity
@@ -79,7 +84,7 @@ extern inline fixedpt sensitivity(fixedpt input_speed, fixedpt param_sens_mult,
     // sens = sigmoid_profile(input_speed);
 
     // Use motivity like function 1+ ((e-1)/(1+e^-(0.4*x-6))) (see: https://www.desmos.com/calculator  input: y=\frac{e-1}{1+e^{-\left(0.4x-6\right)}}+1)
-    //sens = alisk_motivity_profile(input_speed);
+    sens = motivity(input_speed);
   }
 
   sens = fixedpt_mul(sens, param_sens_mult);
