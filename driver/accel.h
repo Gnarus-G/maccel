@@ -27,17 +27,18 @@ static inline fixedpt sigmoid_profile(fixedpt input_speed) {
 
 // Kinda motivity, didn't manage to test it yet
 static inline fixedpt motivity(fixedpt input_speed) {
+    /*
     // Precompute values for clarity and debugging
-    fixedpt exp_1 = fixedpt_exp(FIXEDPT_ONE);
-    fixedpt numerator = fixedpt_sub(exp_1, FIXEDPT_ONE);
+    fixedpt max_sens_factor = fixedpt_rconst(1.618);
+    fixedpt numerator = fixedpt_sub(max_sens_factor, FIXEDPT_ONE);
     
     // Inner exponential expression  -  todo: fix the following line
     // fixedpt exp_term = fixedpt_exp(fixedpt_sub(fixedpt_mul(FIXEDPT_CONST(-0.4), input_speed), FIXEDPT_CONST(-6.0)));
 
-    fixedpt x = fixedpt_rconst(-0.4);
-    fixedpt y = fixedpt_rconst(-6);
+    fixedpt growth = fixedpt_rconst(0.16);
+    fixedpt shift_amount = fixedpt_rconst(-5);
 
-    fixedpt exp_term = fixedpt_exp(fixedpt_sub(fixedpt_mul(x, input_speed), y));
+    fixedpt exp_term = fixedpt_exp(fixedpt_sub(fixedpt_mul(growth, input_speed), shift_amount));
 
     // And delete this line!
     // fixedpt exp_term = fixedpt_exp(FIXEDPT_ONE);
@@ -45,8 +46,14 @@ static inline fixedpt motivity(fixedpt input_speed) {
     
     // Compute the motivity
     fixedpt result = fixedpt_add(FIXEDPT_ONE, fixedpt_div(numerator, denominator));
-    
+
+    dbg("motivity result: %s", fixedpt_cstr(result, 6));
     return result;
+    */
+
+    // oneliner = faster? 
+    // todo: add params for this motivity
+    return fixedpt_add(FIXEDPT_ONE, fixedpt_div(fixedpt_sub(fixedpt_rconst(1.618), FIXEDPT_ONE), fixedpt_add(FIXEDPT_ONE, fixedpt_exp(fixedpt_sub(fixedpt_mul(fixedpt_rconst(0.16), input_speed), fixedpt_rconst(-5))))));
 }
 
 typedef unsigned int u32;
@@ -72,6 +79,7 @@ extern inline fixedpt sensitivity(fixedpt input_speed, fixedpt param_sens_mult,
   fixedpt sens = FIXEDPT_ONE;
 
   dbg("accel    %s", fixedpt_cstr(param_accel, 6));
+  dbg("input_speed %s", fixedpt_cstr(input_speed, 6));
 
   if (input_speed > FIXEDPT_ZERO) {
     // Use linear acceleration
@@ -84,7 +92,9 @@ extern inline fixedpt sensitivity(fixedpt input_speed, fixedpt param_sens_mult,
     // sens = sigmoid_profile(input_speed);
 
     // Use motivity like function 1+ ((e-1)/(1+e^-(0.4*x-6))) (see: https://www.desmos.com/calculator  input: y=\frac{e-1}{1+e^{-\left(0.4x-6\right)}}+1)
+    dbg("motivity input speed    %s", fixedpt_cstr(input_speed, 6));
     sens = motivity(input_speed);
+    // dbg("motivity yeah");
   }
 
   sens = fixedpt_mul(sens, param_sens_mult);
