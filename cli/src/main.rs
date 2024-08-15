@@ -1,3 +1,4 @@
+mod inputspeed;
 mod libmaccel;
 mod params;
 mod tui;

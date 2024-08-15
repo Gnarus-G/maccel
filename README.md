@@ -129,3 +129,6 @@ This debugging experience might be lacking still. Feel free to report any issues
 - https://docs.kernel.org/input/input-programming.html
 - https://www.kernel.org/doc/Documentation/input/input.txt
 - https://docs.kernel.org/driver-api/input.html
+- https://linux-kernel-labs.github.io/refs/heads/master/labs/device_drivers.html
+- https://www.youtube.com/watch?v=oX9ZwMQL2f4
+- https://gist.github.com/fstiehle/17fca11d7d1b4c2b8dfd982e1cf39caf

@@ -96,6 +96,22 @@ extern inline fixedpt sensitivity(fixedpt input_speed, fixedpt param_sens_mult,
   return sens;
 }
 
+static inline fixedpt input_speed(fixedpt dx, fixedpt dy,
+                                  u32 polling_interval) {
+  fixedpt distance =
+      fixedpt_sqrt(fixedpt_add(fixedpt_mul(dx, dx), fixedpt_mul(dy, dy)));
+
+  dbg("distance (in)              %s", fixedpt_cstr(distance, 6));
+
+  fixedpt speed_in = fixedpt_div(distance, fixedpt_fromint(polling_interval));
+
+  dbg("polling interval           %s",
+      fixedpt_cstr(fixedpt_fromint(polling_interval), 6));
+  dbg("speed (in)                 %s", fixedpt_cstr(speed_in, 6));
+
+  return speed_in;
+}
+
 static inline AccelResult f_accelerate(int x, int y, u32 polling_interval,
                                        fixedpt param_sens_mult,
                                        fixedpt param_accel,
@@ -113,17 +129,7 @@ static inline AccelResult f_accelerate(int x, int y, u32 polling_interval,
   dbg("in: x (fixedpt conversion) %s", fixedpt_cstr(dx, 6));
   dbg("in: y (fixedpt conversion) %s", fixedpt_cstr(dy, 6));
 
-  fixedpt distance =
-      fixedpt_sqrt(fixedpt_add(fixedpt_mul(dx, dx), fixedpt_mul(dy, dy)));
-
-  dbg("distance (in)              %s", fixedpt_cstr(distance, 6));
-
-  fixedpt speed_in = fixedpt_div(distance, fixedpt_fromint(polling_interval));
-
-  dbg("polling interval           %s",
-      fixedpt_cstr(fixedpt_fromint(polling_interval), 6));
-  dbg("speed (in)                 %s", fixedpt_cstr(speed_in, 6));
-
+  fixedpt speed_in = input_speed(dx, dy, polling_interval);
   fixedpt sens = sensitivity(speed_in, param_sens_mult, param_accel,
                              param_offset, param_output_cap);
 

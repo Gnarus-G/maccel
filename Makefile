@@ -22,7 +22,8 @@ install: default
 	@sudo chown -v root:root $(MODULEDIR)/*.ko;
 	sudo groupadd -f maccel;
 	sudo depmod; 
-	sudo chown -v :maccel /sys/module/maccel/parameters/*;
+	sudo chown -v :maccel /sys/module/maccel/parameters/* /dev/maccel;
+	sudo chmod g+r /dev/maccel;
 	ls -l /sys/module/maccel/parameters/*
 
 uninstall: clean
