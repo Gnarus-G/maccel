@@ -4,6 +4,15 @@
 #include "dbg.h"
 #include "fixedptc.h"
 
+// fixedpt doesn't have a tanh function, so i made one
+static inline fixedpt fixedpt_tanh(fixedpt x) {
+  fixedpt numerator = fixedpt_sub(fixedpt_exp(x), fixedpt_exp(-x));
+  fixedpt denominator = fixedpt_add(fixedpt_exp(x), fixedpt_exp(-x));
+  return fixedpt_div(numerator, denominator);
+}
+
+static const fixedpt FIXEDPT_ZERO = fixedpt_rconst(0.0);
+
 // Linear profile
 
 static inline fixedpt linear_profile(fixedpt param_accel, fixedpt input_speed) {
@@ -17,6 +26,10 @@ static inline fixedpt log_profile(fixedpt input_speed) {
   return fixedpt_ln(fixedpt_add(FIXEDPT_ONE, input_speed)); // log(1 + input_speed)
 }
 
+static inline fixedpt log_function(fixedpt input_speed) {
+  return fixedpt_log(input_speed, fixedpt_rconst(10));
+}
+
 // Sigmoid profile, tested it, didn't behave as expetced
 static inline fixedpt sigmoid_profile(fixedpt input_speed) {
   // Sigmoid curve: 1 / (1 + exp(-input_speed))
@@ -24,36 +37,85 @@ static inline fixedpt sigmoid_profile(fixedpt input_speed) {
   return fixedpt_div(FIXEDPT_ONE, fixedpt_add(FIXEDPT_ONE, exp_input_speed));
 }
 
+static inline fixedpt raw_accel_motivity(fixedpt input_speed) {
+  if (input_speed == fixedpt_rconst(13)) {
+    return FIXEDPT_ONE;
+  }
+
+  fixedpt log_motivity = fixedpt_log(fixedpt_rconst(2.1),fixedpt_rconst(10)); // use args.motivity
+  fixedpt gamma_const = fixedpt_div(fixedpt_rconst(0.7), log_motivity); // use args.gamma aka growth rate
+  fixedpt log_syncspeed = fixedpt_log(fixedpt_rconst(13),fixedpt_rconst(10)); // use args.sync_speed aka midpoint
+  fixedpt syncspeed = fixedpt_rconst(13); // use args.sync_speed aka midpoint
+  
+  
+  fixedpt sharpness = fixedpt_rconst(fixedpt_rconst(0.5));
+  fixedpt sharpness_recip = fixedpt_div(FIXEDPT_ONE, sharpness);
+  // fixedpt use_linear_clamp(sharpness >= 16);
+  
+  fixedpt minimum_sens = fixedpt_div(FIXEDPT_ONE, fixedpt_rconst(2.1));
+  fixedpt maximum_sens = fixedpt_rconst(2.1);
+
+  fixedpt log_x = fixedpt_log(input_speed,fixedpt_rconst(10));
+  fixedpt log_diff = fixedpt_sub(log_x, log_syncspeed);
+  
+  if (log_diff > FIXEDPT_ZERO) {
+  
+    fixedpt log_space = fixedpt_mul(gamma_const, log_diff);
+    fixedpt log_space_sharpened =  fixedpt_pow(log_space, sharpness);
+    fixedpt tanh_log_space_sharpened = fixedpt_tanh(log_space_sharpened);
+
+
+
+    fixedpt exponent = fixedpt_pow(tanh_log_space_sharpened, sharpness_recip);
+    fixedpt result = fixedpt_exp(fixedpt_mul(exponent, log_motivity));
+
+    dbg("raw accel motivity input_speed: %s", fixedpt_cstr(input_speed, 6));
+    dbg("raw accel motivity log_x: %s", fixedpt_cstr(log_x, 6));
+    dbg("raw accel motivity log_diff: %s", fixedpt_cstr(log_diff, 6));
+
+    dbg("raw accel motivity log_motivity: %s", fixedpt_cstr(log_motivity, 6));
+    dbg("raw accel motivity gamma_const: %s", fixedpt_cstr(gamma_const, 6));
+    dbg("raw accel motivity log_space: %s", fixedpt_cstr(log_space, 6));
+
+    dbg("raw accel motivity log_space_sharpened: %s", fixedpt_cstr(log_space_sharpened, 6));
+    dbg("raw accel motivity tanh_log_space_sharpened: %s", fixedpt_cstr(tanh_log_space_sharpened, 6));
+    dbg("raw accel motivity sharpness_recip: %s", fixedpt_cstr(sharpness_recip, 6));
+
+    dbg("raw accel motivity exponent: %s", fixedpt_cstr(exponent, 6));
+    dbg("raw accel motivity result: %s", fixedpt_cstr(result, 6));
+
+    return result;
+  } 
+
+  else {
+    fixedpt log_space = fixedpt_mul(fixedpt_mul(gamma_const, log_diff),fixedpt_rconst(-1));
+    fixedpt exponent = fixedpt_mul(fixedpt_pow(fixedpt_tanh(fixedpt_pow(log_space, sharpness)), sharpness_recip),fixedpt_rconst(-1));
+    fixedpt result = fixedpt_exp(fixedpt_mul(exponent, log_motivity));
+    return result;
+  } 
+
+  return FIXEDPT_ONE;
+}
 
 // Kinda motivity, didn't manage to test it yet
-static inline fixedpt motivity(fixedpt input_speed) {
-    /*
+static inline fixedpt alisk_motivity(fixedpt input_speed) {
+    
     // Precompute values for clarity and debugging
-    fixedpt max_sens_factor = fixedpt_rconst(1.618);
+    fixedpt max_sens_factor = fixedpt_rconst(2.71);
+    fixedpt growth = fixedpt_rconst(-0.39);
+    fixedpt shift_amount = fixedpt_rconst(6);
+
     fixedpt numerator = fixedpt_sub(max_sens_factor, FIXEDPT_ONE);
     
-    // Inner exponential expression  -  todo: fix the following line
-    // fixedpt exp_term = fixedpt_exp(fixedpt_sub(fixedpt_mul(FIXEDPT_CONST(-0.4), input_speed), FIXEDPT_CONST(-6.0)));
-
-    fixedpt growth = fixedpt_rconst(0.16);
-    fixedpt shift_amount = fixedpt_rconst(-5);
-
-    fixedpt exp_term = fixedpt_exp(fixedpt_sub(fixedpt_mul(growth, input_speed), shift_amount));
-
-    // And delete this line!
-    // fixedpt exp_term = fixedpt_exp(FIXEDPT_ONE);
+    // Inner exponential expression
+    fixedpt exp_term = fixedpt_exp(fixedpt_add(fixedpt_mul(growth, input_speed), shift_amount));
     fixedpt denominator = fixedpt_add(FIXEDPT_ONE, exp_term);
     
     // Compute the motivity
     fixedpt result = fixedpt_add(FIXEDPT_ONE, fixedpt_div(numerator, denominator));
-
-    dbg("motivity result: %s", fixedpt_cstr(result, 6));
     return result;
-    */
-
-    // oneliner = faster? 
-    // todo: add params for this motivity
-    return fixedpt_add(FIXEDPT_ONE, fixedpt_div(fixedpt_sub(fixedpt_rconst(1.618), FIXEDPT_ONE), fixedpt_add(FIXEDPT_ONE, fixedpt_exp(fixedpt_sub(fixedpt_mul(fixedpt_rconst(0.16), input_speed), fixedpt_rconst(-5))))));
+    
+    // oneliner = faster?
 }
 
 typedef unsigned int u32;
@@ -63,7 +125,7 @@ typedef struct {
   int y;
 } AccelResult;
 
-static const fixedpt FIXEDPT_ZERO = fixedpt_rconst(0.0);
+
 
 /**
  * Calculate the factor by which to multiply the input vector
@@ -93,7 +155,8 @@ extern inline fixedpt sensitivity(fixedpt input_speed, fixedpt param_sens_mult,
 
     // Use motivity like function 1+ ((e-1)/(1+e^-(0.4*x-6))) (see: https://www.desmos.com/calculator  input: y=\frac{e-1}{1+e^{-\left(0.4x-6\right)}}+1)
     dbg("motivity input speed    %s", fixedpt_cstr(input_speed, 6));
-    sens = motivity(input_speed);
+    sens = raw_accel_motivity(input_speed);
+    // sens = fixedpt_mul(input_speed, input_speed);
     // dbg("motivity yeah");
   }
 
