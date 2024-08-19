@@ -41,7 +41,7 @@ EndSection
 
 ```
 
-If you need more context on this, refer to https://wiki.archlinux.org/title/Libinput#Via_Xorg_configuration_file, and https://man.archlinux.org/man/libinput.4#SUPPORTED_PROPERTIES.
+If you need more context on this, refer to [libinput xorg configuration](https://wiki.archlinux.org/title/Libinput#Via_Xorg_configuration_file), and [libinput properties](https://man.archlinux.org/man/libinput.4#SUPPORTED_PROPERTIES).
 I don't recommend using `libinput-points` to mimic Rawaccel's linear acceleration because, when I built it, I understood much less than I do now
 about how the math works.
 
