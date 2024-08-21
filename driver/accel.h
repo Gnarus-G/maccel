@@ -48,7 +48,7 @@ static inline fixedpt raw_accel_motivity(fixedpt input_speed) {
   fixedpt syncspeed = fixedpt_rconst(13); // use args.sync_speed aka midpoint
   
   
-  fixedpt sharpness = fixedpt_rconst(fixedpt_rconst(0.94));
+  fixedpt sharpness = fixedpt_rconst(0.94);
   fixedpt sharpness_recip = fixedpt_div(FIXEDPT_ONE, sharpness);
   // fixedpt use_linear_clamp(sharpness >= 16);
   
