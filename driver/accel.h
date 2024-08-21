@@ -48,7 +48,7 @@ static inline fixedpt raw_accel_motivity(fixedpt input_speed) {
   fixedpt syncspeed = fixedpt_rconst(13); // use args.sync_speed aka midpoint
   
   
-  fixedpt sharpness = fixedpt_rconst(fixedpt_rconst(0.5));
+  fixedpt sharpness = fixedpt_rconst(fixedpt_rconst(0.94));
   fixedpt sharpness_recip = fixedpt_div(FIXEDPT_ONE, sharpness);
   // fixedpt use_linear_clamp(sharpness >= 16);
   
@@ -63,8 +63,6 @@ static inline fixedpt raw_accel_motivity(fixedpt input_speed) {
     fixedpt log_space = fixedpt_mul(gamma_const, log_diff);
     fixedpt log_space_sharpened =  fixedpt_pow(log_space, sharpness);
     fixedpt tanh_log_space_sharpened = fixedpt_tanh(log_space_sharpened);
-
-
 
     fixedpt exponent = fixedpt_pow(tanh_log_space_sharpened, sharpness_recip);
     fixedpt result = fixedpt_exp(fixedpt_mul(exponent, log_motivity));
