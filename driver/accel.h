@@ -37,11 +37,10 @@ static inline fixedpt sigmoid_profile(fixedpt input_speed) {
   return fixedpt_div(FIXEDPT_ONE, fixedpt_add(FIXEDPT_ONE, exp_input_speed));
 }
 
-static inline fixedpt raw_accel_motivity(fixedpt input_speed) {
+static inline fixedpt raw_accel_motivity(fixedpt input_speed, fixedpt motivity, fixedpt gamma, fixedpt syncspeed) {
   
-  fixedpt log_motivity = fixedpt_log(fixedpt_rconst(4),fixedpt_rconst(10)); // use args.motivity
-  fixedpt gamma_const = fixedpt_div(fixedpt_rconst(0.8), log_motivity); // use args.gamma aka growth rate
-  fixedpt syncspeed = fixedpt_rconst(31); // use args.sync_speed aka midpoint
+  fixedpt log_motivity = fixedpt_log(motivity,fixedpt_rconst(10)); // use args.motivity
+  fixedpt gamma_const = fixedpt_div(gamma, log_motivity); // use args.gamma aka growth rate
   fixedpt log_syncspeed = fixedpt_log(syncspeed,fixedpt_rconst(10)); // use args.sync_speed aka midpoint
   
   
@@ -113,8 +112,6 @@ static inline fixedpt alisk_motivity(fixedpt input_speed) {
     // Compute the motivity
     fixedpt result = fixedpt_add(FIXEDPT_ONE, fixedpt_div(numerator, denominator));
     return result;
-    
-    // oneliner = faster?
 }
 
 typedef unsigned int u32;
@@ -131,8 +128,13 @@ typedef struct {
  * in order to get the desired output speed.
  *
  */
-extern inline fixedpt sensitivity(fixedpt input_speed, fixedpt param_sens_mult,
-                                  fixedpt param_accel, fixedpt param_offset,
+extern inline fixedpt sensitivity(fixedpt input_speed,
+                                  fixedpt param_sens_mult,
+                                  fixedpt param_accel,
+                                  fixedpt param_motivity,
+                                  fixedpt param_gamma,
+                                  fixedpt param_sync_speed,
+                                  fixedpt param_offset,
                                   fixedpt param_output_cap) {
 
   input_speed = fixedpt_sub(input_speed, param_offset);
@@ -154,7 +156,7 @@ extern inline fixedpt sensitivity(fixedpt input_speed, fixedpt param_sens_mult,
 
     // Use motivity like function 1+ ((e-1)/(1+e^-(0.4*x-6))) (see: https://www.desmos.com/calculator  input: y=\frac{e-1}{1+e^{-\left(0.4x-6\right)}}+1)
     dbg("motivity input speed    %s", fixedpt_cstr(input_speed, 6));
-    sens = raw_accel_motivity(input_speed);
+    sens = raw_accel_motivity(input_speed, param_motivity, param_gamma, param_sync_speed);
     // sens = fixedpt_mul(input_speed, input_speed);
     // dbg("motivity yeah");
   }
@@ -192,6 +194,9 @@ static inline fixedpt input_speed(fixedpt dx, fixedpt dy,
 static inline AccelResult f_accelerate(int x, int y, u32 polling_interval,
                                        fixedpt param_sens_mult,
                                        fixedpt param_accel,
+                                       fixedpt param_motivity,
+                                       fixedpt param_gamma,
+                                       fixedpt param_sync_speed,
                                        fixedpt param_offset,
                                        fixedpt param_output_cap) {
   AccelResult result = {.x = 0, .y = 0};
@@ -208,6 +213,7 @@ static inline AccelResult f_accelerate(int x, int y, u32 polling_interval,
 
   fixedpt speed_in = input_speed(dx, dy, polling_interval);
   fixedpt sens = sensitivity(speed_in, param_sens_mult, param_accel,
+                            param_motivity,param_gamma,param_sync_speed,
                              param_offset, param_output_cap);
 
   dbg("sens %s", fixedpt_cstr(sens, 6));

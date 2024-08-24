@@ -14,6 +14,11 @@
 PARAM(SENS_MULT, 1,
       "A factor applied the sensitivity calculation after ACCEL is applied.");
 PARAM(ACCEL, 0, "Control the sensitivity calculation.");
+
+PARAM(MOTIVITY, 4, "Motivity setting, defines scale of difference between min and max sens.");
+PARAM(SYNC_SPEED, 31, "Midpoint/syncspeed for motivity.");
+PARAM(GAMMA, 0.8, "Gamma/growth for motivity.");
+
 PARAM(OFFSET, 0, "Control the input speed past which to allow acceleration.");
 PARAM(OUTPUT_CAP, 0, "Control the maximum sensitivity.");
 

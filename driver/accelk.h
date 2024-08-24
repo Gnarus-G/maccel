@@ -24,8 +24,9 @@ static AccelResult inline accelerate(int x, int y) {
     ms = 100;
   }
 
-  return f_accelerate(x, y, ms, PARAM_SENS_MULT, PARAM_ACCEL, PARAM_OFFSET,
-                      PARAM_OUTPUT_CAP);
+  return f_accelerate(x, y, ms, PARAM_SENS_MULT, PARAM_ACCEL,
+  PARAM_MOTIVITY, PARAM_GAMMA, PARAM_SYNC_SPEED, 
+  PARAM_OFFSET,PARAM_OUTPUT_CAP);
 }
 
 #endif // !_ACCELK_H_

@@ -14,6 +14,9 @@ const SYS_MODULE_PATH: &str = "/sys/module/maccel";
 pub enum Param {
     SensMult,
     Accel,
+    Motivity,
+    Gamma,
+    SyncSpeed,
     Offset,
     OutputCap,
 }
@@ -83,6 +86,9 @@ impl Param {
         return match self {
             Param::SensMult => "Sens-Multiplier",
             Param::Accel => "Accel",
+            Param::Motivity => "Motivity",
+            Param::Gamma => "Gamma",
+            Param::SyncSpeed => "SyncSpeed",
             Param::Offset => "Offset",
             Param::OutputCap => "Output-Cap",
         };
@@ -93,6 +99,9 @@ impl Param {
         let param_name = match self {
             Param::SensMult => "SENS_MULT",
             Param::Accel => "ACCEL",
+            Param::Motivity => "MOTIVITY",
+            Param::Gamma => "GAMMA",
+            Param::SyncSpeed => "SYNC_SPEED",
             Param::Offset => "OFFSET",
             Param::OutputCap => "OUTPUT_CAP",
         };
@@ -145,6 +154,9 @@ mod tests {
 
         test(SensMult);
         test(Accel);
+        test(Motivity);
+        test(Gamma);
+        test(SyncSpeed);
         test(Offset);
         test(OutputCap);
     }

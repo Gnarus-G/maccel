@@ -84,7 +84,7 @@ impl ParameterInput {
 
 struct AppState {
     tab_tick: u8,
-    parameters: [ParameterInput; 4],
+    parameters: [ParameterInput; 7],
 }
 
 impl AppState {
@@ -94,6 +94,9 @@ impl AppState {
             parameters: [
                 Param::SensMult.into(),
                 Param::Accel.into(),
+                Param::Motivity.into(),
+                Param::Gamma.into(),
+                Param::SyncSpeed.into(),
                 Param::Offset.into(),
                 Param::OutputCap.into(),
             ],

@@ -109,8 +109,9 @@ static void assert_snapshot(const char *filename, const char *content) {
 }
 
 static int test_acceleration(const char *filename, fixedpt param_sens_mult,
-                             fixedpt param_accel, fixedpt param_offset,
-                             fixedpt param_output_cap) {
+                             fixedpt param_accel,
+                             fixedpt param_motivity, fixedpt param_gamma, fixedpt param_sync_speed, 
+                             fixedpt param_offset, fixedpt param_output_cap) {
   const int LINE_LEN = 26;
   const int MIN = -128;
   const int MAX = 127;
@@ -122,8 +123,9 @@ static int test_acceleration(const char *filename, fixedpt param_sens_mult,
   for (int x = MIN; x < MAX; x++) {
     for (int y = MIN; y < MAX; y++) {
 
-      result = f_accelerate(x, y, 1, param_sens_mult, param_accel, param_offset,
-                            param_output_cap);
+      result = f_accelerate(x, y, 1, param_sens_mult, param_accel, 
+      param_motivity, param_gamma, param_sync_speed,
+      param_offset,param_output_cap);
       char curr_debug_print[LINE_LEN];
 
       sprintf(curr_debug_print, "(%d, %d) => (%d, %d)\n", x, y, result.x,
