@@ -147,6 +147,7 @@ extern inline fixedpt sensitivity(fixedpt input_speed,
 
   if (input_speed > FIXEDPT_ZERO) {
     // Chose the right accelearion profile based on the mode
+    // todo: is this check stable?
     if (param_mode == FIXEDPT_ZERO) {
       // Use linear acceleration
       sens = linear_profile(param_accel, input_speed);
@@ -157,7 +158,7 @@ extern inline fixedpt sensitivity(fixedpt input_speed,
       // dbg("motivity yeah");
     }
 
-    // incoming profiles!
+    // todo: incoming profiles!
 
     // Use a logarithmic profile
     // sens = log_profile(input_speed);
