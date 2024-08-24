@@ -38,17 +38,18 @@ static inline fixedpt sigmoid_profile(fixedpt input_speed) {
 }
 
 static inline fixedpt raw_accel_motivity(fixedpt input_speed) {
-  if (input_speed == fixedpt_rconst(13)) {
+  
+  fixedpt log_motivity = fixedpt_log(fixedpt_rconst(4),fixedpt_rconst(10)); // use args.motivity
+  fixedpt gamma_const = fixedpt_div(fixedpt_rconst(0.8), log_motivity); // use args.gamma aka growth rate
+  fixedpt syncspeed = fixedpt_rconst(31); // use args.sync_speed aka midpoint
+  fixedpt log_syncspeed = fixedpt_log(syncspeed,fixedpt_rconst(10)); // use args.sync_speed aka midpoint
+  
+  
+  if (input_speed == syncspeed) {
     return FIXEDPT_ONE;
   }
-
-  fixedpt log_motivity = fixedpt_log(fixedpt_rconst(2.1),fixedpt_rconst(10)); // use args.motivity
-  fixedpt gamma_const = fixedpt_div(fixedpt_rconst(0.7), log_motivity); // use args.gamma aka growth rate
-  fixedpt log_syncspeed = fixedpt_log(fixedpt_rconst(13),fixedpt_rconst(10)); // use args.sync_speed aka midpoint
-  fixedpt syncspeed = fixedpt_rconst(13); // use args.sync_speed aka midpoint
   
-  
-  fixedpt sharpness = fixedpt_rconst(0.94);
+  fixedpt sharpness =  FIXEDPT_ONE; // FIXEDPT_ONE // or fixedpt_rconst(0.94)
   fixedpt sharpness_recip = fixedpt_div(FIXEDPT_ONE, sharpness);
   // fixedpt use_linear_clamp(sharpness >= 16);
   
