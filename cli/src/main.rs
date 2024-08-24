@@ -50,7 +50,11 @@ enum SetSubcommands {
     /// Set the values for all parameters in order
     All {
         sens_mult: f32,
+        mode: f32,
         accel: f32,
+        motivity: f32,
+        gamma: f32,
+        sync_speed: f32,
         offset: f32,
         output_cap: f32,
     },
@@ -78,12 +82,20 @@ fn main() -> anyhow::Result<()> {
         ParamsCommand::Set { command } => match command {
             SetSubcommands::All {
                 sens_mult,
+                mode,
                 accel,
+                motivity,
+                gamma,
+                sync_speed,
                 offset,
                 output_cap,
             } => {
                 Param::SensMult.set(sens_mult)?;
+                Param::Mode.set(mode)?;
                 Param::Accel.set(accel)?;
+                Param::Motivity.set(motivity)?;
+                Param::Gamma.set(gamma)?;
+                Param::SyncSpeed.set(sync_speed)?;
                 Param::Offset.set(offset)?;
                 Param::OutputCap.set(output_cap)?;
             }
@@ -94,7 +106,11 @@ fn main() -> anyhow::Result<()> {
                 let delimiter = if oneline { " " } else { "\n" };
                 let params = [
                     Param::SensMult,
+                    Param::Mode,
                     Param::Accel,
+                    Param::Motivity,
+                    Param::Gamma,
+                    Param::SyncSpeed,
                     Param::Offset,
                     Param::OutputCap,
                 ]

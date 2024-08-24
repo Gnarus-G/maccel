@@ -84,7 +84,7 @@ impl ParameterInput {
 
 struct AppState {
     tab_tick: u8,
-    parameters: [ParameterInput; 4],
+    parameters: [ParameterInput; 8],
 }
 
 impl AppState {
@@ -93,7 +93,11 @@ impl AppState {
             tab_tick: 0,
             parameters: [
                 Param::SensMult.into(),
+                Param::Mode.into(),
                 Param::Accel.into(),
+                Param::Motivity.into(),
+                Param::Gamma.into(),
+                Param::SyncSpeed.into(),
                 Param::Offset.into(),
                 Param::OutputCap.into(),
             ],
@@ -358,6 +362,7 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
         .bounds(bounds)
         .labels(labels);
 
+    // todo: for the graph it would be cool if we don't show the output of 0, but a really small number close to zero so the function looks more continuous
     let data: Vec<_> = (0..1000)
         .map(|x| (x as f32) * 0.1375)
         .map(|x| (x as f64, sensitivity(x, Params::new())))
