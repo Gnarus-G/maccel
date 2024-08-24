@@ -130,6 +130,7 @@ typedef struct {
  */
 extern inline fixedpt sensitivity(fixedpt input_speed,
                                   fixedpt param_sens_mult,
+                                  fixedpt param_mode,
                                   fixedpt param_accel,
                                   fixedpt param_motivity,
                                   fixedpt param_gamma,
@@ -145,20 +146,24 @@ extern inline fixedpt sensitivity(fixedpt input_speed,
   dbg("input_speed %s", fixedpt_cstr(input_speed, 6));
 
   if (input_speed > FIXEDPT_ZERO) {
-    // Use linear acceleration
-    // sens = linear_profile(param_accel, input_speed);
+    // Chose the right accelearion profile based on the mode
+    if (param_mode == FIXEDPT_ZERO) {
+      // Use linear acceleration
+      sens = linear_profile(param_accel, input_speed);
+    } else {
+      // Use motivity like function 1+ ((e-1)/(1+e^-(0.4*x-6))) (see: https://www.desmos.com/calculator  input: y=\frac{e-1}{1+e^{-\left(0.4x-6\right)}}+1)
+      dbg("motivity input speed    %s", fixedpt_cstr(input_speed, 6));
+      sens = raw_accel_motivity(input_speed, param_motivity, param_gamma, param_sync_speed);
+      // dbg("motivity yeah");
+    }
+
+    // incoming profiles!
 
     // Use a logarithmic profile
     // sens = log_profile(input_speed);
 
     // Or use a sigmoid profile instead
     // sens = sigmoid_profile(input_speed);
-
-    // Use motivity like function 1+ ((e-1)/(1+e^-(0.4*x-6))) (see: https://www.desmos.com/calculator  input: y=\frac{e-1}{1+e^{-\left(0.4x-6\right)}}+1)
-    dbg("motivity input speed    %s", fixedpt_cstr(input_speed, 6));
-    sens = raw_accel_motivity(input_speed, param_motivity, param_gamma, param_sync_speed);
-    // sens = fixedpt_mul(input_speed, input_speed);
-    // dbg("motivity yeah");
   }
 
   sens = fixedpt_mul(sens, param_sens_mult);
@@ -193,6 +198,7 @@ static inline fixedpt input_speed(fixedpt dx, fixedpt dy,
 
 static inline AccelResult f_accelerate(int x, int y, u32 polling_interval,
                                        fixedpt param_sens_mult,
+                                       fixedpt param_mode,
                                        fixedpt param_accel,
                                        fixedpt param_motivity,
                                        fixedpt param_gamma,
@@ -212,7 +218,10 @@ static inline AccelResult f_accelerate(int x, int y, u32 polling_interval,
   dbg("in: y (fixedpt conversion) %s", fixedpt_cstr(dy, 6));
 
   fixedpt speed_in = input_speed(dx, dy, polling_interval);
-  fixedpt sens = sensitivity(speed_in, param_sens_mult, param_accel,
+  fixedpt sens = sensitivity(speed_in, param_sens_mult, param_mode,
+                            // linear
+                            param_accel,
+                            // motivity
                             param_motivity,param_gamma,param_sync_speed,
                              param_offset, param_output_cap);
 

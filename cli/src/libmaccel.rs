@@ -4,6 +4,7 @@ use self::fixedptc::Fixedpt;
 
 pub struct Params {
     sens_mult: i32,
+    mode: i32,
     accel: i32,
     motivity: i32,
     gamma: i32,
@@ -18,6 +19,10 @@ impl Params {
             sens_mult: Param::SensMult
                 .get()
                 .expect("failed to read Sens_Mult parameter")
+                .0,
+            mode: Param::Mode
+                .get()
+                .expect("failed to read Mode parameter")
                 .0,
             accel: Param::Accel
                 .get()
@@ -54,6 +59,7 @@ pub fn sensitivity(s_in: f32, params: Params) -> f64 {
         c_lib::sensitivity(
             s_in.0,
             params.sens_mult,
+            params.mode,
             params.accel,
             params.motivity,
             params.gamma,
@@ -114,6 +120,7 @@ mod c_lib {
         pub fn sensitivity(
             speed_in: i32,
             param_sens_mult: i32,
+            param_mode: i32,
             param_accel: i32,
             param_motivity: i32,
             param_gamma: i32,

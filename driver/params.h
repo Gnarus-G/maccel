@@ -13,11 +13,13 @@
 
 PARAM(SENS_MULT, 1,
       "A factor applied the sensitivity calculation after ACCEL is applied.");
+PARAM(MODE,0,"Controls the mode/ acceleration curve type.");
+      // linear mode
 PARAM(ACCEL, 0, "Control the sensitivity calculation.");
-
+// motivity mode
 PARAM(MOTIVITY, 4, "Motivity setting, defines scale of difference between min and max sens.");
-PARAM(SYNC_SPEED, 31, "Midpoint/syncspeed for motivity.");
-PARAM(GAMMA, 0.8, "Gamma/growth for motivity.");
+PARAM(GAMMA, 0.8, "Control gamma/growth for motivity.");
+PARAM(SYNC_SPEED, 31, "Control Midpoint/syncspeed for motivity.");
 
 PARAM(OFFSET, 0, "Control the input speed past which to allow acceleration.");
 PARAM(OUTPUT_CAP, 0, "Control the maximum sensitivity.");
