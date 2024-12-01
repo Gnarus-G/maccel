@@ -1,4 +1,8 @@
-CC=gcc
+ifneq ($(CC),clang)
+	CC=gcc
+else
+	export LLVM=1
+endif
 DRIVERDIR?=`pwd`/driver
 KDIR?=/lib/modules/`uname -r`/build
 
@@ -16,7 +20,7 @@ debug_install: debug install
 
 install: default
 	@sudo insmod $(DRIVERDIR)/maccel.ko;
-	
+
 	@mkdir -p $(MODULEDIR)
 	@sudo cp -v $(DRIVERDIR)/*.ko $(MODULEDIR);
 	@sudo chown -v root:root $(MODULEDIR)/*.ko;
@@ -47,7 +51,7 @@ install_cli: build_cli
 uninstall_cli:
 	@sudo rm -f /usr/local/bin/maccel
 	@sudo rm -f /usr/local/bin/maccel-driver-binder
-	
+
 udev_install: install_cli
 	sudo install -m 644 -v -D `pwd`/udev_rules/99-maccel.rules /usr/lib/udev/rules.d/99-maccel.rules
 	sudo install -m 755 -v -D `pwd`/udev_rules/maccel_param_ownership_and_resets /usr/lib/udev/maccel_param_ownership_and_resets 
