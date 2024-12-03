@@ -1,0 +1,19 @@
+post_install() {
+    udevadm control --reload-rules
+    udevadm trigger --subsystem-match=usb --subsystem-match=input --subsystem-match=hid --attr-match=bInterfaceClass=03 --attr-match=bInterfaceSubClass=01 --attr-match=bInterfaceProtocol=02
+
+    echo ' Add yourself to the "maccel" group\n'
+    echo ' usermod -aG maccel $USER\n'
+}
+
+post_uprgade() {
+    udevadm control --reload-rules
+}
+
+pre_remove() {
+    maccel driver unbindall
+}
+
+post_remove() {
+    udevadm control --reload-rules
+}
