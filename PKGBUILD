@@ -20,6 +20,9 @@ build() {
 }
 
 package() {
+    # Add group
+    install -Dm644 ${srcdir}/maccel/maccel.sysusers ${pkgdir}/usr/lib/sysusers.d/${_pkgname}.conf
+
     # Install Driver
     install -Dm644 ${srcdir}/maccel/dkms.conf ${pkgdir}/usr/src/${_pkgname}-${pkgver}/dkms.conf
 
