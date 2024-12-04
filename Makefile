@@ -1,6 +1,5 @@
 CC=gcc
 DRIVERDIR?=`pwd`/driver
-KDIR?=/lib/modules/`uname -r`/build
 
 MODULEDIR?=/lib/modules/`uname -r`/kernel/drivers/usb
 
@@ -10,7 +9,7 @@ debug: EXTRA_CFLAGS := -DDEBUG
 debug: default
 
 build:
-	$(MAKE) CC=$(CC) EXTRA_CFLAGS=$(EXTRA_CFLAGS) -C $(KDIR) M=$(DRIVERDIR)
+	$(MAKE) -C $(DRIVERDIR)
 
 debug_install: debug install
 
@@ -62,4 +61,4 @@ udev_trigger:
 	udevadm trigger --subsystem-match=usb --subsystem-match=input --subsystem-match=hid --attr-match=bInterfaceClass=03 --attr-match=bInterfaceSubClass=01 --attr-match=bInterfaceProtocol=02
 
 clean:
-	rm -rf $(DRIVERDIR)/.*.cmd $(DRIVERDIR)/*.ko $(DRIVERDIR)/*.mod $(DRIVERDIR)/*.mod.* $(DRIVERDIR)/*.symvers $(DRIVERDIR)/*.order $(DRIVERDIR)/*.o
+	$(MAKE) -C $(DRIVERDIR) clean
