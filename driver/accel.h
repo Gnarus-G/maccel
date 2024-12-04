@@ -11,7 +11,7 @@ typedef struct {
   int y;
 } AccelResult;
 
-static const fixedpt FIXEDPT_ZERO = fixedpt_rconst(0.0);
+const fixedpt FIXEDPT_ZERO = fixedpt_rconst(0.0);
 
 /**
  * Calculate the factor by which to multiply the input vector

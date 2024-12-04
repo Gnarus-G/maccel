@@ -49,7 +49,7 @@ static void on_complete(struct urb *u) {
     return;
   case -EOVERFLOW:
     printk(KERN_ALERT "EOVERFLOW");
-  default:
+  fallthrough; default:
     printk(KERN_ALERT "unknown status; will resubmit request block");
     goto resubmit;
   }
