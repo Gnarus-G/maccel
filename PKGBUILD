@@ -24,15 +24,12 @@ package() {
     install -Dm644 ${srcdir}/maccel/maccel.sysusers ${pkgdir}/usr/lib/sysusers.d/${_pkgname}.conf
 
     # Install Driver
-    install -Dm644 ${srcdir}/maccel/dkms.conf ${pkgdir}/usr/src/${_pkgname}-${pkgver}/dkms.conf
+    install -Dm644 ${srcdir}/maccel/driver/* ${pkgdir}/usr/src/${_pkgname}-${pkgver}/
 
     # Set name and version
     sed -e "s/@_PKGNAME@/${_pkgname}/" \
         -e "s/@PKGVER@/${pkgver}/" \
         -i "${pkgdir}/usr/src/${_pkgname}-${pkgver}/dkms.conf"
-
-    # Copy sources (including Makefile)
-    cp -r ${srcdir}/maccel/driver/* ${pkgdir}/usr/src/${_pkgname}-${pkgver}/
 
     # Install CLI
     install -Dm 755 $srcdir/maccel/cli/target/release/maccel ${pkgdir}/usr/local/bin/maccel
