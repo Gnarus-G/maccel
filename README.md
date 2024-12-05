@@ -132,3 +132,13 @@ This debugging experience might be lacking still. Feel free to report any issues
 - https://linux-kernel-labs.github.io/refs/heads/master/labs/device_drivers.html
 - https://www.youtube.com/watch?v=oX9ZwMQL2f4
 - https://gist.github.com/fstiehle/17fca11d7d1b4c2b8dfd982e1cf39caf
+
+## Contributing
+First off, I apreciate you. Now here are some guidelines:
+### Commit messagses
+Subject line:
+- First letter is capitalized
+- Imperative tense (e.g. "Add ...", not "Added ..." or "Adds ...")
+- Include as much detail as you can.
+
+[See more](https://github.com/Gnarus-G/maccel/blob/main/CONTRIBUTING.md)
