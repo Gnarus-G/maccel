@@ -33,7 +33,7 @@ package() {
         -i "${pkgdir}/usr/src/${_pkgname}-${pkgver}/dkms.conf"
 
     # Install CLI
-    install -Dm 755 ${scrdir}/maccel/cli/target/release/maccel ${pkgdir}/usr/bin/maccel
+    install -Dm 755 ${srcdir}/maccel/cli/target/release/maccel ${pkgdir}/usr/bin/maccel
     install -Dm 755 ${srcdir}/maccel/cli/usbmouse/target/release/maccel-driver-binder ${pkgdir}/usr/bin/maccel-driver-binder
 
     # Install udev rules
