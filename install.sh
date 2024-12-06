@@ -40,7 +40,12 @@ get_current_version(){
   maccel -V | awk '{ print $2 }'
 }
 
+get_version() {
+  wget -qO- https://github.com/Gnarus-G/maccel/releases/latest | grep -oP 'v\d+\.\d+\.\d+' | tail -n 1
+}
+
 CURR_VERSION=$(get_current_version)
+VERSION=$(get_version)
 
 set -e
 
@@ -93,8 +98,22 @@ install_driver() {
   fi
 }
 
+install_driver_dkms() {
+    # Install Driver
+    install -dm 644 /usr/src/maccel-${VERSION}
+    sudo cp -r $(pwd)/driver/* /usr/src/maccel-${VERSION}
+
+    # Set name and version
+    sudo sed -e "s/@_PKGNAME@/maccel/" \
+         -e "s/@PKGVER@/${VERSION}/" \
+         -i "/usr/src/maccel-${VERSION}/dkms.conf"
+
+    dkms install "maccel/${VERSION}"
+
+    sudo modprobe maccel
+}
+
 install_cli() {
-  VERSION=$(wget -qO- https://github.com/Gnarus-G/maccel/releases/latest | grep -oP 'v\d+\.\d+\.\d+' | tail -n 1)
   curl -fsSL https://github.com/Gnarus-G/maccel/releases/download/$VERSION/maccel-cli.tar.gz -o maccel-cli.tar.gz
   tar -zxvf maccel-cli.tar.gz maccel_$VERSION/maccel
   mkdir -p bin
@@ -134,7 +153,8 @@ underline_start
 print_bold "\nInstalling the driver (kernel module)"
 underline_end
 
-install_driver
+#install_driver
+install_driver_dkms
 
 underline_start
 print_bold "\nInstalling the CLI"
