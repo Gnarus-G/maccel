@@ -1,5 +1,5 @@
 pkgname=maccel-dkms
-_pkgname="${pkgname%-*}"
+_pkgname="maccel"
 pkgver=0.2.1
 pkgrel=1
 pkgdesc='Mouse acceleration driver and kernel module for Linux.'
@@ -7,16 +7,16 @@ arch=('x86_64')
 url='https://www.maccel.org/'
 license=('GPL-2.0-or-later')
 
-depends=("curl" "git" "dkms")
-install=${_pkgname}.install
+install=maccel.install
+depends=("dkms")
+makedepends=("git" "cargo")
 
-source=("git+https://github.com/pxlsec/maccel")
+source=("git+https://github.com/Gnarus-G/maccel.git")
 sha256sums=('SKIP')
 
 build() {
     # Build the CLI
-    cd $srcdir/maccel
-    make build_cli
+    make -C ${srcdir}/maccel build_cli
 }
 
 package() {
@@ -24,7 +24,8 @@ package() {
     install -Dm644 ${srcdir}/maccel/maccel.sysusers ${pkgdir}/usr/lib/sysusers.d/${_pkgname}.conf
 
     # Install Driver
-    install -Dm644 ${srcdir}/maccel/driver/* ${pkgdir}/usr/src/${_pkgname}-${pkgver}/
+    install -dm644 ${pkgdir}/usr/src/${_pkgname}-${pkgver}
+    cp -r ${srcdir}/maccel/driver/* ${pkgdir}/usr/src/${_pkgname}-${pkgver}
 
     # Set name and version
     sed -e "s/@_PKGNAME@/${_pkgname}/" \
@@ -32,8 +33,8 @@ package() {
         -i "${pkgdir}/usr/src/${_pkgname}-${pkgver}/dkms.conf"
 
     # Install CLI
-    install -Dm 755 $srcdir/maccel/cli/target/release/maccel ${pkgdir}/usr/local/bin/maccel
-    install -Dm 755 $srcdir/maccel/cli/usbmouse/target/release/maccel-driver-binder ${pkgdir}/usr/local/bin/maccel-driver-binder
+    install -Dm 755 ${scrdir}/maccel/cli/target/release/maccel ${pkgdir}/usr/bin/maccel
+    install -Dm 755 ${srcdir}/maccel/cli/usbmouse/target/release/maccel-driver-binder ${pkgdir}/usr/bin/maccel-driver-binder
 
     # Install udev rules
     install -Dm 644 ${srcdir}/maccel/udev_rules/99-maccel.rules ${pkgdir}/usr/lib/udev/rules.d/99-maccel.rules
