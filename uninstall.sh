@@ -15,6 +15,12 @@ delete_module() {
   sudo rm -vf $MODULEDIR/maccel.ko
 }
 
+delete_module_dkms() {
+  sudo rmmod maccel
+  sudo dkms remove maccel/${CURR_VERSION}
+  sudo rm -rfv /usr/src/maccel-${CURR_VERSION}
+}
+
 udev_uninstall() {
   if [[ "$CURR_VERSION" < "0.1.5" ]]; then
     sudo maccel unbindall
@@ -32,5 +38,6 @@ delete_everything() {
 }
 
 udev_uninstall
-delete_module
+#delete_module
+delete_module_dkms
 delete_everything
