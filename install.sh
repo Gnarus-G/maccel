@@ -41,7 +41,7 @@ get_current_version(){
 }
 
 get_version() {
-  wget -qO- https://github.com/Gnarus-G/maccel/releases/latest | grep -oP 'v\d+\.\d+\.\d+' | tail -n 1
+  wget -qO- https://github.com/Gnarus-G/maccel/releases/latest | grep -oP 'v\d+\.\d+\.\d+' | tail -n 1 | cut -c 2-
 }
 
 CURR_VERSION=$(get_current_version)
@@ -114,10 +114,10 @@ install_driver_dkms() {
 }
 
 install_cli() {
-  curl -fsSL https://github.com/Gnarus-G/maccel/releases/download/$VERSION/maccel-cli.tar.gz -o maccel-cli.tar.gz
-  tar -zxvf maccel-cli.tar.gz maccel_$VERSION/maccel
+  curl -fsSL https://github.com/Gnarus-G/maccel/releases/download/v$VERSION/maccel-cli.tar.gz -o maccel-cli.tar.gz
+  tar -zxvf maccel-cli.tar.gz maccel_v$VERSION/maccel
   mkdir -p bin
-  sudo install -m 755 -v -D maccel_$VERSION/maccel* bin/
+  sudo install -m 755 -v -D maccel_v$VERSION/maccel* bin/
   sudo ln -vfs $(pwd)/bin/maccel* /usr/local/bin/
 }
 
