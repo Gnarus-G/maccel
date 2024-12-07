@@ -17,7 +17,8 @@ delete_module() {
 
 delete_module_dkms() {
   sudo rmmod maccel
-  sudo rm -rfv /usr/src/maccel-*
+  sudo dkms remove maccel/${CURR_VERSION}
+  sudo rm -rfv /usr/src/maccel-${CURR_VERSION}
 }
 
 udev_uninstall() {

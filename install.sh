@@ -98,17 +98,18 @@ install_driver() {
   fi
 }
 
-install_driver_dkms() {
-    # Install Driver
-    install -dm 644 /usr/src/maccel-${VERSION}
-    sudo cp -r $(pwd)/driver/* /usr/src/maccel-${VERSION}
-
+install_driver_dkms() {  
+    # Install Driver 
+    install -Dm 644 $(pwd)/dkms.conf /usr/src/maccel-${VERSION}/dkms.conf
+    
     # Set name and version
     sudo sed -e "s/@_PKGNAME@/maccel/" \
          -e "s/@PKGVER@/${VERSION}/" \
          -i "/usr/src/maccel-${VERSION}/dkms.conf"
+    
+    sudo cp -r $(pwd)/driver/* /usr/src/maccel-${VERSION}/
 
-    dkms install "maccel/${VERSION}"
+    sudo dkms install "maccel/${VERSION}"
 
     sudo modprobe maccel
 }
