@@ -134,7 +134,7 @@ typedef __uint128_t fixedptud;
   ((float)((T) * ((float)(1) / (float)(1L << FIXEDPT_FBITS))))
 
 /* Multiplies two fixedpt numbers, returns the result. */
-static inline fixedpt fixedpt_mul(fixedpt A, fixedpt B) {
+inline fixedpt fixedpt_mul(fixedpt A, fixedpt B) {
   return (((fixedptd)A * (fixedptd)B) >> FIXEDPT_FBITS);
 }
 
@@ -210,7 +210,7 @@ static inline void fixedpt_str(fixedpt A, char *str, int max_dec) {
 
 /* Converts the given fixedpt number into a string, using a static
  * (non-threadsafe) string buffer */
-static inline char *fixedpt_cstr(const fixedpt A, const int max_dec) {
+inline char *fixedpt_cstr(const fixedpt A, const int max_dec) {
   static char str[25];
 
   fixedpt_str(A, str, max_dec);
