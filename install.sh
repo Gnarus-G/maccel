@@ -111,7 +111,10 @@ install_driver_dkms() {
 
     sudo dkms install "maccel/${VERSION}"
 
-    sudo modprobe maccel
+    print_bold $(print_green "[Recommended]")
+    print_bold ' Make sure to run `modprobe maccel` after install\n'
+    print_bold $(print_green "[Recommended]")
+    print_bold ' unless you have `modprobe_on_install` added to your dkms config.\n'
 }
 
 install_cli() {
