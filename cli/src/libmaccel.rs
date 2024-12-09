@@ -36,7 +36,7 @@ impl Params {
 pub fn sensitivity(s_in: f32, params: Params) -> f64 {
     let s_in: Fixedpt = s_in.into();
     let a_factor = unsafe {
-        c_lib::sensitivity(
+        c_lib::sensitivity_rs(
             s_in.0,
             params.sens_mult,
             params.accel,
@@ -93,7 +93,7 @@ mod c_lib {
     use std::ffi::c_char;
 
     extern "C" {
-        pub fn sensitivity(
+        pub fn sensitivity_rs(
             speed_in: i32,
             param_sens_mult: i32,
             param_accel: i32,

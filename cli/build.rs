@@ -9,5 +9,6 @@ fn main() {
 
     println!("cargo:rerun-if-changed=src/libmaccel.c");
     println!("cargo:rerun-if-changed=../driver/accel.h");
+    println!("cargo:rerun-if-changed=../driver/accel_rs.h");
     println!("cargo:rerun-if-changed=../driver/fixedptc.h");
 }
