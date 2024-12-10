@@ -19,11 +19,17 @@ acceleration factor
 ## Install
 
 Make sure to have these dependencies installed on your machine:
-`curl`, `git`, `make`, `gcc`, and the linux headers in `/lib/modules/`
+`curl`, `git`, `make`, `gcc`, `dkms`, and the linux headers in `/lib/modules/`
 
 ```sh
 curl -fsSL https://www.maccel.org/install.sh | sudo sh
 ```
+
+Remember to `modprobe maccel` after installing or add `modprobe_on_install=true` to your dkms
+config file (usually located at /etc/dkms/framework.conf) to automatically modprobe after installing 
+a dkms module.
+
+It's also required to add yourself to the maccel group using `usermod -aG maccel $USER` after installing.
 
 ## Uninstall
 
@@ -102,7 +108,7 @@ uname -r
 On an arch based distro you search for the available headers with
 
 ```
-sudo pacman -Ss linux headers
+pacman -Ss linux headers
 ```
 
 ## Troubleshooting Driver
