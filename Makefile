@@ -67,3 +67,5 @@ udev_trigger:
 
 clean:
 	rm -rf $(DRIVERDIR)/.*.cmd $(DRIVERDIR)/*.ko $(DRIVERDIR)/*.mod $(DRIVERDIR)/*.mod.* $(DRIVERDIR)/*.symvers $(DRIVERDIR)/*.order $(DRIVERDIR)/*.o
+	cargo clean --manifest-path=cli/Cargo.toml
+	cargo clean --manifest-path=cli/usbmouse/Cargo.toml
