@@ -14,9 +14,22 @@ makedepends=("git" "cargo")
 source=("git+https://github.com/Gnarus-G/maccel.git")
 sha256sums=("SKIP")
 
+prepare() {
+    export RUSTUP_TOOLCHAIN=stable
+    
+    platform="$(rustc -vV | sed -n 's/host: //p')"
+    
+    cargo fetch --locked --target "${platform}" --manifest-path="${srcdir}/maccel/cli/Cargo.toml"
+    cargo fetch --locked --target "${platform}" --manifest-path="${srcdir}/maccel/cli/usbmouse/Cargo.toml"
+}
+
 build() {
+    export RUSTUP_TOOLCHAIN=stable
+    export CARGO_TARGET_DIR=target
+    
     # Build the CLI
-    make -C "${srcdir}/maccel" build_cli
+	  cargo build --profile=release-with-debug --frozen --all-features --manifest-path="${srcdir}/maccel/cli/Cargo.toml"
+	  cargo build --profile=release-with-debug --frozen --all-features --manifest-path="${srcdir}/maccel/cli/usbmouse/Cargo.toml"
 }
 
 package() {
@@ -34,8 +47,8 @@ package() {
     cp -r "${srcdir}/maccel/driver/." "${pkgdir}/usr/src/${_pkgname}-${pkgver}/"
 
     # Install CLI
-    install -Dm 755 "${srcdir}/maccel/cli/target/release/maccel" "${pkgdir}/usr/bin/maccel"
-    install -Dm 755 "${srcdir}/maccel/cli/usbmouse/target/release/maccel-driver-binder" "${pkgdir}/usr/bin/maccel-driver-binder"
+    install -Dm 755 "${srcdir}/target/release-with-debug/maccel" "${pkgdir}/usr/bin/maccel"
+    install -Dm 755 "${srcdir}/target/release-with-debug/maccel-driver-binder" "${pkgdir}/usr/bin/maccel-driver-binder"
 
     # Install udev rules
     install -Dm 644 "${srcdir}/maccel/udev_rules/99-maccel.rules" "${pkgdir}/usr/lib/udev/rules.d/99-maccel.rules"
