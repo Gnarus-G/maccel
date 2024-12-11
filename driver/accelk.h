@@ -5,7 +5,7 @@
 #include "linux/ktime.h"
 #include "params.h"
 
-static AccelResult inline accelerate(int x, int y) {
+static inline AccelResult accelerate(int x, int y) {
   static ktime_t last;
   static u64 last_ms = 1;
 
