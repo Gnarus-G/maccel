@@ -40,7 +40,12 @@ get_current_version(){
   maccel -V | awk '{ print $2 }'
 }
 
+get_version() {
+  wget -qO- https://github.com/Gnarus-G/maccel/releases/latest | grep -oP 'v\d+\.\d+\.\d+' | tail -n 1 | cut -c 2-
+}
+
 CURR_VERSION=$(get_current_version)
+VERSION=$(get_version)
 
 set -e
 
@@ -93,12 +98,30 @@ install_driver() {
   fi
 }
 
+install_driver_dkms() {  
+    # Install Driver 
+    install -Dm 644 "$(pwd)/dkms.conf" "/usr/src/maccel-${VERSION}/dkms.conf"
+    
+    # Set name and version
+    sudo sed -e "s/@_PKGNAME@/maccel/" \
+         -e "s/@PKGVER@/${VERSION}/" \
+         -i "/usr/src/maccel-${VERSION}/dkms.conf"
+    
+    sudo cp -r "$(pwd)/driver/." "/usr/src/maccel-${VERSION}/"
+
+    sudo dkms install "maccel/${VERSION}"
+
+    print_bold $(print_green "[Recommended]")
+    print_bold ' Make sure to run `modprobe maccel` after install\n'
+    print_bold $(print_green "[Recommended]")
+    print_bold ' unless you have `modprobe_on_install` added to your dkms config.\n'
+}
+
 install_cli() {
-  VERSION=$(wget -qO- https://github.com/Gnarus-G/maccel/releases/latest | grep -oP 'v\d+\.\d+\.\d+' | tail -n 1)
-  curl -fsSL https://github.com/Gnarus-G/maccel/releases/download/$VERSION/maccel-cli.tar.gz -o maccel-cli.tar.gz
-  tar -zxvf maccel-cli.tar.gz maccel_$VERSION/maccel
+  curl -fsSL https://github.com/Gnarus-G/maccel/releases/download/v$VERSION/maccel-cli.tar.gz -o maccel-cli.tar.gz
+  tar -zxvf maccel-cli.tar.gz maccel_v$VERSION/maccel
   mkdir -p bin
-  sudo install -m 755 -v -D maccel_$VERSION/maccel* bin/
+  sudo install -m 755 -v -D maccel_v$VERSION/maccel* bin/
   sudo ln -vfs $(pwd)/bin/maccel* /usr/local/bin/
 }
 
@@ -134,7 +157,8 @@ underline_start
 print_bold "\nInstalling the driver (kernel module)"
 underline_end
 
-install_driver
+#install_driver
+install_driver_dkms
 
 underline_start
 print_bold "\nInstalling the CLI"

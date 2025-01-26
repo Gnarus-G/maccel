@@ -1,0 +1,25 @@
+post_install() {
+    udevadm control --reload-rules
+
+    echo ''
+    echo ' Add yourself to the "maccel" group and install the module!'
+    echo '   usermod -aG maccel $USER && modprobe maccel'
+    echo ''
+}
+
+post_upgrade() {
+    udevadm control --reload-rules
+    
+    echo ''
+    echo ' Remember to reload the module!'
+    echo '   rmmod maccel && modprobe maccel'
+    echo ''
+}
+
+pre_remove() {
+    maccel driver unbindall
+}
+
+post_remove() {
+    udevadm control --reload-rules
+}
