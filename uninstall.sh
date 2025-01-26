@@ -10,11 +10,6 @@ get_current_version(){
 
 CURR_VERSION=$(get_current_version)
 
-delete_module() {
-  sudo rmmod maccel
-  sudo rm -vf $MODULEDIR/maccel.ko
-}
-
 delete_module_dkms() {
   sudo rmmod maccel
   sudo dkms remove maccel/${CURR_VERSION}
@@ -38,6 +33,5 @@ delete_everything() {
 }
 
 udev_uninstall
-#delete_module
 delete_module_dkms
 delete_everything
