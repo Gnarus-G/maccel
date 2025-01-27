@@ -26,7 +26,7 @@ curl -fsSL https://www.maccel.org/install.sh | sudo sh
 ```
 
 Remember to `modprobe maccel` after installing or add `modprobe_on_install=true` to your dkms
-config file (usually located at /etc/dkms/framework.conf) to automatically modprobe after installing 
+config file (usually located at /etc/dkms/framework.conf) to automatically modprobe after installing
 a dkms module.
 
 It's also required to add yourself to the maccel group using `usermod -aG maccel $USER` after installing.
@@ -111,17 +111,6 @@ On an arch based distro you search for the available headers with
 pacman -Ss linux headers
 ```
 
-## Troubleshooting Driver
-
-If you notice any weird behavior and are looking to investigate it,
-then try a debug build of the driver. Run this modified install command.
-
-```sh
-curl -fsSL https://www.maccel.org/install.sh | sudo MACCEL_DEBUG_INSTALL=1 sh
-```
-
-This debugging experience might be lacking still. Feel free to report any issues.
-
 ## References
 
 - https://lwn.net/Kernel/LDD3/
@@ -140,9 +129,13 @@ This debugging experience might be lacking still. Feel free to report any issues
 - https://gist.github.com/fstiehle/17fca11d7d1b4c2b8dfd982e1cf39caf
 
 ## Contributing
+
 First off, I apreciate you. Now here are some guidelines:
+
 ### Commit messagses
+
 Subject line:
+
 - First letter is capitalized
 - Imperative tense (e.g. "Add ...", not "Added ..." or "Adds ...")
 - Include as much detail as you can.

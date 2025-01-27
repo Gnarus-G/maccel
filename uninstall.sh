@@ -28,6 +28,7 @@ udev_uninstall() {
 }
 
 delete_everything() {
+  sudo groupdel maccel
   sudo rm -vf $(which maccel)
   sudo rm -vrf /opt/maccel /var/opt/maccel
 }

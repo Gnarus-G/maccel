@@ -1,6 +1,7 @@
 # MACCEL_ENABLE_USBMOUSE=0
-# MACCEL_DEBUG_INSTALL=0
 # MACCEL_BRANCH
+
+set -e
 
 bold_start() {
   printf "\e[1m"
@@ -88,16 +89,6 @@ version_update_warning() {
   fi
 }
 
-install_driver() {
-  make uninstall || true
-  if [[ $MACCEL_DEBUG_INSTALL -eq 1 ]]; then
-    print_bold "Will do a debug install as requested, MACCEL_DEBUG_INSTALL=1\n"
-    make debug_install
-  else
-    make install
-  fi
-}
-
 install_driver_dkms() {  
     # Install Driver 
     install -Dm 644 "$(pwd)/dkms.conf" "/usr/src/maccel-${VERSION}/dkms.conf"
@@ -111,9 +102,9 @@ install_driver_dkms() {
 
     sudo dkms install "maccel/${VERSION}"
 
-    print_bold $(print_green "[Recommended]")
+    print_bold $(print_green "[Required]")
     print_bold ' Make sure to run `modprobe maccel` after install\n'
-    print_bold $(print_green "[Recommended]")
+    print_bold $(print_green "[Required]")
     print_bold ' unless you have `modprobe_on_install` added to your dkms config.\n'
 }
 
@@ -123,6 +114,8 @@ install_cli() {
   mkdir -p bin
   sudo install -m 755 -v -D maccel_v$VERSION/maccel* bin/
   sudo ln -vfs $(pwd)/bin/maccel* /usr/local/bin/
+
+  sudo groupadd -f maccel
 }
 
 install_udev_rules() {
@@ -157,7 +150,6 @@ underline_start
 print_bold "\nInstalling the driver (kernel module)"
 underline_end
 
-#install_driver
 install_driver_dkms
 
 underline_start
