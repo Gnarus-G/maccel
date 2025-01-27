@@ -23,7 +23,7 @@
   }                                                                            \
   while (0)                                                                    \
   _Pragma("clang diagnostic pop")
-#else
+#elif defined __KERNEL__
 #define dbg_k(fmt, ...)                                                        \
   do {                                                                         \
     if (DEBUG_TEST)                                                            \
@@ -31,10 +31,7 @@
              __VA_ARGS__);                                                     \
   }                                                                            \
   while (0)
-#endif
-#endif
-
-#ifndef __KERNEL__
+#else
 #define dbg_std(fmt, ...)                                                      \
   do {                                                                         \
     if (DEBUG_TEST)                                                            \
