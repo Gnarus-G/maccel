@@ -12,8 +12,7 @@
 #define dbg(fmt, ...) dbg_std(fmt, __VA_ARGS__)
 #endif
 
-#ifdef __KERNEL__
-#ifdef __clang__
+#if defined __KERNEL__ && defined __clang__
 #define dbg_k(fmt, ...)                                                        \
   _Pragma("clang diagnostic push")                                             \
       _Pragma("clang diagnostic ignored \"-Wstatic-local-in-inline\"") do {    \
