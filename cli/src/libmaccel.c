@@ -1,4 +1,4 @@
-#include "../../driver/accel.h"
+#include "../../driver/accel_rs.h"
 #include "../../driver/fixedptc.h"
 
 extern char *fixedpt_to_str(fixedpt num) { return fixedpt_cstr(num, 5); }

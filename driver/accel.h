@@ -18,7 +18,7 @@ const fixedpt FIXEDPT_ZERO = fixedpt_rconst(0.0);
  * in order to get the desired output speed.
  *
  */
-extern inline fixedpt sensitivity(fixedpt input_speed, fixedpt param_sens_mult,
+static inline fixedpt sensitivity(fixedpt input_speed, fixedpt param_sens_mult,
                                   fixedpt param_accel, fixedpt param_offset,
                                   fixedpt param_output_cap) {
 
