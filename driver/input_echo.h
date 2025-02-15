@@ -8,7 +8,7 @@
  * Cache of the last [REL_X, REL_Y] values to report to userspace
  * on read.
  */
-static int input_cache[2] = {0};
+static int MOUSE_MOVE_CACHE[2] = {0};
 
 static struct cdev device;
 static struct class *device_class;
@@ -26,8 +26,8 @@ static void int_to_bytes(int num, char bytes[4]) {
 
 static ssize_t read(struct file *f, char __user *user_buffer, size_t size,
                     loff_t *offset) {
-  int x = input_cache[0];
-  int y = input_cache[1];
+  int x = MOUSE_MOVE_CACHE[0];
+  int y = MOUSE_MOVE_CACHE[1];
   fixedpt speed = input_speed(fixedpt_fromint(x), fixedpt_fromint(y), 1);
 
   signed char be_bytes_for_int[4] = {0};

@@ -7,34 +7,34 @@
 static int create_virtual_device(void) {
   int error;
 
-  virtual_input_dev = input_allocate_device();
-  if (!virtual_input_dev) {
+  VIRTUAL_INPUT_DEV = input_allocate_device();
+  if (!VIRTUAL_INPUT_DEV) {
     printk(KERN_ERR "Failed to allocate virtual input device\n");
     return -ENOMEM;
   }
 
-  virtual_input_dev->name = "maccel [Virtual Mouse]";
-  virtual_input_dev->id.bustype = BUS_USB;
+  VIRTUAL_INPUT_DEV->name = "maccel [Virtual Mouse]";
+  VIRTUAL_INPUT_DEV->id.bustype = BUS_USB;
   /* virtual_input_dev->id.vendor = 0x1234; */
   /* virtual_input_dev->id.product = 0x5678; */
-  virtual_input_dev->id.version = 1;
+  VIRTUAL_INPUT_DEV->id.version = 1;
 
   // Set the supported event types and codes for the virtual device
   // and for some reason not setting some EV_KEY bits causes a noticeable
   // difference in the values we operate on, leading to a different
   // acceleration behavior than we expect.
-  set_bit(EV_KEY, virtual_input_dev->evbit);
-  set_bit(BTN_LEFT, virtual_input_dev->keybit);
+  set_bit(EV_KEY, VIRTUAL_INPUT_DEV->evbit);
+  set_bit(BTN_LEFT, VIRTUAL_INPUT_DEV->keybit);
 
-  set_bit(EV_REL, virtual_input_dev->evbit);
+  set_bit(EV_REL, VIRTUAL_INPUT_DEV->evbit);
   for (u32 code = REL_X; code < REL_CNT; code++) {
-    set_bit(code, virtual_input_dev->relbit);
+    set_bit(code, VIRTUAL_INPUT_DEV->relbit);
   }
 
-  error = input_register_device(virtual_input_dev);
+  error = input_register_device(VIRTUAL_INPUT_DEV);
   if (error) {
     printk(KERN_ERR "Failed to register virtual input device\n");
-    input_free_device(virtual_input_dev);
+    input_free_device(VIRTUAL_INPUT_DEV);
     return error;
   }
 
@@ -73,8 +73,8 @@ err_unregister_usb:
   usb_deregister(&maccel_usb_driver);
 
 err_free_vdev:
-  input_unregister_device(virtual_input_dev);
-  input_free_device(virtual_input_dev);
+  input_unregister_device(VIRTUAL_INPUT_DEV);
+  input_free_device(VIRTUAL_INPUT_DEV);
   return error;
 }
 
@@ -85,8 +85,8 @@ static void __exit my_exit(void) {
 
   usb_deregister(&maccel_usb_driver);
 
-  input_unregister_device(virtual_input_dev);
-  input_free_device(virtual_input_dev);
+  input_unregister_device(VIRTUAL_INPUT_DEV);
+  input_free_device(VIRTUAL_INPUT_DEV);
 }
 
 MODULE_LICENSE("GPL");
