@@ -5,8 +5,6 @@
 #include <linux/hid.h>
 #include <linux/version.h>
 
-static struct input_dev *VIRTUAL_INPUT_DEV;
-
 /*
  * Collect the events EV_REL REL_X and EV_REL REL_Y, once we have both then
  * we accelerate the (x, y) vector and set the EV_REL event's value
@@ -72,8 +70,6 @@ static unsigned int maccel_events(struct input_handle *handle,
 }
 
 static bool maccel_match(struct input_handler *handler, struct input_dev *dev) {
-  if (dev == VIRTUAL_INPUT_DEV)
-    return false;
   if (!dev->dev.parent)
     return false;
 
