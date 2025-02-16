@@ -1,5 +1,4 @@
 #include "./input_handler.h"
-#include "./usbmouse.h"
 #include "input_echo.h"
 
 /*
@@ -10,13 +9,9 @@
  */
 static int __init my_init(void) {
   int error;
-  error = usb_register(&maccel_usb_driver);
-  if (error)
-    goto err_free_vdev;
-
   error = create_char_device();
   if (error)
-    goto err_unregister_usb;
+    return error;
 
   error = input_register_handler(&maccel_handler);
   if (error)
@@ -26,20 +21,12 @@ static int __init my_init(void) {
 
 err_free_chrdev:
   destroy_char_device();
-
-err_unregister_usb:
-  usb_deregister(&maccel_usb_driver);
-
-err_free_vdev:
   return error;
 }
 
 static void __exit my_exit(void) {
   input_unregister_handler(&maccel_handler);
-
   destroy_char_device();
-
-  usb_deregister(&maccel_usb_driver);
 }
 
 MODULE_LICENSE("GPL");

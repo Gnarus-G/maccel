@@ -3,16 +3,12 @@ import numpy as np
 import pandas as pd
 
 control_data = pd.read_csv("control.csv")
-old_data = pd.read_csv("usbmouse.csv")
 new_data = pd.read_csv("input_handler.csv")
 
 fig, ax = plt.subplots()
 
 ax.plot(np.arange(1000), control_data["diff"], 'b',
         label=f"Hid-generic (mean = {control_data["diff"].mean()}us)")
-
-ax.plot(np.arange(1000), old_data["diff"], 'r',
-        label=f"Old driver   (mean = {old_data["diff"].mean()}us)")
 
 ax.plot(np.arange(1000), new_data["diff"], 'g',
         label=f"New driver  (mean = {new_data["diff"].mean()}us)")
