@@ -13,7 +13,7 @@ debug: EXTRA_CFLAGS := -DDEBUG
 debug: default
 
 build:
-	$(MAKE) -C $(DRIVERDIR)
+	$(MAKE) CC=$(CC) EXTRA_CFLAGS=$(EXTRA_CFLAGS) -C $(DRIVERDIR)
 
 debug_install: debug install
 
