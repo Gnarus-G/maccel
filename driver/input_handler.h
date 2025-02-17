@@ -46,9 +46,20 @@ static void event(struct input_handle *handle, struct input_value *value_ptr) {
   }
 }
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0))
+#define __cleanup_events 0
+#else
+#define __cleanup_events 1
+#endif
+
+#if __cleanup_events
 static unsigned int maccel_events(struct input_handle *handle,
                                   struct input_value *vals,
                                   unsigned int count) {
+#else
+static void maccel_events(struct input_handle *handle,
+                          const struct input_value *vals, unsigned int count) {
+#endif
   struct input_value *v;
   for (v = vals; v != vals + count; v++) {
     event(handle, v);
@@ -66,7 +77,9 @@ static unsigned int maccel_events(struct input_handle *handle,
 
   int _count = end - vals;
   handle->dev->num_vals = _count;
+#if __cleanup_events
   return _count;
+#endif
 }
 
 static bool maccel_match(struct input_handler *handler, struct input_dev *dev) {
