@@ -82,19 +82,6 @@ static void maccel_events(struct input_handle *handle,
 #endif
 }
 
-static bool maccel_match(struct input_handler *handler, struct input_dev *dev) {
-  if (!dev->dev.parent)
-    return false;
-
-  struct hid_device *hdev = to_hid_device(dev->dev.parent);
-
-  printk(KERN_INFO "maccel found a possible mouse: %s", hdev->name);
-  /* printk(KERN_INFO "is it a mouse? %s", */
-  /*        hdev->type == HID_TYPE_USBMOUSE ? "true" : "false"); */
-
-  return hdev->type == HID_TYPE_USBMOUSE;
-}
-
 /* Same as Linux's input_register_handle but we always add the handle to the
  * head of handlers */
 static int input_register_handle_head(struct input_handle *handle) {
@@ -173,5 +160,4 @@ struct input_handler maccel_handler = {.events = maccel_events,
                                        .connect = maccel_connect,
                                        .disconnect = maccel_disconnect,
                                        .name = "maccel",
-                                       .id_table = my_ids,
-                                       .match = maccel_match};
+                                       .id_table = my_ids};
