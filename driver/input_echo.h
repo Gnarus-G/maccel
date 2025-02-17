@@ -3,6 +3,8 @@
 
 #include "./accel.h"
 #include "linux/cdev.h"
+#include "linux/fs.h"
+#include <linux/version.h>
 
 /**
  * Cache of the last [REL_X, REL_Y] values to report to userspace
@@ -50,11 +52,14 @@ static int create_char_device(void) {
     return -EIO;
 
   cdev_init(&device, &fops);
-  device.owner = THIS_MODULE;
-
   cdev_add(&device, device_number, 1);
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 4, 0))
+  device_class = class_create(THIS_MODULE, "maccel");
+#else
+  device.owner = THIS_MODULE;
   device_class = class_create("maccel");
+#endif
 
   if (IS_ERR(device_class)) {
     goto err_free_cdev;
