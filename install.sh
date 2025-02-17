@@ -1,4 +1,3 @@
-# MACCEL_ENABLE_USBMOUSE=0
 # MACCEL_BRANCH
 
 set -e
@@ -165,10 +164,4 @@ print_bold ' usermod -aG maccel $USER\n'
 
 if [[ -n "$ATTENTION" ]]; then
   printf "\n$ATTENTION\n"
-fi
-
-if [[ -n "$CURR_VERSION" && "$CURR_VERSION" < "0.2.0" ]]; then 
-  bold_start
-  print_yellow "\nNOTE: There are two drivers now, and the new (default) one has better compatibility. For more info, see https://github.com/Gnarus-G/maccel/blob/main/TWO_IMPLEMENTATIONS.md.md\n"
-  bold_end
 fi

@@ -41,7 +41,6 @@ refresh-debug: default uninstall
 
 build_cli:
 	cargo build --release --manifest-path=cli/Cargo.toml
-	cargo build --release --manifest-path=cli/usbmouse/Cargo.toml
 
 install_cli: build_cli
 	sudo install -m 755 `pwd`/cli/target/release/maccel /usr/local/bin/maccel
