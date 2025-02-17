@@ -18,18 +18,33 @@ acceleration factor
 
 ## Install
 
+### Shell Script
 Make sure to have these dependencies installed on your machine:
-`curl`, `git`, `make`, `gcc`, `dkms`, and the linux headers in `/lib/modules/`
+`curl`, `git`, `make`, `dkms`, and the linux headers in `/lib/modules/`
+
+You might also, and you probably don't, have to install `gcc` or `clang` 
+depending on with which your distro's kernel was built.
 
 ```sh
 curl -fsSL https://www.maccel.org/install.sh | sudo sh
 ```
 
-Remember to `modprobe maccel` after installing or add `modprobe_on_install=true` to your dkms
+### Arch (PKGBUILD)
+
+```sh
+git clone https://github.com/Gnarus-G/maccel
+cd maccel
+makepkg -si
+```
+
+### Post Install
+
+Run `modprobe maccel` after installing or add `modprobe_on_install=true` to your dkms
 config file (usually located at /etc/dkms/framework.conf) to automatically modprobe after installing
 a dkms module.
 
-It's also required to add yourself to the maccel group using `usermod -aG maccel $USER` after installing.
+Optionally, add yourself to the maccel group using `usermod -aG maccel $USER` after installing, 
+if you want to run `maccel` without running as root.
 
 ## Uninstall
 
@@ -71,17 +86,6 @@ Here is [Breakdown of why and how I ended up making this](https://www.bytin.tech
 
 ## Troubleshooting Install
 
-### gcc
-
-The version matters, it must match the version with which the kernel was built.
-
-For example you might encounter such an error:
-
-![image](https://github.com/Gnarus-G/maccel/assets/37311893/6147e20a-a132-4132-a45e-2af3dc035552)
-
-And you'll have to find a version of `gcc` that matches. This will be more or less annoying
-depending on your distro and/or how familiar you are with it.
-
 ### linux headers
 
 You want to make sure that `/lib/modules/` is not empty. For example mine looks like this:
@@ -107,6 +111,17 @@ On an arch based distro you search for the available headers with
 ```
 pacman -Ss linux headers
 ```
+
+### gcc
+
+The version matters, it must match the version with which the kernel was built.
+
+For example you might encounter such an error:
+
+![image](https://github.com/Gnarus-G/maccel/assets/37311893/6147e20a-a132-4132-a45e-2af3dc035552)
+
+And you'll have to find a version of `gcc` that matches. This will be more or less annoying
+depending on your distro and/or how familiar you are with it.
 
 ## References
 
