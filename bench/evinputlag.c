@@ -4,7 +4,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define VIRTUAL_DEVICE "/dev/input/event7"
+#define MOUSE_DEVICE "/dev/input/event7"
 
 static __suseconds_t to_us(struct timeval time) {
   return time.tv_sec * 1000000L + time.tv_usec;
@@ -23,9 +23,9 @@ static __suseconds_t to_us(struct timeval time) {
  */
 
 int main(void) {
-  int fd_source = open(VIRTUAL_DEVICE, O_RDONLY);
+  int fd_source = open(MOUSE_DEVICE, O_RDONLY);
   if (fd_source < 0) {
-    perror("Failed to open virtual device");
+    perror("Failed to open device");
     return 1;
   }
 

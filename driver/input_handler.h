@@ -1,73 +1,75 @@
 #include "./accelk.h"
 #include "input_echo.h"
+#include "linux/input.h"
+#include "mouse_move.h"
 #include <linux/hid.h>
+#include <linux/version.h>
 
-static struct input_dev *virtual_input_dev;
-
-#define NONE_EVENT_VALUE 0
-static int relative_axis_events[REL_CNT] = { // [x, y, ..., wheel, ...]
-    NONE_EVENT_VALUE};
-
-static bool maccel_filter(struct input_handle *handle, u32 type,
-
-                          u32 code, int value) {
+/*
+ * Collect the events EV_REL REL_X and EV_REL REL_Y, once we have both then
+ * we accelerate the (x, y) vector and set the EV_REL event's value
+ * through the `value_ptr` of each collected event.
+ */
+static void event(struct input_handle *handle, struct input_value *value_ptr) {
   /* printk(KERN_INFO "type %d, code %d, value %d", type, code, value); */
 
-  switch (type) {
+  switch (value_ptr->type) {
   case EV_REL: {
-    dbg("EV_REL => code %d, value %d", code, value);
-    relative_axis_events[code] = value;
+    dbg("EV_REL => code %d, value %d", value_ptr->code, value_ptr->value);
+    update_mouse_move(value_ptr);
 
     // So we can relay the original speed of the mouse movement to userspace
     // for visualization.
-    input_cache[0] = relative_axis_events[REL_X];
-    input_cache[1] = relative_axis_events[REL_Y];
+    MOUSE_MOVE_CACHE[0] = get_x(MOVEMENT);
+    MOUSE_MOVE_CACHE[1] = get_y(MOVEMENT);
 
-    return true; // so input system skips (filters out) this unaccelerated
-                 // mouse input.
+    return;
   }
   case EV_SYN: {
-    int x = relative_axis_events[REL_X];
-    int y = relative_axis_events[REL_Y];
+    int x = get_x(MOVEMENT);
+    int y = get_y(MOVEMENT);
     if (x || y) {
-      dbg("EV_SYN => code %d", code);
+      dbg("EV_SYN => code %d", value_ptr->code);
 
       AccelResult accelerated = accelerate(x, y);
       dbg("accel: (%d, %d) -> (%d, %d)", x, y, accelerated.x, accelerated.y);
-      x = accelerated.x;
-      y = accelerated.y;
+      set_x_move(accelerated.x);
+      set_y_move(accelerated.y);
 
-      if (x) {
-        input_report_rel(virtual_input_dev, REL_X, x);
-      }
-      if (y) {
-        input_report_rel(virtual_input_dev, REL_Y, y);
-      }
-
-      relative_axis_events[REL_X] = NONE_EVENT_VALUE;
-      relative_axis_events[REL_Y] = NONE_EVENT_VALUE;
+      clear_mouse_move();
     }
 
-    for (u32 code = REL_Z; code < REL_CNT; code++) {
-      int value = relative_axis_events[code];
-      if (value != NONE_EVENT_VALUE) {
-        input_report_rel(virtual_input_dev, code, value);
-        relative_axis_events[code] = NONE_EVENT_VALUE;
-      }
-    }
-
-    input_sync(virtual_input_dev);
-    return false;
+    return;
   }
-
   default:
-    return false;
+    return;
   }
 }
 
+static unsigned int maccel_events(struct input_handle *handle,
+                                  struct input_value *vals,
+                                  unsigned int count) {
+  struct input_value *v;
+  for (v = vals; v != vals + count; v++) {
+    event(handle, v);
+  }
+
+  struct input_value *end = vals;
+  for (v = vals; v != vals + count; v++) {
+    if (v->type == EV_REL && v->value == NONE_EVENT_VALUE)
+      continue;
+    if (end != v) {
+      *end = *v;
+    }
+    end++;
+  }
+
+  int _count = end - vals;
+  handle->dev->num_vals = _count;
+  return _count;
+}
+
 static bool maccel_match(struct input_handler *handler, struct input_dev *dev) {
-  if (dev == virtual_input_dev)
-    return false;
   if (!dev->dev.parent)
     return false;
 
@@ -78,6 +80,32 @@ static bool maccel_match(struct input_handler *handler, struct input_dev *dev) {
   /*        hdev->type == HID_TYPE_USBMOUSE ? "true" : "false"); */
 
   return hdev->type == HID_TYPE_USBMOUSE;
+}
+
+/* Same as Linux's input_register_handle but we always add the handle to the
+ * head of handlers */
+static int input_register_handle_head(struct input_handle *handle) {
+  struct input_handler *handler = handle->handler;
+  struct input_dev *dev = handle->dev;
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 7))
+  /* In 6.11.7 an additional handler pointer was added:
+   * https://github.com/torvalds/linux/commit/071b24b54d2d05fbf39ddbb27dee08abd1d713f3
+   */
+  if (handler->events)
+    handle->handle_events = handler->events;
+#endif
+
+  int error = mutex_lock_interruptible(&dev->mutex);
+  if (error)
+    return error;
+
+  list_add_rcu(&handle->d_node, &dev->h_list);
+  mutex_unlock(&dev->mutex);
+  list_add_tail_rcu(&handle->h_node, &handler->h_list);
+  if (handler->start)
+    handler->start(handle);
+  return 0;
 }
 
 static int maccel_connect(struct input_handler *handler, struct input_dev *dev,
@@ -93,7 +121,7 @@ static int maccel_connect(struct input_handler *handler, struct input_dev *dev,
   handle->handler = handler;
   handle->name = "maccel";
 
-  error = input_register_handle(handle);
+  error = input_register_handle_head(handle);
   if (error)
     goto err_free_mem;
 
@@ -128,7 +156,7 @@ static const struct input_device_id my_ids[] = {
 
 MODULE_DEVICE_TABLE(input, my_ids);
 
-struct input_handler maccel_handler = {.filter = maccel_filter,
+struct input_handler maccel_handler = {.events = maccel_events,
                                        .connect = maccel_connect,
                                        .disconnect = maccel_disconnect,
                                        .name = "maccel",
