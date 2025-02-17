@@ -16,10 +16,6 @@ post_upgrade() {
     echo ''
 }
 
-pre_remove() {
-    maccel driver unbindall
-}
-
 post_remove() {
     udevadm control --reload-rules
 }

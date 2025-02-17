@@ -3,9 +3,7 @@ mod libmaccel;
 mod params;
 mod tui;
 
-use std::{os::unix::process::CommandExt, process};
-
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use clap::{CommandFactory, Parser};
 use params::Param;
 use tui::run_tui;
@@ -39,8 +37,6 @@ enum ParamsCommand {
         // The shell for which to generate completions
         shell: clap_complete::Shell,
     },
-    /// Manage binding for the usbmouse driver.
-    Driver { args: Vec<String> },
 }
 
 #[derive(clap::Subcommand)]
@@ -126,12 +122,6 @@ fn main() -> anyhow::Result<()> {
         ParamsCommand::Tui => run_tui()?,
         ParamsCommand::Completion { shell } => {
             clap_complete::generate(shell, &mut Cli::command(), "maccel", &mut std::io::stdout())
-        }
-        ParamsCommand::Driver { args } => {
-            let err = process::Command::new("maccel-driver-binder")
-                .args(args)
-                .exec();
-            return Err(anyhow!("{:#}", err)).context("failed to run the driver binder cli");
         }
     }
 

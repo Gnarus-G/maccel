@@ -17,12 +17,6 @@ delete_module_dkms() {
 }
 
 udev_uninstall() {
-  if [[ "$CURR_VERSION" < "0.1.5" ]]; then
-    sudo maccel unbindall
-  else
-    sudo maccel driver unbindall
-  fi
-
 	sudo rm -vf /usr/lib/udev/rules.d/99-maccel*.rules /usr/lib/udev/maccel_*
   sudo udevadm control --reload-rules
 }
