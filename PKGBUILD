@@ -1,6 +1,6 @@
 pkgname=maccel-dkms
 _pkgname="maccel"
-pkgver=0.2.1
+pkgver=0.3.1
 pkgrel=1
 pkgdesc="Mouse acceleration driver and kernel module for Linux."
 arch=("x86_64")
@@ -48,7 +48,6 @@ package() {
 
     # Install CLI
     install -Dm 755 "${srcdir}/target/release-with-debug/maccel" "${pkgdir}/usr/bin/maccel"
-    install -Dm 755 "${srcdir}/target/release-with-debug/maccel-driver-binder" "${pkgdir}/usr/bin/maccel-driver-binder"
 
     # Install udev rules
     install -Dm 644 "${srcdir}/maccel/udev_rules/99-maccel.rules" "${pkgdir}/usr/lib/udev/rules.d/99-maccel.rules"

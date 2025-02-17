@@ -2,12 +2,10 @@
 #include "input_echo.h"
 
 /*
- * We initialize the usb driver for the usb_mouse driver, and the character
- * driver for the userspace visualizations.
- *
- * Some may prefer to bind to this usbmouse driver if their mouse allows.
+ * We initialize the character driver for the userspace visualizations,
+ * and we register the input_handler.
  */
-static int __init my_init(void) {
+static int __init driver_initialization(void) {
   int error;
   error = create_char_device();
   if (error)
@@ -24,7 +22,7 @@ err_free_chrdev:
   return error;
 }
 
-static void __exit my_exit(void) {
+static void __exit driver_exit(void) {
   input_unregister_handler(&maccel_handler);
   destroy_char_device();
 }
@@ -33,5 +31,5 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Gnarus-G");
 MODULE_DESCRIPTION("Mouse acceleration driver.");
 
-module_init(my_init);
-module_exit(my_exit);
+module_init(driver_initialization);
+module_exit(driver_exit);

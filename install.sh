@@ -120,15 +120,8 @@ install_cli() {
 
 install_udev_rules() {
 	sudo rm -f /usr/lib/udev/rules.d/99-maccel*.rules /usr/lib/udev/maccel_*
-
   sudo install -m 644 -v -D $(pwd)/udev_rules/99-maccel.rules /usr/lib/udev/rules.d/99-maccel.rules
   sudo install -m 755 -v -D $(pwd)/udev_rules/maccel_param_ownership_and_resets /usr/lib/udev/maccel_param_ownership_and_resets 
-
-  # We must maintain the usbmouse driver with its binding rules if an old maccel version is installed.
-  if [[ -n "$CURR_VERSION" && "$CURR_VERSION" < "0.1.5" ]]; then 
-    sudo install -m 755 -v -D $(pwd)/udev_rules/maccel_bind /usr/lib/udev/maccel_bind
-    sudo install -m 644 -v -D $(pwd)/udev_rules/99-maccel-bind.rules /usr/lib/udev/rules.d/99-maccel-bind.rules
-  fi
 }
 
 trigger_udev_rules() {

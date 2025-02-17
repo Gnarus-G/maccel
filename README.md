@@ -46,19 +46,16 @@ curl -fsSL https://www.maccel.org/uninstall.sh | sudo sh
 ## CLI Usage
 
 ```
-CLI to control the parameters for the maccel driver, and manage mice bindings
+CLI to control the parameters for the maccel driver
 
-Usage: maccel <COMMAND>
+Usage: maccel [COMMAND]
 
 Commands:
-  tui        Open the Terminal UI to manage the parameters and see a graph of the sensitivity
-  bind       Attach a device to the maccel driver
-  bindall    Attach all detected mice to the maccel driver
-  unbind     Detach a device from the maccel driver, reattach to the generic usbhid driver
-  unbindall  Detach all detected mice from the maccel driver reattach them to the generic usbhid driver
-  set        Set the value for a parameter of the maccel driver
-  get        Get the value for a parameter of the maccel driver
-  help       Print this message or the help of the given subcommand(s)
+  tui         Open the Terminal UI to manage the parameters and see a graph of the sensitivity
+  set         Set the value for a parameter of the maccel driver
+  get         Get the values for parameters of the maccel driver
+  completion  Generate a completions file for a specified shell
+  help        Print this message or the help of the given subcommand(s)
 
 Options:
   -h, --help     Print help
