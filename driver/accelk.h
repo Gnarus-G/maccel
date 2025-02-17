@@ -4,27 +4,32 @@
 #include "accel.h"
 #include "linux/ktime.h"
 #include "params.h"
-#include "utils.h"
+
+const fixedpt HUNDRED_MS = fixedpt_rconst(100);
+const fixedpt US_PER_MS = fixedpt_rconst(1000);
 
 static inline AccelResult accelerate(int x, int y) {
   dbg("FIXEDPT_BITS = %d", FIXEDPT_BITS);
 
-  static ktime_t last;
-  static u64 last_ms = 1;
+  static ktime_t last_time;
+  static s64 last_us = 100; // .1ms
 
   ktime_t now = ktime_get();
-  u64 ms = ktime_to_ms(now - last);
+  s64 us = ktime_to_us(now - last_time);
 
-  last = now;
+  last_time = now;
 
-  if (ms < 1) { // ensure no less than 1ms
-    ms = last_ms;
+  if (us < 100) { // ensure no less than .1ms?
+    us = last_us;
   }
 
-  last_ms = ms;
+  last_us = us;
 
-  if (ms > 100) { // rounding dow to 100 ms
-    ms = 100;
+  fixedpt _us = fixedpt_fromint(us);
+  fixedpt ms = fixedpt_div(_us, US_PER_MS);
+
+  if (ms > HUNDRED_MS) { // rounding down to 100 ms
+    ms = HUNDRED_MS;
   }
 
   return f_accelerate(x, y, ms, atofp(PARAM_SENS_MULT), atofp(PARAM_ACCEL),
