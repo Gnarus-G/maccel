@@ -1,4 +1,4 @@
-#include "utils.h"
+#include "test_utils.h"
 #include <stdio.h>
 
 int main(void) {
@@ -8,5 +8,5 @@ int main(void) {
 
   test(0.0917, 0.002048, 78.125, 2.0239);
 
-  printf("All tests passed!\n");
+  printf("[accel] All tests passed!\n");
 }
