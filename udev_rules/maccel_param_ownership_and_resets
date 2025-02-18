@@ -15,3 +15,5 @@ mkdir -p $RESET_SCRIPTS_DIR
 chown -v :maccel $RESET_SCRIPTS_DIR 
 chmod -v g+w "$RESET_SCRIPTS_DIR" 
 ls $RESET_SCRIPTS_DIR/set_last_*_value.sh | xargs cat | sh &> $LOG_DIR/reset-scripts
+ls $RESET_SCRIPTS_DIR/* | xargs chown -v :maccel &> $LOG_DIR/reset-scripts
+ls $RESET_SCRIPTS_DIR/* | xargs chmod -v g+w &> $LOG_DIR/reset-scripts
