@@ -1,14 +1,13 @@
 #ifndef _PARAM_H_
 #define _PARAM_H_
 
-#include "fixedptc.h"
 #include "linux/moduleparam.h"
 
 #define RW_USER_GROUP 0664
 
 #define PARAM(param, default, desc)                                            \
-  static fixedpt PARAM_##param = fixedpt_rconst(default);                      \
-  module_param_named(param, PARAM_##param, int, RW_USER_GROUP);                \
+  char *PARAM_##param = #default;                                              \
+  module_param_named(param, PARAM_##param, charp, RW_USER_GROUP);              \
   MODULE_PARM_DESC(param, desc);
 
 PARAM(SENS_MULT, 1,
