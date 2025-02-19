@@ -20,6 +20,10 @@ build_debug: build
 clean:
 		$(MAKE) -C $(KDIR) M=$(CURDIR) clean
 
+test_debug: **/*.test.c
+	@mkdir -p tests/snapshots
+	@sh tests/run_tests.sh -DDEBUG
+
 test: **/*.test.c
 	@mkdir -p tests/snapshots
-	@sh tests/run_tests.sh
+	@sh tests/run_tests.sh $(DEBUG)

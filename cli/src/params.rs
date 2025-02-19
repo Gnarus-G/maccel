@@ -19,7 +19,7 @@ pub enum Param {
 }
 
 impl Param {
-    pub fn set(&self, value: f32) -> anyhow::Result<()> {
+    pub fn set(&self, value: f64) -> anyhow::Result<()> {
         let value: Fixedpt = value.into();
         let path = self.path()?;
         let mut file = File::create(&path).context(anyhow!(
@@ -39,7 +39,7 @@ impl Param {
         Ok(())
     }
 
-    fn save_reset_script(&self, value: i32) -> anyhow::Result<()> {
+    fn save_reset_script(&self, value: i64) -> anyhow::Result<()> {
         let script_dir = "/var/opt/maccel/resets";
         if !Path::new(script_dir).exists() {
             std::fs::create_dir_all(script_dir).context(format!("failed create directory: {}", script_dir))
@@ -71,7 +71,7 @@ impl Param {
         file.read_to_string(&mut buf)
             .context("failed to read the parameter's value")?;
 
-        let value: i32 = buf
+        let value: i64 = buf
             .trim()
             .parse()
             .context(format!("couldn't interpret the parameter's value {}", buf))?;
@@ -123,10 +123,10 @@ mod tests {
 
     fn test(param: Param) {
         param.set(3.0).unwrap();
-        assert_eq!(param.get().unwrap(), Fixedpt(768));
+        assert_eq!(param.get().unwrap(), Fixedpt(12884901888));
 
         param.set(4.0).unwrap();
-        assert_eq!(param.get().unwrap(), Fixedpt(1024));
+        assert_eq!(param.get().unwrap(), Fixedpt(17179869184));
 
         param.set(4.5).unwrap();
         assert_eq!(param.get().unwrap(), (4.5).into());

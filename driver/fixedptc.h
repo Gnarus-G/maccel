@@ -68,13 +68,23 @@
  * SUCH DAMAGE.
  */
 
+#include "utils.h"
+
 #ifndef FIXEDPT_BITS
+#if __SIZEOF_INT128__
+#include "Fixed64.utils.h"
+#define FIXEDPT_BITS 64
+#else
 #define FIXEDPT_BITS 32
+#endif
 #endif
 
 #ifdef __KERNEL__
+#include <linux/math64.h>
+#include <linux/stddef.h>
 #include <linux/types.h>
 #else
+#include <stddef.h>
 #include <stdint.h>
 #endif
 
@@ -93,7 +103,7 @@ typedef __uint128_t fixedptud;
 #endif
 
 #ifndef FIXEDPT_WBITS
-#define FIXEDPT_WBITS 16
+#define FIXEDPT_WBITS 32
 #endif
 
 #if FIXEDPT_WBITS >= FIXEDPT_BITS
@@ -133,13 +143,29 @@ typedef __uint128_t fixedptud;
 #define fixedpt_tofloat(T)                                                     \
   ((float)((T) * ((float)(1) / (float)(1L << FIXEDPT_FBITS))))
 
+#define fixedpt_todouble(T)                                                    \
+  ((double)((T) * ((double)(1) / (double)(1L << FIXEDPT_FBITS))))
+
 /* Multiplies two fixedpt numbers, returns the result. */
 static inline fixedpt fixedpt_mul(fixedpt A, fixedpt B) {
   return (((fixedptd)A * (fixedptd)B) >> FIXEDPT_FBITS);
 }
 
+#if FIXEDPT_BITS == 64
+static inline fixedpt div128_s64_s64(fixedpt dividend, fixedpt divisor) {
+  fixedpt high = dividend >> FIXEDPT_FBITS;
+  fixedpt low = dividend << FIXEDPT_FBITS;
+
+  fixedpt result = div128_s64_s64_s64(high, low, divisor);
+  return result;
+}
+#endif
+
 /* Divides two fixedpt numbers, returns the result. */
 static inline fixedpt fixedpt_div(fixedpt A, fixedpt B) {
+#if FIXEDPT_BITS == 64
+  return div128_s64_s64(A, B);
+#endif
   return (((fixedptd)A << FIXEDPT_FBITS) / (fixedptd)B);
 }
 
@@ -210,18 +236,47 @@ static inline void fixedpt_str(fixedpt A, char *str, int max_dec) {
 
 /* Converts the given fixedpt number into a string, using a static
  * (non-threadsafe) string buffer */
-static inline char *fixedpt_cstr(const fixedpt A, const int max_dec) {
+static inline char *fptoa(const fixedpt A) {
   static char str[25];
-
-  fixedpt_str(A, str, max_dec);
+#if FIXEDPT_BITS == 64
+  FP64_ToString(A, str);
+#else
+  fixedpt_str(A, str, 10);
+#endif
   return (str);
+}
+
+static fixedpt atofp(char *num_string) {
+  fixedptu n = 0;
+  int sign = 0;
+
+  for (int idx = 0; num_string[idx] != '\0'; idx++) {
+    char c = num_string[idx];
+    switch (c) {
+    case ' ':
+      continue;
+    case '-':
+      sign = 1;
+      continue;
+    default:
+      if (is_digit(c)) {
+        int digit = c - '0';
+        n = n * 10 + digit;
+      } else {
+        dbg("Hit an unsupported character while parsing a number: '%c'", c);
+      }
+    }
+  }
+
+  return sign ? -n : n;
 }
 
 /* Returns the square root of the given number, or -1 in case of error */
 static inline fixedpt fixedpt_sqrt(fixedpt A) {
   int invert = 0;
   int iter = FIXEDPT_FBITS;
-  int l, i;
+  int i;
+  fixedpt l;
 
   if (A < 0)
     return (-1);
@@ -232,7 +287,8 @@ static inline fixedpt fixedpt_sqrt(fixedpt A) {
     A = fixedpt_div(FIXEDPT_ONE, A);
   }
   if (A > FIXEDPT_ONE) {
-    int s = A;
+    fixedpt s = A;
+    dbg("sus: %lli vs %s", s, fptoa(A));
 
     iter = 0;
     while (s > 0) {
@@ -243,6 +299,7 @@ static inline fixedpt fixedpt_sqrt(fixedpt A) {
 
   /* Newton's iterations */
   l = (A >> 1) + 1;
+  dbg("sus? %lli", l);
   for (i = 0; i < iter; i++)
     l = (l + fixedpt_div(A, l)) >> 1;
   if (invert)

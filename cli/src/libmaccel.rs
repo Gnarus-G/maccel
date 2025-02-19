@@ -3,10 +3,10 @@ use crate::params::Param;
 use self::fixedptc::Fixedpt;
 
 pub struct Params {
-    sens_mult: i32,
-    accel: i32,
-    offset: i32,
-    output_cap: i32,
+    sens_mult: i64,
+    accel: i64,
+    offset: i64,
+    output_cap: i64,
 }
 
 impl Params {
@@ -33,7 +33,7 @@ impl Params {
 }
 
 /// Ratio of Output speed to Input speed
-pub fn sensitivity(s_in: f32, params: Params) -> f64 {
+pub fn sensitivity(s_in: f64, params: Params) -> f64 {
     let s_in: Fixedpt = s_in.into();
     let a_factor = unsafe {
         c_lib::sensitivity_rs(
@@ -44,9 +44,9 @@ pub fn sensitivity(s_in: f32, params: Params) -> f64 {
             params.output_cap,
         )
     };
-    let a_factor: f32 = Fixedpt(a_factor).into();
+    let a_factor: f64 = Fixedpt(a_factor).into();
 
-    return a_factor as f64;
+    return a_factor;
 }
 
 pub mod fixedptc {
@@ -54,7 +54,7 @@ pub mod fixedptc {
 
     use super::c_lib;
 
-    fn fixedpt_as_str(num: &i32) -> anyhow::Result<&str> {
+    fn fixedpt_as_str(num: &i64) -> anyhow::Result<&str> {
         unsafe {
             let s = CStr::from_ptr(c_lib::fixedpt_to_str(*num));
             let s = core::str::from_utf8(s.to_bytes())?;
@@ -63,16 +63,16 @@ pub mod fixedptc {
     }
 
     #[derive(Debug, PartialEq)]
-    pub struct Fixedpt(pub i32);
+    pub struct Fixedpt(pub i64);
 
-    impl From<Fixedpt> for f32 {
+    impl From<Fixedpt> for f64 {
         fn from(value: Fixedpt) -> Self {
             unsafe { c_lib::fixedpt_to_float(value.0) }
         }
     }
 
-    impl From<f32> for Fixedpt {
-        fn from(value: f32) -> Self {
+    impl From<f64> for Fixedpt {
+        fn from(value: f64) -> Self {
             unsafe {
                 let i = c_lib::fixedpt_from_float(value);
                 return Fixedpt(i);
@@ -94,17 +94,17 @@ mod c_lib {
 
     extern "C" {
         pub fn sensitivity_rs(
-            speed_in: i32,
-            param_sens_mult: i32,
-            param_accel: i32,
-            param_offset: i32,
-            param_output_cap: i32,
-        ) -> i32;
+            speed_in: i64,
+            param_sens_mult: i64,
+            param_accel: i64,
+            param_offset: i64,
+            param_output_cap: i64,
+        ) -> i64;
     }
 
     extern "C" {
-        pub fn fixedpt_to_str(num: i32) -> *const c_char;
-        pub fn fixedpt_from_float(value: f32) -> i32;
-        pub fn fixedpt_to_float(value: i32) -> f32;
+        pub fn fixedpt_to_str(num: i64) -> *const c_char;
+        pub fn fixedpt_from_float(value: f64) -> i64;
+        pub fn fixedpt_to_float(value: i64) -> f64;
     }
 }

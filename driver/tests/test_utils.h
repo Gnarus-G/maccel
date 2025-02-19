@@ -1,5 +1,6 @@
 #include "../accel.h"
 #include <assert.h>
+#include <linux/limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -57,7 +58,32 @@ static int diff(const char *content, const char *filename) {
   return 0;
 }
 
-static void assert_snapshot(const char *filename, const char *content) {
+static int get_current_working_dir(char *buf, size_t buf_size) {
+  if (getcwd(buf, buf_size) != NULL) {
+    return 0;
+  }
+  perror("getcwd() error");
+  return 1;
+}
+
+static char *create_snapshot_file_path(const char *filename) {
+  char cwd[PATH_MAX];
+  if (get_current_working_dir(cwd, PATH_MAX)) {
+    return NULL;
+  };
+
+  static char filepath[PATH_MAX];
+  sprintf(filepath, "%s/tests/snapshots/%s", cwd, filename);
+  return filepath;
+}
+
+static void assert_snapshot(const char *__filename, const char *content) {
+  char *filename = create_snapshot_file_path(__filename);
+  if (filename == NULL) {
+    fprintf(stderr, "failed to create snapshot file: %s\n", filename);
+    exit(1);
+  }
+
   bool snapshot_file_exists = access(filename, F_OK) != -1;
   FILE *snapshot_file;
 
@@ -99,6 +125,8 @@ static void assert_snapshot(const char *filename, const char *content) {
 
     diff(content, filename);
 
+    /* dbg("diff in content = %d: snapshot '%s' vs now '%s'", string_test, */
+    /*     snapshot, content); */
     assert(string_test == 0);
   } else {
     fprintf(snapshot_file, "%s", content);
@@ -108,39 +136,4 @@ static void assert_snapshot(const char *filename, const char *content) {
   fclose(snapshot_file);
 }
 
-static int test_acceleration(const char *filename, fixedpt param_sens_mult,
-                             fixedpt param_accel, fixedpt param_offset,
-                             fixedpt param_output_cap) {
-  const int LINE_LEN = 26;
-  const int MIN = -128;
-  const int MAX = 127;
-
-  char content[256 * 256 * LINE_LEN + 1];
-  strcpy(content, ""); // initialize as an empty string
-
-  AccelResult result;
-  for (int x = MIN; x < MAX; x++) {
-    for (int y = MIN; y < MAX; y++) {
-
-      result = f_accelerate(x, y, 1, param_sens_mult, param_accel, param_offset,
-                            param_output_cap);
-      char curr_debug_print[LINE_LEN];
-
-      sprintf(curr_debug_print, "(%d, %d) => (%d, %d)\n", x, y, result.x,
-              result.y);
-
-      strcat(content, curr_debug_print);
-    }
-  }
-
-  assert_snapshot(filename, content);
-
-  return 0;
-}
-
-#define test(sens_mult, accel, offset, cap)                                    \
-  assert(test_acceleration("tests/snapshots/"                                  \
-                           "SENS_MULT-" #sens_mult "-ACCEL-" #accel            \
-                           "-OFFSET" #offset "-OUTPUT_CAP-" #cap ".snapshot",  \
-                           fixedpt_rconst(sens_mult), fixedpt_rconst(accel),   \
-                           fixedpt_rconst(offset), fixedpt_rconst(cap)) == 0);
+#define print_success printf("[%s]\t\tAll tests passed!\n", __FILE_NAME__)

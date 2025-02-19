@@ -1,31 +1,28 @@
 #ifndef _UTILS_H_
 #define _UTILS_H_
 
-#include "accel.h"
-#include "fixedptc.h"
+#ifdef __KERNEL__
+#include <linux/types.h>
+#else
+#include <stdint.h>
+#endif
+
+#include "dbg.h"
+
+static inline int64_t div128_s64_s64_s64(int64_t high, int64_t low,
+                                         int64_t divisor) {
+  int64_t result;
+  // s.high.low
+  // high -> rdx
+  // low -> rax
+  uint64_t remainder;
+  __asm__("idivq %[B]"
+          : "=a"(result), "=d"(remainder)
+          : [B] "r"(divisor), "a"(low), "d"(high));
+
+  return result;
+}
 
 static inline int is_digit(char c) { return '0' <= c && c <= '9'; }
-
-static fixedpt atofp(char *num_string) {
-  fixedptud n = 0; // just looking to assign eith u64 or u128 depending on
-                   // fixedpt settings
-
-  for (int idx = 0; num_string[idx] != '\0'; idx++) {
-    char c = num_string[idx];
-    switch (c) {
-    case ' ':
-      continue;
-    default:
-      if (is_digit(c)) {
-        int digit = c - '0';
-        n = n * 10 + digit;
-      } else {
-        dbg("Hit an unsupported character while parsing a number: '%c'", c);
-      }
-    }
-  }
-
-  return n;
-}
 
 #endif
