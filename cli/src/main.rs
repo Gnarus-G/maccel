@@ -42,13 +42,13 @@ enum ParamsCommand {
 #[derive(clap::Subcommand)]
 enum SetSubcommands {
     /// Set the value for a single parameter
-    Param { name: Param, value: f32 },
+    Param { name: Param, value: f64 },
     /// Set the values for all parameters in order
     All {
-        sens_mult: f32,
-        accel: f32,
-        offset: f32,
-        output_cap: f32,
+        sens_mult: f64,
+        accel: f64,
+        offset: f64,
+        output_cap: f64,
     },
 }
 
@@ -83,7 +83,9 @@ fn main() -> anyhow::Result<()> {
                 Param::Offset.set(offset)?;
                 Param::OutputCap.set(output_cap)?;
             }
-            SetSubcommands::Param { name, value } => name.set(value)?,
+            SetSubcommands::Param { name, value } => {
+                name.set(value)?;
+            },
         },
         ParamsCommand::Get { command } => match command {
             GetSubcommands::All { oneline, quiet } => {

@@ -38,7 +38,7 @@ struct ParameterInput {
 
 impl From<Param> for ParameterInput {
     fn from(param: Param) -> Self {
-        let value: f32 = param
+        let value: f64 = param
             .get()
             .expect("failed to read and initialize a parameter's value")
             .into();
@@ -359,8 +359,8 @@ fn ui(frame: &mut Frame, app: &mut AppState) {
         .labels(labels);
 
     let data: Vec<_> = (0..1000)
-        .map(|x| (x as f32) * 0.1375)
-        .map(|x| (x as f64, sensitivity(x, Params::new())))
+        .map(|x| (x as f64) * 0.1375)
+        .map(|x| (x, sensitivity(x, Params::new())))
         .collect();
 
     let highlight_point = &[inputspeed::read_input_speed_and_resolved_sens()];

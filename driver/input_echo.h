@@ -2,9 +2,13 @@
 #define _INPUT_ECHO_
 
 #include "./accel.h"
+#include "fixedptc.h"
 #include "linux/cdev.h"
 #include "linux/fs.h"
 #include <linux/version.h>
+
+int create_char_device(void);
+void destroy_char_device(void);
 
 /**
  * Cache of the last [REL_X, REL_Y] values to report to userspace
@@ -17,13 +21,22 @@ static struct class *device_class;
 static dev_t device_number;
 
 /*
- * Convert an int into an array of four bytes, in big endian (MSB first)
+ * Convert an int into an array of four/eight bytes, in big endian (MSB first)
  */
-static void int_to_bytes(int num, char bytes[4]) {
-  bytes[0] = (num >> 24) & 0xFF; // Most significant byte
-  bytes[1] = (num >> 16) & 0xFF;
-  bytes[2] = (num >> 8) & 0xFF;
-  bytes[3] = num & 0xFF; // Least significant byte
+static void fixedpt_to_int_be_bytes(fixedpt num, char bytes[sizeof(fixedpt)]) {
+#define byte(i) (FIXEDPT_BITS - (i * 8))
+  bytes[0] = (num >> byte(1)) & 0xFF; // Most significant byte
+  bytes[1] = (num >> byte(2)) & 0xFF;
+  bytes[2] = (num >> byte(3)) & 0xFF;
+  if (sizeof(fixedpt) == 8) {
+    bytes[3] = (num >> byte(4)) & 0xFF;
+    bytes[4] = (num >> byte(5)) & 0xFF;
+    bytes[5] = (num >> byte(6)) & 0xFF;
+    bytes[6] = (num >> byte(7)) & 0xFF;
+    bytes[7] = num & 0xFF; // Least significant byte
+  } else {
+    bytes[3] = num & 0xFF; // Least significant byte
+  }
 }
 
 static ssize_t read(struct file *f, char __user *user_buffer, size_t size,
@@ -32,8 +45,10 @@ static ssize_t read(struct file *f, char __user *user_buffer, size_t size,
   int y = MOUSE_MOVE_CACHE[1];
   fixedpt speed = input_speed(fixedpt_fromint(x), fixedpt_fromint(y), 1);
 
-  signed char be_bytes_for_int[4] = {0};
-  int_to_bytes(speed, be_bytes_for_int);
+  dbg("echoing speed to userspace: %s", fptoa(speed));
+
+  char be_bytes_for_int[sizeof(fixedpt)] = {0};
+  fixedpt_to_int_be_bytes(speed, be_bytes_for_int);
 
   int err =
       copy_to_user(user_buffer, be_bytes_for_int, sizeof(be_bytes_for_int));
@@ -45,7 +60,7 @@ static ssize_t read(struct file *f, char __user *user_buffer, size_t size,
 
 struct file_operations fops = {.owner = THIS_MODULE, .read = read};
 
-static int create_char_device(void) {
+int create_char_device(void) {
   int err;
   err = alloc_chrdev_region(&device_number, 0, 1, "maccel");
   if (err)
@@ -75,7 +90,7 @@ err_free_cdev:
   return -EIO;
 }
 
-static void destroy_char_device(void) {
+void destroy_char_device(void) {
   device_destroy(device_class, device_number);
   class_destroy(device_class);
   cdev_del(&device);

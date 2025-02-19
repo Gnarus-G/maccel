@@ -6,16 +6,16 @@
 
 use std::{fs, io::Read, thread};
 
-static mut INPUT_SPEED: f32 = 0.0;
+static mut INPUT_SPEED: f64 = 0.0;
 
 use crate::libmaccel::{fixedptc::Fixedpt, sensitivity, Params};
 
 pub fn read_input_speed_and_resolved_sens() -> (f64, f64) {
-    let input_speed = read_input_speed();
+    let input_speed = read_input_speed() as f64;
     return (input_speed as f64, sensitivity(input_speed, Params::new()));
 }
 
-pub fn read_input_speed() -> f32 {
+pub fn read_input_speed() -> f64 {
     // Safety don't care about race conditions
     return unsafe { INPUT_SPEED };
 }
@@ -23,14 +23,22 @@ pub fn read_input_speed() -> f32 {
 pub fn setup_input_speed_reader() {
     thread::spawn(|| {
         let mut file = fs::File::open("/dev/maccel").expect("failed to open /dev/maccel");
-        let mut buffer = [0u8; 4];
+        let mut buffer = [0u8; 8];
 
         loop {
-            file.read_exact(&mut buffer)
-                .expect("failed to read 4 bytes from /dev/maccel");
+            let nread = file.read(&mut buffer)
+                .expect("failed to read bytes from /dev/maccel");
 
-            // The buffer, we expect, is just 4 bytes for a number (fixedpt)
-            let num: f32 = Fixedpt(i32::from_be_bytes(buffer)).into();
+            let num = match nread {
+                4 => {
+                    let buffer = buffer.first_chunk::<4>().expect("failed to grab 4 bytes from the read buffer") ;
+                    i32::from_be_bytes(*buffer) as i64
+                },
+                8 => i64::from_be_bytes(buffer),
+                _ => 0
+            };
+
+            let num: f64 = Fixedpt(num).into();
 
             // Safety don't care about race conditions
             unsafe { INPUT_SPEED = num };
