@@ -28,8 +28,7 @@
     if (DEBUG_TEST)                                                            \
       printk(KERN_INFO "%s:%d:%s(): " #fmt "\n", __FILE__, __LINE__, __func__, \
              __VA_ARGS__);                                                     \
-  }                                                                            \
-  while (0)
+  } while (0)
 #else
 #define dbg_std(fmt, ...)                                                      \
   do {                                                                         \

@@ -11,46 +11,53 @@ install=maccel.install
 depends=("dkms")
 makedepends=("git" "cargo")
 
+# DEBUG_CFLAGS="$DEBUG_CFLAGS -DDEBUG"
+options=(!debug)
+
 source=("git+https://github.com/Gnarus-G/maccel.git")
 sha256sums=("SKIP")
 
 prepare() {
-    export RUSTUP_TOOLCHAIN=stable
-    
-    platform="$(rustc -vV | sed -n 's/host: //p')"
-    
-    cargo fetch --locked --target "${platform}" --manifest-path="${srcdir}/maccel/cli/Cargo.toml"
+  export RUSTUP_TOOLCHAIN=stable
+
+  platform="$(rustc -vV | sed -n 's/host: //p')"
+
+  cargo fetch --locked --target "${platform}" --manifest-path="${srcdir}/maccel/cli/Cargo.toml"
 }
 
 build() {
-    export RUSTUP_TOOLCHAIN=stable
-    export CARGO_TARGET_DIR=target
-    
-    # Build the CLI
-	  cargo build --profile=release-with-debug --frozen --all-features --manifest-path="${srcdir}/maccel/cli/Cargo.toml"
+  export RUSTUP_TOOLCHAIN=stable
+  export CARGO_TARGET_DIR=target
+
+  # Build the CLI
+  cargo build --profile=release-with-debug --frozen --all-features --manifest-path="${srcdir}/maccel/cli/Cargo.toml"
 }
 
 package() {
-    # Add group
-    install -Dm 644 "${srcdir}/maccel/maccel.sysusers" "${pkgdir}/usr/lib/sysusers.d/${_pkgname}.conf"
+  # Add group
+  install -Dm 644 "${srcdir}/maccel/maccel.sysusers" "${pkgdir}/usr/lib/sysusers.d/${_pkgname}.conf"
 
-    # Install Driver
-    install -Dm 644 "${srcdir}/maccel/dkms.conf" "${pkgdir}/usr/src/${_pkgname}-${pkgver}/dkms.conf"
+  # Install Driver
+  install -Dm 644 "${srcdir}/maccel/dkms.conf" "${pkgdir}/usr/src/${_pkgname}-${pkgver}/dkms.conf"
 
-    # Set name and version
-    sed -e "s/@_PKGNAME@/${_pkgname}/" \
-        -e "s/@PKGVER@/${pkgver}/" \
-        -i "${pkgdir}/usr/src/${_pkgname}-${pkgver}/dkms.conf"
-    
-    cp -r "${srcdir}/maccel/driver/." "${pkgdir}/usr/src/${_pkgname}-${pkgver}/"
+  # Escape path separators from debug flags values
+  EXTRA_CFLAGS=$(echo ${DEBUG_CFLAGS} | sed -e "s/\//\\\\\\//g")
 
-    # Install CLI
-    install -Dm 755 "${srcdir}/target/release-with-debug/maccel" "${pkgdir}/usr/bin/maccel"
+  # Set name and version
+  sed -e "s/@_PKGNAME@/${_pkgname}/" \
+    -e "s/@PKGVER@/${pkgver}/" \
+    -e "s/@EXTRA_CFLAGS@/'${EXTRA_CFLAGS}'/" \
+    -i "${pkgdir}/usr/src/${_pkgname}-${pkgver}/dkms.conf"
 
-    # Install udev rules
-    install -Dm 644 "${srcdir}/maccel/udev_rules/99-maccel.rules" "${pkgdir}/usr/lib/udev/rules.d/99-maccel.rules"
-    install -Dm 755 "${srcdir}/maccel/udev_rules/maccel_param_ownership_and_resets" "${pkgdir}/usr/lib/udev/maccel_param_ownership_and_resets"
-    
-    # Install License
-    install -Dm 644 "${srcdir}/maccel/LICENSE" "${pkgdir}/usr/share/licenses/${_pkgname}/LICENSE"
+  cp -r "${srcdir}/maccel/driver/." "${pkgdir}/usr/src/${_pkgname}-${pkgver}/"
+
+  # Install CLI
+  install -Dm 755 "${srcdir}/target/release-with-debug/maccel" "${pkgdir}/usr/bin/maccel"
+
+  # Install udev rules
+  install -Dm 644 "${srcdir}/maccel/udev_rules/99-maccel.rules" "${pkgdir}/usr/lib/udev/rules.d/99-maccel.rules"
+  install -Dm 755 "${srcdir}/maccel/udev_rules/maccel_param_ownership_and_resets" "${pkgdir}/usr/lib/udev/maccel_param_ownership_and_resets"
+
+  # Install License
+  install -Dm 644 "${srcdir}/maccel/LICENSE" "${pkgdir}/usr/share/licenses/${_pkgname}/LICENSE"
 }

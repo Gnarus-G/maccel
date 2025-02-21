@@ -1,23 +1,15 @@
-ifneq ($(CC),clang)
-	CC=gcc
-else
-	export LLVM=1
-endif
 DRIVERDIR?=`pwd`/driver
-
 MODULEDIR?=/lib/modules/`uname -r`/kernel/drivers/usb
 
-default: build
-
-debug: EXTRA_CFLAGS := -DDEBUG
-debug: default
-
 build:
-	$(MAKE) CC=$(CC) EXTRA_CFLAGS=$(EXTRA_CFLAGS) -C $(DRIVERDIR)
+	$(MAKE) EXTRA_CFLAGS='$(EXTRA_CFLAGS)' -C $(DRIVERDIR)
 
-install_debug: debug install
+build_debug: EXTRA_CFLAGS = -g -DDEBUG
+build_debug: build
 
-install: default
+install_debug: build_debug install
+
+install: build
 	@sudo insmod $(DRIVERDIR)/maccel.ko;
 
 	@mkdir -p $(MODULEDIR)
@@ -34,10 +26,10 @@ uninstall: clean
 	@sudo rm -fv $(MODULEDIR)/maccel.ko
 	@sudo rmmod maccel
 
-refresh: default uninstall
+reinstall: uninstall
 	@sudo make install
 
-refresh_debug: default uninstall
+reinstall_debug: uninstall
 	@sudo make install_debug
 
 build_cli:
@@ -62,4 +54,5 @@ udev_trigger:
 	udevadm trigger --subsystem-match=usb --subsystem-match=input --subsystem-match=hid --attr-match=bInterfaceClass=03 --attr-match=bInterfaceSubClass=01 --attr-match=bInterfaceProtocol=02
 
 clean:
+	@rm -rf src pkg maccel maccel*.zst maccel-dkms*.log*
 	$(MAKE) -C $(DRIVERDIR) clean

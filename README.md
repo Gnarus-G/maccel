@@ -29,6 +29,8 @@ depending on with which your distro's kernel was built.
 curl -fsSL https://www.maccel.org/install.sh | sudo sh
 ```
 
+If you choose to build the cli from source, you'll need [`cargo`](https://www.rust-lang.org/tools/install)
+
 ### Arch (PKGBUILD)
 
 ```sh
@@ -123,6 +125,22 @@ For example you might encounter such an error:
 And you'll have to find a version of `gcc` that matches. This will be more or less annoying
 depending on your distro and/or how familiar you are with it.
 
+### Miscellaneous
+
+If you notice any weird behavior and are looking to investigate it,            
+then try a debug build of the driver. Run this modified install command.       
+                                                                               
+```sh                                                                          
+curl -fsSL https://www.maccel.org/install.sh | sudo DEBUG=1 sh  
+```                                                                            
+Watch the extra log messages flowing though:
+
+```sh
+dmesg -w
+```
+
+This debugging experience might be lacking still. Feel free to report any issue
+
 ## References
 
 - https://lwn.net/Kernel/LDD3/
@@ -138,6 +156,8 @@ depending on your distro and/or how familiar you are with it.
 - https://linux-kernel-labs.github.io/refs/heads/master/labs/device_drivers.html
 - https://www.youtube.com/watch?v=oX9ZwMQL2f4
 - https://gist.github.com/fstiehle/17fca11d7d1b4c2b8dfd982e1cf39caf
+- https://man.archlinux.org/man/PKGBUILD.5#OPTIONS_AND_DIRECTIVES
+- https://stackoverflow.com/questions/669452/are-double-square-brackets-preferable-over-single-square-brackets-in-b
 
 ## Contributing
 

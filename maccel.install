@@ -1,5 +1,6 @@
 post_install() {
     udevadm control --reload-rules
+    udevadm trigger --subsystem-match=usb --subsystem-match=input --subsystem-match=hid --attr-match=bInterfaceClass=03 --attr-match=bInterfaceSubClass=01 --attr-match=bInterfaceProtocol=02
 
     echo ''
     echo ' Add yourself to the "maccel" group and install the module!'

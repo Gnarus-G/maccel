@@ -1,4 +1,8 @@
-# MACCEL_BRANCH
+#!/bin/sh
+
+BRANCH=${BRANCH:-""}
+DEBUG=${DEBUG:-0}
+BUILD_CLI_FROM_SOURCE=${BUILD_CLI_FROM_SOURCE:-0}
 
 set -e
 
@@ -53,10 +57,10 @@ setup_dirs() {
   rm -rf /opt/maccel && mkdir -p /opt/maccel
   cd /opt/maccel
 
-  if [[ -n $MACCEL_BRANCH ]]; then
-    print_bold "Will do an install, using the branch: $MACCEL_BRANCH\n"
+  if [ -n "$BRANCH" ]; then
+    print_bold "Will do an install, using the branch: $BRANCH\n"
     git clone --depth 1 --no-single-branch https://github.com/Gnarus-G/maccel.git .
-    git switch $MACCEL_BRANCH
+    git switch $BRANCH
   else
     git clone --depth 1 https://github.com/Gnarus-G/maccel.git .
   fi
@@ -88,31 +92,61 @@ version_update_warning() {
   fi
 }
 
-install_driver_dkms() {  
-    # Install Driver 
-    install -Dm 644 "$(pwd)/dkms.conf" "/usr/src/maccel-${VERSION}/dkms.conf"
-    
-    # Set name and version
-    sudo sed -e "s/@_PKGNAME@/maccel/" \
-         -e "s/@PKGVER@/${VERSION}/" \
-         -i "/usr/src/maccel-${VERSION}/dkms.conf"
-    
-    sudo cp -r "$(pwd)/driver/." "/usr/src/maccel-${VERSION}/"
+install_driver_dkms() {
+  dkms_version=$(cat PKGBUILD | grep "pkgver=" | grep -oP '\d.\d.\d')
 
-    sudo dkms install "maccel/${VERSION}"
+  # Uninstall any old ones
+  test -n "$(sudo dkms status maccel | grep 'maccel')" && {
+    maccel_dkms_status=$(sudo dkms status maccel | grep 'maccel')
+    sudo rmmod maccel;
+    curr_dkms_vesions=$(echo $maccel_dkms_status | grep -oP '\d.\d.\d');
+    echo $curr_dkms_vesions | xargs -I {} sudo dkms remove maccel/{};
+  }
 
-    print_bold $(print_green "[Required]")
-    print_bold ' Make sure to run `modprobe maccel` after install\n'
-    print_bold $(print_green "[Required]")
-    print_bold ' unless you have `modprobe_on_install` added to your dkms config.\n'
+  # Install Driver 
+  install -Dm 644 "$(pwd)/dkms.conf" "/usr/src/maccel-${dkms_version}/dkms.conf"
+  
+  DEBUG_CFLAGS=""
+  if [ $DEBUG -eq 1 ]; then
+    print_bold "Debug build enabled\n"
+    DEBUG_CFLAGS="-g -DDEBUG"
+  fi
+
+  # Set name and version
+  sudo sed -e "s/@_PKGNAME@/maccel/" \
+          -e "s/@PKGVER@/${dkms_version}/" \
+          -e "s/@EXTRA_CFLAGS@/'${DEBUG_CFLAGS}'/" \
+          -i "/usr/src/maccel-${dkms_version}/dkms.conf"
+  
+  sudo cp -r "$(pwd)/driver/." "/usr/src/maccel-${dkms_version}/"
+
+  sudo dkms install --force "maccel/${dkms_version}"
+
+  # Note(Gnarus):
+  # This wouldn't ok in the .install file as noted in https://wiki.archlinux.org/title/DKMS_package_guidelines#Module_loading_automatically_in_.install
+  # But I think it's ok here.
+  sudo modprobe maccel
 }
 
 install_cli() {
-  curl -fsSL https://github.com/Gnarus-G/maccel/releases/download/v$VERSION/maccel-cli.tar.gz -o maccel-cli.tar.gz
-  tar -zxvf maccel-cli.tar.gz maccel_v$VERSION/maccel
-  mkdir -p bin
-  sudo install -m 755 -v -D maccel_v$VERSION/maccel* bin/
-  sudo ln -vfs $(pwd)/bin/maccel* /usr/local/bin/
+  if [ $(getconf LONG_BIT) -lt 64 ]; then
+    BUILD_CLI_FROM_SOURCE=1
+  fi
+
+  if [ $BUILD_CLI_FROM_SOURCE -eq 1 ]; then
+    export RUSTUP_TOOLCHAIN=stable
+    cargo build --release --manifest-path=cli/Cargo.toml
+    sudo install -m 755 `pwd`/cli/target/release/maccel /usr/local/bin/maccel
+  else
+    print_bold "Preparing to download and install the CLI tool...\n"
+    printf "If you want to build the CLI tool from source, then next time run: \n"
+    print_bold "  curl -fsSL https://maccel.org/install.sh | sudo BUILD_CLI_FROM_SOURCE=1 sh \n"
+    curl -fsSL https://github.com/Gnarus-G/maccel/releases/download/v$VERSION/maccel-cli.tar.gz -o maccel-cli.tar.gz
+    tar -zxvf maccel-cli.tar.gz maccel_v$VERSION/maccel
+    mkdir -p bin
+    sudo install -m 755 -v -D maccel_v$VERSION/maccel* bin/
+    sudo ln -vfs $(pwd)/bin/maccel* /usr/local/bin/
+  fi
 
   sudo groupadd -f maccel
 }
@@ -124,8 +158,8 @@ install_udev_rules() {
 }
 
 trigger_udev_rules() {
-  udevadm control --reload-rules
-  udevadm trigger --subsystem-match=usb --subsystem-match=input --subsystem-match=hid --attr-match=bInterfaceClass=03 --attr-match=bInterfaceSubClass=01 --attr-match=bInterfaceProtocol=02
+  sudo udevadm control --reload-rules
+  sudo udevadm trigger --subsystem-match=usb --subsystem-match=input --subsystem-match=hid --attr-match=bInterfaceClass=03 --attr-match=bInterfaceSubClass=01 --attr-match=bInterfaceProtocol=02
 }
 
 # ---- Install Process ----
@@ -162,6 +196,6 @@ print_bold ' Add yourself to the "maccel" group\n'
 print_bold $(print_green "[Recommended]")
 print_bold ' usermod -aG maccel $USER\n'
 
-if [[ -n "$ATTENTION" ]]; then
+if [ -n "$ATTENTION" ]; then
   printf "\n$ATTENTION\n"
 fi

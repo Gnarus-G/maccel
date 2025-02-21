@@ -1,32 +1,67 @@
-MODULEDIR=/lib/modules/$(uname -r)/kernel/drivers/usb
+#!/bin/sh
 
-get_current_version(){
-  if ! which maccel &>/dev/null; then
-    return
-  fi
-
-  maccel -V | awk '{ print $2 }'
+bold_start() {
+  printf "\e[1m"
 }
 
-CURR_VERSION=$(get_current_version)
+bold_end() {
+  printf "\e[22m"
+}
+
+print_bold() {
+  bold_start
+  printf "$1"
+  bold_end
+}
+
+print_yellow() {
+  printf "\e[33m$1\e[0m"
+}
 
 delete_module_dkms() {
   sudo rmmod maccel
-  sudo dkms remove maccel/${CURR_VERSION}
-  sudo rm -rfv /usr/src/maccel-${CURR_VERSION}
+
+  if test -n "$(ls /var/lib/pacman/local/maccel*)"; then
+    sudo pacman -R maccel-dkms
+    sudo pacman -R maccel-dkms-debug
+  fi
+
+  maccel_dkms_status=$(sudo dkms status maccel | grep 'maccel')
+  if [ -n "$maccel_dkms_status" ]; then
+    curr_dkms_vesions=$(echo $maccel_dkms_status | grep -oP '\d.\d.\d')
+    echo $curr_dkms_vesions | xargs -I {} sudo dkms remove maccel/{}
+  fi
+
 }
 
 udev_uninstall() {
-	sudo rm -vf /usr/lib/udev/rules.d/99-maccel*.rules /usr/lib/udev/maccel_*
+  sudo rm -vf /usr/lib/udev/rules.d/99-maccel*.rules /usr/lib/udev/maccel_*
   sudo udevadm control --reload-rules
+}
+
+uninstall_cli() {
+  sudo rm -vf $(which maccel)
 }
 
 delete_everything() {
   sudo groupdel maccel
-  sudo rm -vf $(which maccel)
-  sudo rm -vrf /opt/maccel /var/opt/maccel
+  sudo rm -vrf /opt/maccel /var/opt/maccel /usr/src/maccel-*
+  sudo find /usr/lib/modules /var/lib/dkms -name "*maccel*" | xargs sudo rm -rfv
 }
 
-udev_uninstall
-delete_module_dkms
-delete_everything
+run() {
+  delete_module_dkms
+  uninstall_cli
+  udev_uninstall
+
+  print_bold "$(print_yellow "Do you plan to reinstall? [y]/n\n")"
+  print_bold "If not, enter n[no] to delete everything.\n"
+
+  read choice
+
+  if [ "$choice" = "n" ] || [ "$choice" = "no" ]; then
+    delete_everything
+  fi
+}
+
+run 2>/dev/null
