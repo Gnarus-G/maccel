@@ -46,7 +46,8 @@ static ssize_t read(struct file *f, char __user *user_buffer, size_t size,
                     loff_t *offset) {
   int x = MOUSE_MOVE_CACHE[0];
   int y = MOUSE_MOVE_CACHE[1];
-  fixedpt speed = input_speed(fixedpt_fromint(x), fixedpt_fromint(y), 1);
+  fixedpt speed =
+      input_speed(fixedpt_fromint(x), fixedpt_fromint(y), FIXEDPT_ONE);
 
   dbg("echoing speed to userspace: %s", fptoa(speed));
 

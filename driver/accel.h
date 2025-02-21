@@ -11,8 +11,6 @@ typedef struct {
   int y;
 } AccelResult;
 
-const fixedpt FIXEDPT_ZERO = fixedpt_rconst(0.0);
-
 /**
  * Calculate the factor by which to multiply the input vector
  * in order to get the desired output speed.
@@ -28,7 +26,7 @@ static inline fixedpt sensitivity(fixedpt input_speed, fixedpt param_sens_mult,
 
   dbg("accel    %s", fptoa(param_accel));
 
-  if (input_speed > FIXEDPT_ZERO) {
+  if (input_speed > 0) {
     sens = fixedpt_add(FIXEDPT_ONE, fixedpt_mul((param_accel), input_speed));
   }
 
@@ -39,7 +37,7 @@ static inline fixedpt sensitivity(fixedpt input_speed, fixedpt param_sens_mult,
   dbg("sens     %s", fptoa(sens));
   dbg("sens cap %s", fptoa(output_cap));
 
-  if (param_output_cap != FIXEDPT_ZERO && sens > output_cap) {
+  if (param_output_cap != 0 && sens > output_cap) {
     return output_cap;
   }
 
@@ -79,8 +77,8 @@ static inline AccelResult f_accelerate(int x, int y, fixedpt time_interval_ms,
                                        fixedpt param_output_cap) {
   AccelResult result = {.x = 0, .y = 0};
 
-  static fixedpt carry_x = FIXEDPT_ZERO;
-  static fixedpt carry_y = FIXEDPT_ZERO;
+  static fixedpt carry_x = 0;
+  static fixedpt carry_y = 0;
 
   fixedpt dx = fixedpt_fromint(x);
   fixedpt dy = fixedpt_fromint(y);
