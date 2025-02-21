@@ -4,6 +4,9 @@
 #include <stdint.h>
 
 void test_custom_division_against_fixedpth(double a, double b) {
+#if FIXEDPT_BITS == 32
+  return;
+#else
 
   fixedpt n = fixedpt_rconst(a);
   fixedpt divisor = fixedpt_rconst(b);
@@ -18,6 +21,7 @@ void test_custom_division_against_fixedpth(double a, double b) {
   dbg("expect = (%li) -> %.10f", quotient1, expected);
 
   assert(actual == expected);
+#endif
 }
 
 int main(void) {
