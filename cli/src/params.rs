@@ -113,6 +113,10 @@ impl Param {
     }
 }
 
+pub fn format_param_value(value: f64) -> String {
+    format!("{:.5}", value)
+}
+
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;

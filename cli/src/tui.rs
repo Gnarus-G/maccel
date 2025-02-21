@@ -19,7 +19,7 @@ use tui_input::{backend::crossterm::EventHandler, Input};
 use crate::{
     inputspeed,
     libmaccel::{sensitivity, Params},
-    params::Param,
+    params::{format_param_value, Param},
 };
 
 #[derive(PartialEq)]
@@ -38,15 +38,15 @@ struct ParameterInput {
 
 impl From<Param> for ParameterInput {
     fn from(param: Param) -> Self {
-        let value: f64 = param
+        let value = param
             .get()
             .expect("failed to read and initialize a parameter's value")
             .into();
 
         Self {
             param,
-            value: value as f64,
-            input: value.to_string().into(),
+            value,
+            input: format_param_value(value).into(),
             input_mode: InputMode::Normal,
             error: None,
         }
@@ -67,7 +67,7 @@ impl ParameterInput {
 
         match value {
             Ok(value) => {
-                self.value = value as f64;
+                self.value = value;
                 self.error = None;
             }
             Err(err) => {
@@ -78,7 +78,7 @@ impl ParameterInput {
     }
 
     fn reset(&mut self) {
-        self.input = self.value.to_string().into();
+        self.input = format_param_value(self.value).into()
     }
 }
 
@@ -101,12 +101,11 @@ impl AppState {
     }
 
     fn selected_parameter_index(&self) -> usize {
-        return self.tab_tick as usize % self.parameters.len();
+        self.tab_tick as usize % self.parameters.len()
     }
 
     fn selected_parameter_input(&mut self) -> &mut ParameterInput {
-        let param = &mut self.parameters[self.selected_parameter_index()];
-        return param;
+        &mut self.parameters[self.selected_parameter_index()]
     }
 }
 
@@ -404,5 +403,5 @@ fn bounds_and_labels(bounds: [f64; 2], div: usize) -> ([f64; 2], Vec<Span<'stati
         .map(|label| format!("{:.2}", label).into())
         .collect();
 
-    return (bounds, labels);
+    (bounds, labels)
 }
