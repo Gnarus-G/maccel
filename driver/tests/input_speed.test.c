@@ -2,9 +2,10 @@
 #include "./test_utils.h"
 #include <stdio.h>
 
-int assert_string_value(char *filename, double x, double y, double dt) {
+int assert_string_value(char *filename, double x, double y, double t) {
   fixedpt dx = fixedpt_rconst(x);
   fixedpt dy = fixedpt_rconst(y);
+  fixedpt dt = fixedpt_rconst(t);
 
   dbg("in                        (%f, %f)", x, y);
   dbg("in: x (fixedpt conversion) %s", fptoa(x));
@@ -13,10 +14,10 @@ int assert_string_value(char *filename, double x, double y, double dt) {
   fixedpt s = input_speed(dx, dy, dt);
 
   double res = fixedpt_todouble(s);
-  dbg("(%f, %f) dt = %f -> %f\n", x, y, dt, res);
+  dbg("(%f, %f) dt = %f -> %f\n", x, y, t, res);
 
   char content[100];
-  sprintf(content, "(sqrt(%f, %f) / %f) = %f\n", x, y, dt, res);
+  sprintf(content, "(sqrt(%f, %f) / %f) = %f\n", x, y, t, res);
 
   assert_snapshot(filename, content);
 
