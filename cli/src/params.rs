@@ -22,15 +22,9 @@ impl Param {
     pub fn set(&self, value: f64) -> anyhow::Result<()> {
         let value: Fixedpt = value.into();
         let path = self.path()?;
-        let mut file = File::create(&path).context(anyhow!(
-            "failed to open the parameter's file for writing: {}",
-            path.display()
-        ))?;
-
-        use std::io::Write;
 
         let value = value.0;
-        write!(file, "{}", value).context(anyhow!(
+        std::fs::write(&path, format!("{}", value)).context(anyhow!(
             "failed to write to parameter file: {}",
             path.display()
         ))?;
@@ -76,27 +70,26 @@ impl Param {
             .parse()
             .context(format!("couldn't interpret the parameter's value {}", buf))?;
 
-        return Ok(Fixedpt(value));
+        Ok(Fixedpt(value))
     }
 
     pub fn display_name(&self) -> &'static str {
-        return match self {
+        match self {
             Param::SensMult => "Sens-Multiplier",
             Param::Accel => "Accel",
             Param::Offset => "Offset",
             Param::OutputCap => "Output-Cap",
-        };
+        }
     }
 
     /// The canonical name of parameter, exactly what can be read from /sys/module/maccel/parameters
     fn name(&self) -> &'static str {
-        let param_name = match self {
+        match self {
             Param::SensMult => "SENS_MULT",
             Param::Accel => "ACCEL",
             Param::Offset => "OFFSET",
             Param::OutputCap => "OUTPUT_CAP",
-        };
-        return param_name;
+        }
     }
 
     fn path(&self) -> anyhow::Result<PathBuf> {
@@ -109,7 +102,7 @@ impl Param {
                 .context(anyhow!("no such parameter {:?}", self));
         }
 
-        return Ok(params_path);
+        Ok(params_path)
     }
 }
 
