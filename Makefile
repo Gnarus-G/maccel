@@ -15,7 +15,7 @@ debug: default
 build:
 	$(MAKE) CC=$(CC) EXTRA_CFLAGS=$(EXTRA_CFLAGS) -C $(DRIVERDIR)
 
-debug_install: debug install
+install_debug: debug install
 
 install: default
 	@sudo insmod $(DRIVERDIR)/maccel.ko;
@@ -25,7 +25,8 @@ install: default
 	@sudo chown -v root:root $(MODULEDIR)/*.ko;
 	sudo groupadd -f maccel;
 	sudo depmod; 
-	sudo chown -v :maccel /sys/module/maccel/parameters/* /dev/maccel;
+	sudo chown -v :maccel /sys/module/maccel/parameters/* /var/opt/maccel/resets/* /dev/maccel;
+	sudo chmod g+w /var/opt/maccel/resets/*;
 	sudo chmod g+r /dev/maccel;
 	ls -l /sys/module/maccel/parameters/*
 
@@ -36,8 +37,8 @@ uninstall: clean
 refresh: default uninstall
 	@sudo make install
 
-refresh-debug: default uninstall
-	@sudo make debug_install
+refresh_debug: default uninstall
+	@sudo make install_debug
 
 build_cli:
 	cargo build --release --manifest-path=cli/Cargo.toml
