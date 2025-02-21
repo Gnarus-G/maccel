@@ -85,7 +85,7 @@ fn main() -> anyhow::Result<()> {
             }
             SetSubcommands::Param { name, value } => {
                 name.set(value)?;
-            },
+            }
         },
         ParamsCommand::Get { command } => match command {
             GetSubcommands::All { oneline, quiet } => {

@@ -26,16 +26,19 @@ pub fn setup_input_speed_reader() {
         let mut buffer = [0u8; 8];
 
         loop {
-            let nread = file.read(&mut buffer)
+            let nread = file
+                .read(&mut buffer)
                 .expect("failed to read bytes from /dev/maccel");
 
             let num = match nread {
                 4 => {
-                    let buffer = buffer.first_chunk::<4>().expect("failed to grab 4 bytes from the read buffer") ;
+                    let buffer = buffer
+                        .first_chunk::<4>()
+                        .expect("failed to grab 4 bytes from the read buffer");
                     i32::from_be_bytes(*buffer) as i64
-                },
+                }
                 8 => i64::from_be_bytes(buffer),
-                _ => 0
+                _ => 0,
             };
 
             let num: f64 = Fixedpt(num).into();
