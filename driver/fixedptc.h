@@ -253,6 +253,8 @@ static fixedpt atofp(char *num_string) {
     switch (c) {
     case ' ':
       continue;
+    case '\n':
+      continue;
     case '-':
       sign = 1;
       continue;
