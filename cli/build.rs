@@ -1,9 +1,23 @@
-use std::{env, path::PathBuf};
+use std::{
+    env::{self, consts::ARCH},
+    path::PathBuf,
+};
 
 fn main() {
-    let out = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let out = PathBuf::from(
+        env::var("OUT_DIR").expect("Expected OUT_DIR to be defined in the environment"),
+    );
 
-    cc::Build::new().file("src/libmaccel.c").compile("maccel");
+    let fixedpt_bits = match ARCH {
+        "x86" => "32",
+        "x86_64" => "32",
+        a => panic!("unsupported/untested architecture: {a}"),
+    };
+
+    cc::Build::new()
+        .file("src/libmaccel.c")
+        .define("FIXEDPT_BITS", fixedpt_bits)
+        .compile("maccel");
 
     println!("cargo:rust-link-search=static={}", out.display());
 

@@ -7,6 +7,8 @@
 #include "utils.h"
 
 static inline AccelResult accelerate(int x, int y) {
+  dbg("FIXEDPT_BITS = %d", FIXEDPT_BITS);
+
   static ktime_t last;
   static u64 last_ms = 1;
 

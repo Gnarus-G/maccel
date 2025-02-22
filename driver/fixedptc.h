@@ -71,12 +71,7 @@
 #include "utils.h"
 
 #ifndef FIXEDPT_BITS
-#if __SIZEOF_INT128__
-#include "Fixed64.utils.h"
 #define FIXEDPT_BITS 64
-#else
-#define FIXEDPT_BITS 32
-#endif
 #endif
 
 #ifdef __KERNEL__
@@ -93,17 +88,20 @@ typedef int32_t fixedpt;
 typedef int64_t fixedptd;
 typedef uint32_t fixedptu;
 typedef uint64_t fixedptud;
+
+#define FIXEDPT_WBITS 16
+
 #elif FIXEDPT_BITS == 64
+#include "Fixed64.utils.h"
+
 typedef int64_t fixedpt;
 typedef __int128_t fixedptd;
 typedef uint64_t fixedptu;
 typedef __uint128_t fixedptud;
+
+#define FIXEDPT_WBITS 32
 #else
 #error "FIXEDPT_BITS must be equal to 32 or 64"
-#endif
-
-#ifndef FIXEDPT_WBITS
-#define FIXEDPT_WBITS 32
 #endif
 
 #if FIXEDPT_WBITS >= FIXEDPT_BITS
@@ -288,7 +286,6 @@ static inline fixedpt fixedpt_sqrt(fixedpt A) {
   }
   if (A > FIXEDPT_ONE) {
     fixedpt s = A;
-    dbg("sus: %lli vs %s", s, fptoa(A));
 
     iter = 0;
     while (s > 0) {
@@ -299,7 +296,6 @@ static inline fixedpt fixedpt_sqrt(fixedpt A) {
 
   /* Newton's iterations */
   l = (A >> 1) + 1;
-  dbg("sus? %lli", l);
   for (i = 0; i < iter; i++)
     l = (l + fixedpt_div(A, l)) >> 1;
   if (invert)

@@ -59,7 +59,8 @@ static inline fixedpt input_speed(fixedpt dx, fixedpt dy,
   fixedpt distance = fixedpt_sqrt(a2_plus_b2);
 
   if (distance == -1) {
-    dbg("distance calculation failed: x = %lli, y = %lli", dx, dy);
+    dbg("distance calculation failed: t = %d", polling_interval);
+    return 0;
   }
 
   dbg("distance (in)              %s", fptoa(distance));
