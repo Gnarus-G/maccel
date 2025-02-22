@@ -18,7 +18,7 @@ acceleration factor
 
 ## Install
 
-### Shell Script
+### Shell Script (Recommended)
 Make sure to have these dependencies installed on your machine:
 `curl`, `git`, `make`, `dkms`, and the linux headers in `/lib/modules/`
 
@@ -29,7 +29,11 @@ depending on with which your distro's kernel was built.
 curl -fsSL https://www.maccel.org/install.sh | sudo sh
 ```
 
-If you choose to build the cli from source, you'll need [`cargo`](https://www.rust-lang.org/tools/install)
+If you choose to build the cli from source:
+```sh
+curl -fsSL https://www.maccel.org/install.sh | sudo BUILD_CLI_FROM_SOURCE=1 sh
+```
+You'll need [`cargo`](https://www.rust-lang.org/tools/install)
 
 ### Arch (PKGBUILD)
 
@@ -39,11 +43,13 @@ cd maccel
 makepkg -si
 ```
 
-### Post Install
+Run `modprobe maccel` after installing.
 
-Run `modprobe maccel` after installing or add `modprobe_on_install=true` to your dkms
+Optionally, add `modprobe_on_install=true` to your dkms
 config file (usually located at /etc/dkms/framework.conf) to automatically modprobe after installing
 a dkms module.
+
+#### Post-install recommendation
 
 Optionally, add yourself to the maccel group using `usermod -aG maccel $USER` after installing, 
 if you want to run `maccel` without running as root.

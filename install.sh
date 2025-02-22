@@ -95,12 +95,11 @@ version_update_warning() {
 install_driver_dkms() {
   dkms_version=$(cat PKGBUILD | grep "pkgver=" | grep -oP '\d.\d.\d')
 
-  # Uninstall any old ones
-  test -n "$(sudo dkms status maccel | grep 'maccel')" && {
-    maccel_dkms_status=$(sudo dkms status maccel | grep 'maccel')
-    sudo rmmod maccel;
-    curr_dkms_vesions=$(echo $maccel_dkms_status | grep -oP '\d.\d.\d');
-    echo $curr_dkms_vesions | xargs -I {} sudo dkms remove maccel/{};
+  ! sudo rmmod maccel 2>/dev/null; # It's obviously okay if this fails
+
+  # Uninstall if this version already exists
+  test -n "$(sudo dkms status maccel/$dkms_version)" && {
+    sudo dkms remove maccel/$dkms_version
   }
 
   # Install Driver 
