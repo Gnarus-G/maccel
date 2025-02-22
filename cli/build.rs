@@ -10,7 +10,7 @@ fn main() {
 
     let fixedpt_bits = match ARCH {
         "x86" => "32",
-        "x86_64" => "32",
+        "x86_64" => "64",
         a => panic!("unsupported/untested architecture: {a}"),
     };
 
