@@ -67,7 +67,17 @@ setup_dirs() {
 }
 
 version_update_warning() {
-  if [[ -n $CURR_VERSION && "$CURR_VERSION" < "0.1.3" ]]; then
+  if [ -z "$CURR_VERSION" ]; then
+    return
+  fi
+
+  MARKER_VERSION="0.4.0"
+
+  if [ "$CURR_VERSION" = "$MARKER_VERSION" ]; then
+    return
+  fi
+
+  if [[ "$CURR_VERSION" < "$MARKER_VERSION" ]]; then
     print_yellow $(print_bold "ATTENTION!")
     printf "\n\n"
 
@@ -79,16 +89,16 @@ version_update_warning() {
     printf "\nHere were your values as maccel understands them in '$CURR_VERSION':\n"
 
     print_bold "SENS MULT:  "
-    maccel get sens-mult
+    maccel get param sens-mult
 
     print_bold "ACCEL:      "
-    maccel get accel
+    maccel get param accel
 
     print_bold "OFFSET:     "
-    maccel get offset
+    maccel get param offset
 
     print_bold "OUTPUT CAP: "
-    maccel get output-cap
+    maccel get param output-cap
   fi
 }
 
