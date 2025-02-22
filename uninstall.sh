@@ -28,8 +28,8 @@ delete_module_dkms() {
 
   maccel_dkms_status=$(sudo dkms status maccel | grep 'maccel')
   if [ -n "$maccel_dkms_status" ]; then
-    curr_dkms_vesions=$(echo $maccel_dkms_status | grep -oP '\d.\d.\d')
-    echo $curr_dkms_vesions | xargs -I {} sudo dkms remove maccel/{}
+    curr_dkms_versions=$(echo $maccel_dkms_status | grep -oP '\d.\d.\d')
+    echo $curr_dkms_versions | xargs -I {} sudo dkms remove maccel/{}
   fi
 
 }

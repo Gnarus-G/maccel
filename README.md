@@ -167,9 +167,9 @@ This debugging experience might be lacking still. Feel free to report any issue
 
 ## Contributing
 
-First off, I apreciate you. Now here are some guidelines:
+First off, I appreciate you. Now here are some guidelines:
 
-### Commit messagses
+### Commit messages
 
 Subject line:
 
