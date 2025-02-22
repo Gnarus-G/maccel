@@ -28,15 +28,18 @@ static void fixedpt_to_int_be_bytes(fixedpt num, char bytes[sizeof(fixedpt)]) {
   bytes[0] = (num >> byte(1)) & 0xFF; // Most significant byte
   bytes[1] = (num >> byte(2)) & 0xFF;
   bytes[2] = (num >> byte(3)) & 0xFF;
+#if FIXEDPT_BITS == 64
   if (sizeof(fixedpt) == 8) {
     bytes[3] = (num >> byte(4)) & 0xFF;
     bytes[4] = (num >> byte(5)) & 0xFF;
     bytes[5] = (num >> byte(6)) & 0xFF;
     bytes[6] = (num >> byte(7)) & 0xFF;
     bytes[7] = num & 0xFF; // Least significant byte
-  } else {
-    bytes[3] = num & 0xFF; // Least significant byte
+    return;
   }
+#else
+  bytes[3] = num & 0xFF; // Least significant byte
+#endif
 }
 
 static ssize_t read(struct file *f, char __user *user_buffer, size_t size,
