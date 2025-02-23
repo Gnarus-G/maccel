@@ -15,8 +15,8 @@ static int test_acceleration(const char *filename, fixedpt param_sens_mult,
   for (int x = MIN; x < MAX; x++) {
     for (int y = MIN; y < MAX; y++) {
 
-      result = f_accelerate(x, y, 1, param_sens_mult, param_accel, param_offset,
-                            param_output_cap);
+      result = f_accelerate(x, y, FIXEDPT_ONE, param_sens_mult, param_accel,
+                            param_offset, param_output_cap);
       char curr_debug_print[LINE_LEN];
 
       sprintf(curr_debug_print, "(%d, %d) => (%d, %d)\n", x, y, result.x,

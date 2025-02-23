@@ -1,5 +1,10 @@
+#!/bin/bash
+
 for test in tests/*.test.c; do
-  gcc ${test} -o maccel_test -g -lm $1
+  if [[ ! $test =~ $TEST_NAME ]]; then
+    continue
+  fi
+  gcc ${test} -o maccel_test -lm $EXTRA_CFLAGS
   ./maccel_test
   rm maccel_test
 done
