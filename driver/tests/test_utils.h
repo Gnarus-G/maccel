@@ -8,8 +8,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-typedef int bool;
-
 static int diff(const char *content, const char *filename) {
 
   int pipe_fd[2];
@@ -84,7 +82,7 @@ static void assert_snapshot(const char *__filename, const char *content) {
     exit(1);
   }
 
-  bool snapshot_file_exists = access(filename, F_OK) != -1;
+  int snapshot_file_exists = access(filename, F_OK) != -1;
   FILE *snapshot_file;
 
   if (snapshot_file_exists) {
@@ -105,7 +103,7 @@ static void assert_snapshot(const char *__filename, const char *content) {
 
     stat(filename, &stats);
     file_size = stats.st_size;
-    char *snapshot = malloc(stats.st_size + 1);
+    char *snapshot = (char *)malloc(stats.st_size + 1);
 
     if (snapshot == NULL) {
       fprintf(stderr,
@@ -120,14 +118,15 @@ static void assert_snapshot(const char *__filename, const char *content) {
       fprintf(stderr, "failed to read a snapshot file %s\n", filename);
       exit(1);
     }
+    snapshot[file_size] = 0; // null byte terminator
 
-    int string_test = strcmp(snapshot, content);
+    int string_test_diff = strcmp(snapshot, content);
 
     diff(content, filename);
 
     /* dbg("diff in content = %d: snapshot '%s' vs now '%s'", string_test, */
     /*     snapshot, content); */
-    assert(string_test == 0);
+    assert(string_test_diff == 0);
   } else {
     fprintf(snapshot_file, "%s", content);
     printf("created a snapshot file %s\n", filename);

@@ -2,10 +2,15 @@ DRIVERDIR?=`pwd`/driver
 MODULEDIR?=/lib/modules/`uname -r`/kernel/drivers/usb
 
 build:
-	$(MAKE) EXTRA_CFLAGS='$(EXTRA_CFLAGS)' -C $(DRIVERDIR)
+	$(MAKE) EXTRA_CFLAGS="$(EXTRA_CFLAGS)" -C $(DRIVERDIR)
 
 build_debug: EXTRA_CFLAGS = -g -DDEBUG
 build_debug: build
+
+test: 
+	$(MAKE) -C $(DRIVERDIR) test
+test_debug:
+	$(MAKE) -C $(DRIVERDIR) test_debug
 
 install_debug: build_debug install
 
