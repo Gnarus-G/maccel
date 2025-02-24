@@ -60,12 +60,6 @@ if you want to run `maccel` without running as root.
 sh /opt/maccel/uninstall.sh
 ```
 
-Or
-
-```sh
-curl -fsSL https://www.maccel.org/uninstall.sh | sudo sh
-```
-
 ## CLI Usage
 
 ```
