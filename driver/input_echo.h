@@ -1,20 +1,14 @@
 #ifndef _INPUT_ECHO_
 #define _INPUT_ECHO_
 
-#include "./accel.h"
 #include "fixedptc.h"
 #include "linux/cdev.h"
 #include "linux/fs.h"
+#include "speed.h"
 #include <linux/version.h>
 
 int create_char_device(void);
 void destroy_char_device(void);
-
-/**
- * Cache of the last [REL_X, REL_Y] values to report to userspace
- * on read.
- */
-static int MOUSE_MOVE_CACHE[2] = {0};
 
 static struct cdev device;
 static struct class *device_class;
@@ -44,15 +38,10 @@ static void fixedpt_to_int_be_bytes(fixedpt num, char bytes[sizeof(fixedpt)]) {
 
 static ssize_t read(struct file *f, char __user *user_buffer, size_t size,
                     loff_t *offset) {
-  int x = MOUSE_MOVE_CACHE[0];
-  int y = MOUSE_MOVE_CACHE[1];
-  fixedpt speed =
-      input_speed(fixedpt_fromint(x), fixedpt_fromint(y), FIXEDPT_ONE);
-
-  dbg("echoing speed to userspace: %s", fptoa(speed));
+  dbg("echoing speed to userspace: %s", fptoa(LAST_INPUT_MOUSE_SPEED));
 
   char be_bytes_for_int[sizeof(fixedpt)] = {0};
-  fixedpt_to_int_be_bytes(speed, be_bytes_for_int);
+  fixedpt_to_int_be_bytes(LAST_INPUT_MOUSE_SPEED, be_bytes_for_int);
 
   int err =
       copy_to_user(user_buffer, be_bytes_for_int, sizeof(be_bytes_for_int));

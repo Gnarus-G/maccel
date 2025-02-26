@@ -1,4 +1,4 @@
-#include "../accel.h"
+#include "../speed.h"
 #include "./test_utils.h"
 #include <stdio.h>
 

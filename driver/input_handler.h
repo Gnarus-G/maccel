@@ -1,5 +1,4 @@
-#include "./accelk.h"
-#include "input_echo.h"
+#include "./accel_k.h"
 #include "linux/input.h"
 #include "mouse_move.h"
 #include <linux/hid.h>
@@ -17,12 +16,6 @@ static void event(struct input_handle *handle, struct input_value *value_ptr) {
   case EV_REL: {
     dbg("EV_REL => code %d, value %d", value_ptr->code, value_ptr->value);
     update_mouse_move(value_ptr);
-
-    // So we can relay the original speed of the mouse movement to userspace
-    // for visualization.
-    MOUSE_MOVE_CACHE[0] = get_x(MOVEMENT);
-    MOUSE_MOVE_CACHE[1] = get_y(MOVEMENT);
-
     return;
   }
   case EV_SYN: {
