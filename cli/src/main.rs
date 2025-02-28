@@ -3,9 +3,12 @@ mod libmaccel;
 mod params;
 mod tui;
 
+use std::fs::File;
+
 use anyhow::Context;
 use clap::{CommandFactory, Parser};
 use params::Param;
+use tracing::Level;
 use tui::run_tui;
 
 #[derive(Parser)]
@@ -69,6 +72,11 @@ enum GetSubcommands {
 
 fn main() -> anyhow::Result<()> {
     let args = Cli::parse();
+
+    // tracing_subscriber::fmt()
+    //     .with_max_level(Level::DEBUG)
+    //     .with_writer(File::create("./maccel.log")?)
+    //     .init();
 
     match args.command.unwrap_or_default() {
         ParamsCommand::Set { command } => match command {

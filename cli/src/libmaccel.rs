@@ -46,7 +46,7 @@ pub fn sensitivity(s_in: f64, params: Params) -> f64 {
     };
     let a_factor: f64 = Fixedpt(a_factor).into();
 
-    return a_factor;
+    a_factor
 }
 
 pub mod fixedptc {
@@ -58,11 +58,11 @@ pub mod fixedptc {
         unsafe {
             let s = CStr::from_ptr(c_lib::fixedpt_to_str(*num));
             let s = core::str::from_utf8(s.to_bytes())?;
-            return Ok(s);
+            Ok(s)
         }
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, Default, PartialEq)]
     pub struct Fixedpt(pub i64);
 
     impl From<Fixedpt> for f64 {
@@ -75,7 +75,7 @@ pub mod fixedptc {
         fn from(value: f64) -> Self {
             unsafe {
                 let i = c_lib::fixedpt_from_float(value);
-                return Fixedpt(i);
+                Fixedpt(i)
             }
         }
     }
@@ -84,7 +84,7 @@ pub mod fixedptc {
         type Error = anyhow::Error;
 
         fn try_from(value: &'a Fixedpt) -> Result<Self, Self::Error> {
-            return fixedpt_as_str(&value.0);
+            fixedpt_as_str(&value.0)
         }
     }
 }

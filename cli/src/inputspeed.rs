@@ -8,12 +8,7 @@ use std::{fs, io::Read, thread};
 
 static mut INPUT_SPEED: f64 = 0.0;
 
-use crate::libmaccel::{fixedptc::Fixedpt, sensitivity, Params};
-
-pub fn read_input_speed_and_resolved_sens() -> (f64, f64) {
-    let input_speed = read_input_speed() as f64;
-    return (input_speed as f64, sensitivity(input_speed, Params::new()));
-}
+use crate::libmaccel::fixedptc::Fixedpt;
 
 pub fn read_input_speed() -> f64 {
     // Safety don't care about race conditions

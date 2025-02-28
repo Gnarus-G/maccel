@@ -20,6 +20,8 @@ clap_complete = "4.4.9"
 crossterm = "0.27.0"
 glob = "0.3.1"
 ratatui = "0.25.0"
+tracing = "0.1.41"
+tracing-subscriber = "0.3.19"
 tui-input = "*"
 
 [build-dependencies]
