@@ -32,6 +32,7 @@ impl App {
         let context = ContextRef::new(Context {
             parameters: vec![
                 Param::SensMult.into(),
+                Param::YxRatio.into(),
                 Param::Accel.into(),
                 Param::Offset.into(),
                 Param::OutputCap.into(),

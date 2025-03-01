@@ -13,6 +13,7 @@ const SYS_MODULE_PATH: &str = "/sys/module/maccel";
 #[derive(Debug, Clone, Copy, ValueEnum, PartialEq)]
 pub enum Param {
     SensMult,
+    YxRatio,
     Accel,
     Offset,
     OutputCap,
@@ -79,6 +80,7 @@ impl Param {
             Param::Accel => "Accel",
             Param::Offset => "Offset",
             Param::OutputCap => "Output-Cap",
+            Param::YxRatio => "Y/x Ratio",
         }
     }
 
@@ -89,6 +91,7 @@ impl Param {
             Param::Accel => "ACCEL",
             Param::Offset => "OFFSET",
             Param::OutputCap => "OUTPUT_CAP",
+            Param::YxRatio => "YX_RATIO",
         }
     }
 

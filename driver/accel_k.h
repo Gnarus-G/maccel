@@ -41,8 +41,8 @@ static inline AccelResult accelerate(int x, int y) {
 #endif
 
   return f_accelerate(x, y, millisecond, atofp(PARAM_SENS_MULT),
-                      atofp(PARAM_ACCEL), atofp(PARAM_OFFSET),
-                      atofp(PARAM_OUTPUT_CAP));
+                      atofp(PARAM_YX_RATIO), atofp(PARAM_ACCEL),
+                      atofp(PARAM_OFFSET), atofp(PARAM_OUTPUT_CAP));
 }
 
 #endif // !_ACCELK_H_
