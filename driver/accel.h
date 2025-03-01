@@ -23,7 +23,7 @@ static inline fixedpt sensitivity(fixedpt input_speed, fixedpt param_sens_mult,
 
   fixedpt sens = FIXEDPT_ONE;
 
-  dbg("accel    %s", fptoa(param_accel));
+  dbg("param accel                %s", fptoa(param_accel));
 
   if (input_speed > 0) {
     sens = fixedpt_add(FIXEDPT_ONE, fixedpt_mul((param_accel), input_speed));
@@ -33,8 +33,8 @@ static inline fixedpt sensitivity(fixedpt input_speed, fixedpt param_sens_mult,
 
   fixedpt output_cap = fixedpt_mul(param_output_cap, param_sens_mult);
 
-  dbg("sens     %s", fptoa(sens));
-  dbg("sens cap %s", fptoa(output_cap));
+  dbg("param sens                 %s", fptoa(sens));
+  dbg("sens limit                 %s", fptoa(output_cap));
 
   if (param_output_cap != 0 && sens > output_cap) {
     return output_cap;
@@ -43,11 +43,10 @@ static inline fixedpt sensitivity(fixedpt input_speed, fixedpt param_sens_mult,
   return sens;
 }
 
-static inline AccelResult f_accelerate(int x, int y, fixedpt time_interval_ms,
-                                       fixedpt param_sens_mult,
-                                       fixedpt param_accel,
-                                       fixedpt param_offset,
-                                       fixedpt param_output_cap) {
+static inline AccelResult
+f_accelerate(int x, int y, fixedpt time_interval_ms, fixedpt param_sens_mult,
+             fixedpt param_yx_ratio, fixedpt param_accel, fixedpt param_offset,
+             fixedpt param_output_cap) {
   AccelResult result = {.x = 0, .y = 0};
 
   static fixedpt carry_x = 0;
@@ -61,13 +60,15 @@ static inline AccelResult f_accelerate(int x, int y, fixedpt time_interval_ms,
   dbg("in: y (fixedpt conversion) %s", fptoa(dy));
 
   fixedpt speed_in = input_speed(dx, dy, time_interval_ms);
-  fixedpt sens = sensitivity(speed_in, param_sens_mult, param_accel,
-                             param_offset, param_output_cap);
+  fixedpt sens_x = sensitivity(speed_in, param_sens_mult, param_accel,
+                               param_offset, param_output_cap);
+  dbg("scale x                    %s", fptoa(sens_x));
 
-  dbg("sens %s", fptoa(sens));
+  fixedpt sens_y = fixedpt_mul(sens_x, param_yx_ratio);
+  dbg("scale y                    %s", fptoa(sens_y));
 
-  fixedpt dx_out = fixedpt_mul(dx, sens);
-  fixedpt dy_out = fixedpt_mul(dy, sens);
+  fixedpt dx_out = fixedpt_mul(dx, sens_x);
+  fixedpt dy_out = fixedpt_mul(dy, sens_y);
 
   dx_out = fixedpt_add(dx_out, carry_x);
   dy_out = fixedpt_add(dy_out, carry_y);
