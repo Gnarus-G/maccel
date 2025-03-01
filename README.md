@@ -14,7 +14,11 @@ $$dy_f = dy_0 * (1 + aV)$$
 Where $dx$ and $dy$ are the directional displacements read from the mouse,
 $i$ is the polling interval of the mouse; this would be 1ms if the polling rate is 1000Hz,
 and $a$ is the user provided
-acceleration factor
+acceleration factor.
+
+The more general function, which is relevant with a set input offset, is:
+
+$$(dx_f, dy_f) = (dx_0, dy_0) * (1 + a * (V - offset_in)^2 / V)$$
 
 ## Install
 

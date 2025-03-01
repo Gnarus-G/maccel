@@ -37,6 +37,9 @@ reinstall: uninstall
 reinstall_debug: uninstall
 	@sudo make install_debug
 
+dev_cli:
+	cargo watch -C cli -x 'run'
+
 build_cli:
 	cargo build --release --manifest-path=cli/Cargo.toml
 

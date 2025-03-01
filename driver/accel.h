@@ -10,6 +10,44 @@ typedef struct {
   int y;
 } AccelResult;
 
+static inline fixedpt minsd(fixedpt a, fixedpt b) { return (a < b) ? a : b; }
+
+static inline fixedpt base_fn(fixedpt x, fixedpt accel, fixedpt input_offset) {
+  fixedpt _x = x - input_offset;
+  fixedpt _x_square = fixedpt_mul(
+      _x, _x); // because linear in rawaccel is classic with exponent = 2
+  return fixedpt_mul(accel, fixedpt_div(_x_square, x));
+}
+
+/**
+ * Sensitivity Function for Linear Acceleration
+ */
+static inline fixedpt __sensitivity(fixedpt input_speed, fixedpt param_accel,
+                                    fixedpt param_offset,
+                                    fixedpt param_output_cap) {
+  if (input_speed <= param_offset) {
+    return FIXEDPT_ONE;
+  }
+
+  dbg("param accel                %s", fptoa(param_accel));
+  fixedpt sens = base_fn(input_speed, param_accel, param_offset);
+
+  fixedpt sign = FIXEDPT_ONE;
+  if (param_output_cap > 0) {
+    fixedpt cap = fixedpt_sub(param_output_cap, FIXEDPT_ONE);
+    if (cap < 0) {
+      cap = -cap;
+      sign = -sign;
+    }
+    /* fixedpt cap = fixedpt_mul(param_output_cap, param_sens_mult); */
+    dbg("sens limit                 %s", fptoa(cap));
+    sens = minsd(sens, cap);
+  }
+
+  sens = fixedpt_add(fixedpt_mul(sign, sens), FIXEDPT_ONE);
+  return sens;
+}
+
 /**
  * Calculate the factor by which to multiply the input vector
  * in order to get the desired output speed.
@@ -18,28 +56,10 @@ typedef struct {
 static inline fixedpt sensitivity(fixedpt input_speed, fixedpt param_sens_mult,
                                   fixedpt param_accel, fixedpt param_offset,
                                   fixedpt param_output_cap) {
-
-  input_speed = fixedpt_sub(input_speed, param_offset);
-
-  fixedpt sens = FIXEDPT_ONE;
-
-  dbg("param accel                %s", fptoa(param_accel));
-
-  if (input_speed > 0) {
-    sens = fixedpt_add(FIXEDPT_ONE, fixedpt_mul((param_accel), input_speed));
-  }
-
+  fixedpt sens =
+      __sensitivity(input_speed, param_accel, param_offset, param_output_cap);
+  dbg("param sens                 %s", fptoa(param_sens_mult));
   sens = fixedpt_mul(sens, param_sens_mult);
-
-  fixedpt output_cap = fixedpt_mul(param_output_cap, param_sens_mult);
-
-  dbg("param sens                 %s", fptoa(sens));
-  dbg("sens limit                 %s", fptoa(output_cap));
-
-  if (param_output_cap != 0 && sens > output_cap) {
-    return output_cap;
-  }
-
   return sens;
 }
 
