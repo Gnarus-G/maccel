@@ -2,14 +2,15 @@ use crate::params::Param;
 
 use self::fixedptc::Fixedpt;
 
-pub struct Params {
+pub struct SensitivityParams {
     sens_mult: i64,
+    yx_ration: i64,
     accel: i64,
     offset: i64,
     output_cap: i64,
 }
 
-impl Params {
+impl SensitivityParams {
     pub fn new() -> Self {
         Self {
             sens_mult: Param::SensMult
@@ -28,12 +29,16 @@ impl Params {
                 .get()
                 .expect("failed to read Output_Cap parameter")
                 .0,
+            yx_ration: Param::YxRatio
+                .get()
+                .expect("failed to read Output_Cap parameter")
+                .0,
         }
     }
 }
 
 /// Ratio of Output speed to Input speed
-pub fn sensitivity(s_in: f64, params: Params) -> f64 {
+pub fn sensitivity(s_in: f64, params: SensitivityParams) -> f64 {
     let s_in: Fixedpt = s_in.into();
     let a_factor = unsafe {
         c_lib::sensitivity_rs(

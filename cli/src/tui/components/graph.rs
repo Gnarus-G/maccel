@@ -1,6 +1,6 @@
 use crate::{
     inputspeed::read_input_speed,
-    libmaccel::{sensitivity, Params},
+    libmaccel::{sensitivity, SensitivityParams},
     params::Param,
     tui::{
         action::{self, Action},
@@ -16,12 +16,17 @@ use tracing::debug;
 #[derive(Debug, Default)]
 struct LastMouseMove {
     in_speed: f64,
-    out_sens: f64,
+    out_sens_x: f64,
+    out_sens_y: f64,
 }
 
 impl LastMouseMove {
-    fn as_point(&self) -> (f64, f64) {
-        (self.in_speed, self.out_sens)
+    fn as_point_sens_x(&self) -> (f64, f64) {
+        (self.in_speed, self.out_sens_x)
+    }
+
+    fn as_point_sens_y(&self) -> (f64, f64) {
+        (self.in_speed, self.out_sens_y)
     }
 }
 
@@ -30,9 +35,12 @@ pub struct Graph {
     last_mouse_move: LastMouseMove,
     output_cap: f64,
     sens_mult: f64,
+    yx_ratio: f64,
     data: Vec<(f64, f64)>,
+    data_alt: Vec<(f64, f64)>,
     title: &'static str,
-    legend: String,
+    data_name: String,
+    data_alt_name: String,
     context: ContextRef,
 }
 
@@ -43,23 +51,27 @@ impl Graph {
             last_mouse_move: Default::default(),
             output_cap: Param::OutputCap.get().unwrap_or_default().into(),
             sens_mult: Param::SensMult.get().unwrap_or_default().into(),
+            yx_ratio: Param::YxRatio.get().unwrap_or_default().into(),
             data: vec![],
+            data_alt: vec![],
             title: "graph (Sensitivity = Speed_out / Speed_in)",
-            legend: format!(
-                "f(x) = (1 + {}⋅x) ⋅ {}",
-                Param::Accel.display_name(),
-                Param::SensMult.display_name()
-            ),
+            data_name: "Sens 🠠 🠢 ".to_string(),
+            data_alt_name: "Sens 🠡 🠣".to_string(),
         };
         s.update_data();
         s
     }
 
     fn update_data(&mut self) {
-        self.data = (0..1000)
-            .map(|x| (x as f64) * 0.1375)
-            .map(|x| (x, sensitivity(x, Params::new())))
-            .collect();
+        self.data.clear();
+        self.data_alt.clear();
+
+        for x in (0..900).map(|x| (x as f64) * 0.1375 /* step size */) {
+            let sens_x = sensitivity(x, SensitivityParams::new());
+            self.data.push((x, sens_x));
+            let sens_y = sens_x * self.yx_ratio;
+            self.data_alt.push((x, sens_y));
+        }
     }
 
     /// To make the y axis bounds and labels scale with our sensitivity multiplier
@@ -81,7 +93,11 @@ impl TuiComponent for Graph {
     fn update(&mut self, action: &action::Action) {
         if let Action::Tick = action {
             let (in_speed, out_sens) = read_input_speed_and_resolved_sens();
-            self.last_mouse_move = LastMouseMove { in_speed, out_sens };
+            self.last_mouse_move = LastMouseMove {
+                in_speed,
+                out_sens_x: out_sens,
+                out_sens_y: out_sens * self.yx_ratio,
+            };
 
             self.sens_mult = self
                 .context
@@ -98,6 +114,15 @@ impl TuiComponent for Graph {
                 .parameters
                 .iter()
                 .find(|p| p.param == Param::OutputCap)
+                .map(|p| p.value)
+                .unwrap_or_default();
+
+            self.yx_ratio = self
+                .context
+                .get()
+                .parameters
+                .iter()
+                .find(|p| p.param == Param::YxRatio)
                 .map(|p| p.value)
                 .unwrap_or_default();
 
@@ -120,18 +145,30 @@ impl TuiComponent for Graph {
             .bounds(bounds)
             .labels(labels);
 
-        let highlight_point = &[self.last_mouse_move.as_point()];
+        let highlight_point_x = &[self.last_mouse_move.as_point_sens_x()];
+        let highlight_point_y = &[self.last_mouse_move.as_point_sens_y()];
         let chart = Chart::new(vec![
             Dataset::default()
-                .name(self.legend.clone())
+                .name(self.data_name.clone())
                 .marker(symbols::Marker::Braille)
                 .graph_type(GraphType::Line)
                 .style(Style::default().green())
                 .data(&self.data),
-            Dataset::default() // current instance of acceleration
+            Dataset::default()
+                .name(self.data_alt_name.clone())
+                .marker(symbols::Marker::Braille)
+                .graph_type(GraphType::Line)
+                .style(Style::default().yellow())
+                .data(&self.data_alt),
+            // current instance of user input speed and output sensitivity
+            Dataset::default()
                 .marker(symbols::Marker::Braille)
                 .style(Style::default().red())
-                .data(highlight_point),
+                .data(highlight_point_x),
+            Dataset::default()
+                .marker(symbols::Marker::Braille)
+                .style(Style::default().blue())
+                .data(highlight_point_y),
         ])
         .x_axis(x_axis)
         .y_axis(y_axis);
@@ -164,5 +201,8 @@ fn bounds_and_labels(bounds: [f64; 2], div: usize) -> ([f64; 2], Vec<Span<'stati
 pub fn read_input_speed_and_resolved_sens() -> (f64, f64) {
     let input_speed = read_input_speed();
     debug!("last mouse move read at {} counts/ms", input_speed);
-    (input_speed, sensitivity(input_speed, Params::new()))
+    (
+        input_speed,
+        sensitivity(input_speed, SensitivityParams::new()),
+    )
 }
