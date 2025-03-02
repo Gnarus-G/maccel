@@ -1,7 +1,8 @@
 # maccel
 
 Linear mouse acceleration.
-![image](https://github.com/user-attachments/assets/9db3b5ad-af12-49a5-b817-6b4d28dcdb5d)
+![image](https://github.com/user-attachments/assets/a879f941-d9ef-49ad-9118-c67e2514de7e)
+
 
 ## Acceleration Function
 
