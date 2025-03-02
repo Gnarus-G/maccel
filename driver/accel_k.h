@@ -12,7 +12,7 @@ const fixedpt UNIT_PER_MS = fixedpt_rconst(1000000); // 1 million nanoseconds
 const fixedpt UNIT_PER_MS = fixedpt_rconst(1000); // 1 thousand microsends
 #endif
 
-static inline AccelResult accelerate(int x, int y) {
+static inline void accelerate(int *x, int *y) {
   dbg("FIXEDPT_BITS = %d", FIXEDPT_BITS);
 
   static ktime_t last_time;

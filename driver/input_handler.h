@@ -24,10 +24,10 @@ static void event(struct input_handle *handle, struct input_value *value_ptr) {
     if (x || y) {
       dbg("EV_SYN => code %d", value_ptr->code);
 
-      AccelResult accelerated = accelerate(x, y);
-      dbg("accel: (%d, %d) -> (%d, %d)", x, y, accelerated.x, accelerated.y);
-      set_x_move(accelerated.x);
-      set_y_move(accelerated.y);
+      accelerate(&x, &y);
+      dbg("accelerated -> (%d, %d)", x, y);
+      set_x_move(x);
+      set_y_move(y);
 
       clear_mouse_move();
     }

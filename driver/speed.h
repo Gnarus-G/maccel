@@ -3,6 +3,7 @@
 
 #include "dbg.h"
 #include "fixedptc.h"
+#include "vector.h"
 
 /**
  * Track this to enable the UI to show the last noted
@@ -11,15 +12,8 @@
 static fixedpt LAST_INPUT_MOUSE_SPEED = 0;
 
 static inline fixedpt input_speed(fixedpt dx, fixedpt dy, fixedpt time_ms) {
-  fixedpt a2 = fixedpt_mul(dx, dx);
-  fixedpt b2 = fixedpt_mul(dy, dy);
-  fixedpt a2_plus_b2 = fixedpt_add(a2, b2);
 
-  dbg("dx^2 (in)                  %s", fptoa(a2));
-  dbg("dy^2 (in)                  %s", fptoa(b2));
-  dbg("square modulus (in)        %s", fptoa(a2_plus_b2));
-
-  fixedpt distance = fixedpt_sqrt(a2_plus_b2);
+  fixedpt distance = magnitude((struct vector){dx, dy});
 
   if (distance == -1) {
     dbg("distance calculation failed: t = %s", fptoa(time_ms));
