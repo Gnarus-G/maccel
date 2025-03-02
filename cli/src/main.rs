@@ -3,12 +3,9 @@ mod libmaccel;
 mod params;
 mod tui;
 
-use std::fs::File;
-
 use anyhow::Context;
 use clap::{CommandFactory, Parser};
-use params::Param;
-use tracing::Level;
+use params::{Param, ALL_PARAMS};
 use tui::run_tui;
 
 #[derive(Parser)]
@@ -16,11 +13,11 @@ use tui::run_tui;
 /// CLI to control the parameters for the maccel driver.
 struct Cli {
     #[clap(subcommand)]
-    command: Option<ParamsCommand>,
+    command: Option<CLiCommands>,
 }
 
 #[derive(clap::Subcommand, Default)]
-enum ParamsCommand {
+enum CLiCommands {
     /// Open the Terminal UI to manage the parameters
     /// and see a graph of the sensitivity
     #[default]
@@ -28,12 +25,12 @@ enum ParamsCommand {
     /// Set the value for a parameter of the maccel driver
     Set {
         #[clap(subcommand)]
-        command: SetSubcommands,
+        command: SetParamsSubcommands,
     },
     /// Get the values for parameters of the maccel driver
     Get {
         #[clap(subcommand)]
-        command: GetSubcommands,
+        command: GetParamsSubcommands,
     },
     /// Generate a completions file for a specified shell
     Completion {
@@ -43,12 +40,13 @@ enum ParamsCommand {
 }
 
 #[derive(clap::Subcommand)]
-enum SetSubcommands {
+enum SetParamsSubcommands {
     /// Set the value for a single parameter
     Param { name: Param, value: f64 },
     /// Set the values for all parameters in order
     All {
         sens_mult: f64,
+        yx_ratio: f64,
         accel: f64,
         offset: f64,
         output_cap: f64,
@@ -56,7 +54,7 @@ enum SetSubcommands {
 }
 
 #[derive(clap::Subcommand)]
-enum GetSubcommands {
+enum GetParamsSubcommands {
     /// Get the value for a single parameter
     Param { name: Param },
     /// Get the values for all parameters in order
@@ -79,40 +77,37 @@ fn main() -> anyhow::Result<()> {
     //     .init();
 
     match args.command.unwrap_or_default() {
-        ParamsCommand::Set { command } => match command {
-            SetSubcommands::All {
+        CLiCommands::Set { command } => match command {
+            SetParamsSubcommands::All {
                 sens_mult,
+                yx_ratio,
                 accel,
                 offset,
                 output_cap,
             } => {
                 Param::SensMult.set(sens_mult)?;
+                Param::YxRatio.set(yx_ratio)?;
                 Param::Accel.set(accel)?;
                 Param::Offset.set(offset)?;
                 Param::OutputCap.set(output_cap)?;
             }
-            SetSubcommands::Param { name, value } => {
+            SetParamsSubcommands::Param { name, value } => {
                 name.set(value)?;
             }
         },
-        ParamsCommand::Get { command } => match command {
-            GetSubcommands::All { oneline, quiet } => {
+        CLiCommands::Get { command } => match command {
+            GetParamsSubcommands::All { oneline, quiet } => {
                 let delimiter = if oneline { " " } else { "\n" };
-                let params = [
-                    Param::SensMult,
-                    Param::Accel,
-                    Param::Offset,
-                    Param::OutputCap,
-                ]
-                .map(|p| {
-                    p.get().and_then(|_p| {
-                        let value: &str = (&_p).try_into()?;
-                        Ok((p.display_name(), value.to_string()))
+                let params = ALL_PARAMS
+                    .iter()
+                    .map(|p| {
+                        p.get().and_then(|_p| {
+                            let value: &str = (&_p).try_into()?;
+                            Ok((p.display_name(), value.to_string()))
+                        })
                     })
-                })
-                .into_iter()
-                .collect::<anyhow::Result<Vec<_>>>()
-                .context("failed to get all parameters")?;
+                    .collect::<anyhow::Result<Vec<_>>>()
+                    .context("failed to get all parameters")?;
 
                 for (name, value) in params {
                     if !quiet {
@@ -123,14 +118,14 @@ fn main() -> anyhow::Result<()> {
                     print!("{}", delimiter);
                 }
             }
-            GetSubcommands::Param { name } => {
+            GetParamsSubcommands::Param { name } => {
                 let value = name.get()?;
                 let string_value: &str = (&value).try_into()?;
                 println!("{}", string_value);
             }
         },
-        ParamsCommand::Tui => run_tui()?,
-        ParamsCommand::Completion { shell } => {
+        CLiCommands::Tui => run_tui()?,
+        CLiCommands::Completion { shell } => {
             clap_complete::generate(shell, &mut Cli::command(), "maccel", &mut std::io::stdout())
         }
     }

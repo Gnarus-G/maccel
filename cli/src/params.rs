@@ -10,14 +10,18 @@ use clap::ValueEnum;
 
 const SYS_MODULE_PATH: &str = "/sys/module/maccel";
 
-#[derive(Debug, Clone, Copy, ValueEnum, PartialEq)]
-pub enum Param {
-    SensMult,
-    YxRatio,
-    Accel,
-    Offset,
-    OutputCap,
+macro_rules! declare_params {
+    ($($name:tt,)+) => {
+        #[derive(Debug, Clone, Copy, ValueEnum, PartialEq)]
+        pub enum Param {
+            $($name),+
+        }
+
+        pub const ALL_PARAMS: &[Param] = &[ $(Param::$name),+ ];
+    };
 }
+
+declare_params!(SensMult, YxRatio, Accel, Offset, OutputCap,);
 
 impl Param {
     pub fn set(&self, value: f64) -> anyhow::Result<()> {
@@ -84,7 +88,8 @@ impl Param {
         }
     }
 
-    /// The canonical name of parameter, exactly what can be read from /sys/module/maccel/parameters
+    /// The canonical name of the parameter, as defined by the kernel module,
+    /// and exactly what can be read from /sys/module/maccel/parameters
     fn name(&self) -> &'static str {
         match self {
             Param::SensMult => "SENS_MULT",
