@@ -54,7 +54,7 @@ impl Graph {
             yx_ratio: Param::YxRatio.get().unwrap_or_default().into(),
             data: vec![],
             data_alt: vec![],
-            title: "graph (Sensitivity = Speed_out / Speed_in)",
+            title: "Sensitivity Graph (Ratio = Speed_out / Speed_in)",
             data_name: "🠠🠢 Sens".to_string(),
             data_alt_name: "🠡🠣 Sens".to_string(),
         };
@@ -141,7 +141,7 @@ impl TuiComponent for Graph {
 
         let (bounds, labels) = bounds_and_labels(self.auto_scaled_y_bounds(), 5);
         let y_axis = Axis::default()
-            .title("Sensitivity".magenta())
+            .title("Ratio".magenta())
             .style(Style::default().white())
             .bounds(bounds)
             .labels(labels);
