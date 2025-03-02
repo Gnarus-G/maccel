@@ -4,7 +4,7 @@ use self::fixedptc::Fixedpt;
 
 pub struct SensitivityParams {
     sens_mult: i64,
-    yx_ration: i64,
+    yx_ratio: i64,
     accel: i64,
     offset: i64,
     output_cap: i64,
@@ -29,7 +29,7 @@ impl SensitivityParams {
                 .get()
                 .expect("failed to read Output_Cap parameter")
                 .0,
-            yx_ration: Param::YxRatio
+            yx_ratio: Param::YxRatio
                 .get()
                 .expect("failed to read Output_Cap parameter")
                 .0,
@@ -37,21 +37,25 @@ impl SensitivityParams {
     }
 }
 
+pub type SensXY = (f64, f64);
+
 /// Ratio of Output speed to Input speed
-pub fn sensitivity(s_in: f64, params: SensitivityParams) -> f64 {
+pub fn sensitivity(s_in: f64, params: SensitivityParams) -> SensXY {
     let s_in: Fixedpt = s_in.into();
-    let a_factor = unsafe {
+    let sens = unsafe {
         c_lib::sensitivity_rs(
             s_in.0,
             params.sens_mult,
+            params.yx_ratio,
             params.accel,
             params.offset,
             params.output_cap,
         )
     };
-    let a_factor: f64 = Fixedpt(a_factor).into();
+    let ratio_x: f64 = Fixedpt(sens.x).into();
+    let ratio_y: f64 = Fixedpt(sens.y).into();
 
-    a_factor
+    (ratio_x, ratio_y)
 }
 
 pub mod fixedptc {
@@ -97,14 +101,21 @@ pub mod fixedptc {
 mod c_lib {
     use std::ffi::c_char;
 
+    #[repr(C)]
+    pub(super) struct Vector {
+        pub x: i64,
+        pub y: i64,
+    }
+
     extern "C" {
         pub fn sensitivity_rs(
             speed_in: i64,
             param_sens_mult: i64,
+            param_yx_ratio: i64,
             param_accel: i64,
             param_offset: i64,
             param_output_cap: i64,
-        ) -> i64;
+        ) -> Vector;
     }
 
     extern "C" {

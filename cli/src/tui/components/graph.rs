@@ -1,6 +1,6 @@
 use crate::{
     inputspeed::read_input_speed,
-    libmaccel::{sensitivity, SensitivityParams},
+    libmaccel::{sensitivity, SensXY, SensitivityParams},
     params::Param,
     tui::{
         action::{self, Action},
@@ -55,8 +55,8 @@ impl Graph {
             data: vec![],
             data_alt: vec![],
             title: "graph (Sensitivity = Speed_out / Speed_in)",
-            data_name: "Sens 🠠 🠢 ".to_string(),
-            data_alt_name: "Sens 🠡 🠣".to_string(),
+            data_name: "🠠🠢 Sens".to_string(),
+            data_alt_name: "🠡🠣 Sens".to_string(),
         };
         s.update_data();
         s
@@ -67,10 +67,11 @@ impl Graph {
         self.data_alt.clear();
 
         for x in (0..900).map(|x| (x as f64) * 0.1375 /* step size */) {
-            let sens_x = sensitivity(x, SensitivityParams::new());
+            let (sens_x, sens_y) = sensitivity(x, SensitivityParams::new());
             self.data.push((x, sens_x));
-            let sens_y = sens_x * self.yx_ratio;
-            self.data_alt.push((x, sens_y));
+            if sens_x != sens_y {
+                self.data_alt.push((x, sens_y));
+            }
         }
     }
 
@@ -95,8 +96,8 @@ impl TuiComponent for Graph {
             let (in_speed, out_sens) = read_input_speed_and_resolved_sens();
             self.last_mouse_move = LastMouseMove {
                 in_speed,
-                out_sens_x: out_sens,
-                out_sens_y: out_sens * self.yx_ratio,
+                out_sens_x: out_sens.0,
+                out_sens_y: out_sens.1,
             };
 
             self.sens_mult = self
@@ -147,31 +148,49 @@ impl TuiComponent for Graph {
 
         let highlight_point_x = &[self.last_mouse_move.as_point_sens_x()];
         let highlight_point_y = &[self.last_mouse_move.as_point_sens_y()];
-        let chart = Chart::new(vec![
+        let mut chart_plots = vec![
             Dataset::default()
-                .name(self.data_name.clone())
+                .name(if self.data_alt.is_empty() {
+                    "🠠🠢 🠡🠣Sens".to_owned()
+                } else {
+                    self.data_name.clone()
+                })
                 .marker(symbols::Marker::Braille)
                 .graph_type(GraphType::Line)
                 .style(Style::default().green())
                 .data(&self.data),
-            Dataset::default()
-                .name(self.data_alt_name.clone())
-                .marker(symbols::Marker::Braille)
-                .graph_type(GraphType::Line)
-                .style(Style::default().yellow())
-                .data(&self.data_alt),
             // current instance of user input speed and output sensitivity
             Dataset::default()
+                .name("• Current")
                 .marker(symbols::Marker::Braille)
                 .style(Style::default().red())
                 .data(highlight_point_x),
-            Dataset::default()
-                .marker(symbols::Marker::Braille)
-                .style(Style::default().blue())
-                .data(highlight_point_y),
-        ])
-        .x_axis(x_axis)
-        .y_axis(y_axis);
+        ];
+
+        if !self.data_alt.is_empty() {
+            chart_plots.push(
+                Dataset::default()
+                    .name(self.data_alt_name.clone())
+                    .marker(symbols::Marker::Braille)
+                    .graph_type(GraphType::Line)
+                    .style(if self.data_alt.is_empty() {
+                        Style::default().green()
+                    } else {
+                        Style::default().yellow()
+                    })
+                    .data(&self.data_alt),
+            );
+
+            chart_plots.push(
+                Dataset::default()
+                    .name("• Current")
+                    .marker(symbols::Marker::Braille)
+                    .style(Style::default().blue())
+                    .data(highlight_point_y),
+            );
+        }
+
+        let chart = Chart::new(chart_plots).x_axis(x_axis).y_axis(y_axis);
 
         frame.render_widget(
             chart.block(
@@ -198,7 +217,7 @@ fn bounds_and_labels(bounds: [f64; 2], div: usize) -> ([f64; 2], Vec<Span<'stati
     (bounds, labels)
 }
 
-pub fn read_input_speed_and_resolved_sens() -> (f64, f64) {
+fn read_input_speed_and_resolved_sens() -> (f64, SensXY) {
     let input_speed = read_input_speed();
     debug!("last mouse move read at {} counts/ms", input_speed);
     (
