@@ -3,10 +3,9 @@ use ratatui::{prelude::*, widgets::*};
 
 use crate::tui::action::{Action, Actions};
 use crate::tui::component::TuiComponent;
-use crate::tui::context::ContextRef;
+use crate::tui::context::AccelMode;
 use crate::tui::event;
 
-use super::graph::Graph;
 use super::param_input::InputMode;
 use super::ParameterInput;
 
@@ -19,31 +18,43 @@ pub enum HelpTextMode {
 
 #[derive(Debug)]
 pub struct Screen {
-    context: ContextRef,
+    pub accel_mode: AccelMode,
     tab_tick: u8,
     parameters: Vec<ParameterInput>,
-    graph: Graph,
+    preview_slot: Box<dyn TuiComponent>,
+}
+
+impl AccelMode {
+    pub fn as_title(&self) -> &'static str {
+        match self {
+            AccelMode::Linear => "Linear Acceleration",
+            AccelMode::Natural => "Natural (w/ Gain)",
+        }
+    }
 }
 
 impl Screen {
-    pub fn new(context: ContextRef) -> Self {
+    pub fn new(
+        mode: AccelMode,
+        parameters: Vec<ParameterInput>,
+        preview: Box<dyn TuiComponent>,
+    ) -> Self {
         let mut s = Self {
             tab_tick: 0,
-            parameters: context
-                .clone()
-                .get()
-                .parameters
-                .iter()
-                .enumerate()
-                .map(|(id, p)| ParameterInput::new(id, p.value, context.clone()))
-                .collect(),
-            graph: Graph::new(context.clone()),
-            context,
+            accel_mode: mode,
+            parameters,
+            preview_slot: preview,
         };
 
         s.parameters[0].is_selected = true;
 
         s
+    }
+
+    #[cfg(test)]
+    pub fn with_no_preview(mode: AccelMode, parameters: Vec<ParameterInput>) -> Self {
+        use crate::tui::component::NoopComponent;
+        Self::new(mode, parameters, Box::new(NoopComponent))
     }
 
     fn selected_parameter_index(&self) -> usize {
@@ -71,7 +82,7 @@ impl TuiComponent for Screen {
             param.is_selected = selected_param_idx == idx;
             param.handle_key_event(event, actions);
         }
-        self.graph.handle_key_event(event, actions);
+        self.preview_slot.handle_key_event(event, actions);
     }
 
     fn handle_mouse_event(
@@ -97,10 +108,10 @@ impl TuiComponent for Screen {
             param.is_selected = selected_param_idx == idx;
             param.update(action);
         }
-        self.graph.update(action);
+        self.preview_slot.update(action);
     }
 
-    fn draw(&mut self, frame: &mut ratatui::Frame, area: Rect) {
+    fn draw(&self, frame: &mut ratatui::Frame, area: Rect) {
         let root_layout = Layout::new(
             Direction::Vertical,
             [
@@ -131,6 +142,8 @@ impl TuiComponent for Screen {
             ("Tab / Down", "select next parameter"),
             ("Shift + Tab / Up", "select previous parameter"),
             ("i", "start editing a parameter"),
+            ("Left", "prev mode"),
+            ("Right", "next mode"),
         ]
         .into_iter()
         .flat_map(|(command, description)| {
@@ -170,7 +183,7 @@ impl TuiComponent for Screen {
         frame.render_widget(
             Block::default()
                 .borders(Borders::ALL)
-                .title("parameters")
+                .title(self.accel_mode.as_title())
                 .border_style(Style::new().blue().bold()),
             main_layout[0],
         );
@@ -186,12 +199,12 @@ impl TuiComponent for Screen {
             .margin(2)
             .split(main_layout[0]);
 
-        for (idx, param) in self.parameters.iter_mut().enumerate() {
+        for (idx, param) in self.parameters.iter().enumerate() {
             param.draw(frame, params_layout[idx]);
         }
         // Done with parameter inputs, now on to the graph
 
-        self.graph.draw(frame, main_layout[1]);
+        self.preview_slot.draw(frame, main_layout[1]);
     }
 }
 
@@ -202,22 +215,28 @@ mod test {
     use crate::tui::{
         action::Action,
         component::TuiComponent,
-        components::HelpTextMode,
-        context::{ContextRef, Parameter},
+        components::{HelpTextMode, ParameterInput},
+        context::{AccelMode, ContextRef, Parameter},
     };
 
     use super::Screen;
 
     #[test]
     fn can_select_input() {
-        let context = ContextRef::new(crate::tui::context::Context {
-            parameters: vec![
-                Parameter::new(crate::params::Param::SensMult, 1.0),
-                Parameter::new(crate::params::Param::Accel, 1.0),
-            ],
+        let parameters = vec![
+            Parameter::new_with_float_value(crate::params::Param::SensMult, 1.0),
+            Parameter::new_with_float_value(crate::params::Param::Accel, 1.0),
+        ];
+        let context = ContextRef::new(crate::tui::context::TuiContext {
+            parameters: parameters.clone(),
         });
 
-        let mut screen = Screen::new(context);
+        let inputs = parameters
+            .iter()
+            .map(|p| ParameterInput::new(p, context.clone()))
+            .collect();
+
+        let mut screen = Screen::with_no_preview(AccelMode::Linear, inputs);
         assert_eq!(screen.selected_parameter_index(), 0);
         assert!(screen.parameters[0].is_selected);
 
@@ -252,14 +271,20 @@ mod test {
 
     #[test]
     fn can_show_edit_mode_help_text() {
-        let context = ContextRef::new(crate::tui::context::Context {
-            parameters: vec![
-                Parameter::new(crate::params::Param::SensMult, 1.0),
-                Parameter::new(crate::params::Param::SensMult, 1.0),
-            ],
+        let parameters = vec![
+            Parameter::new_with_float_value(crate::params::Param::SensMult, 1.0),
+            Parameter::new_with_float_value(crate::params::Param::Accel, 1.0),
+        ];
+        let context = ContextRef::new(crate::tui::context::TuiContext {
+            parameters: parameters.clone(),
         });
 
-        let mut screen = Screen::new(context);
+        let inputs = parameters
+            .iter()
+            .map(|p| ParameterInput::new(p, context.clone()))
+            .collect();
+
+        let mut screen = Screen::with_no_preview(AccelMode::Linear, inputs);
 
         assert_eq!(screen.help_text_mode(), HelpTextMode::NormalMode);
 
@@ -280,14 +305,20 @@ mod test {
 
     #[test]
     fn can_edit_input() {
-        let context = ContextRef::new(crate::tui::context::Context {
-            parameters: vec![
-                Parameter::new(crate::params::Param::SensMult, 1.0),
-                Parameter::new(crate::params::Param::Accel, 0.0),
-            ],
+        let parameters = vec![
+            Parameter::new_with_float_value(crate::params::Param::SensMult, 1.0),
+            Parameter::new_with_float_value(crate::params::Param::Accel, 1.0),
+        ];
+        let context = ContextRef::new(crate::tui::context::TuiContext {
+            parameters: parameters.clone(),
         });
 
-        let mut screen = Screen::new(context);
+        let inputs = parameters
+            .iter()
+            .map(|p| ParameterInput::new(p, context.clone()))
+            .collect();
+
+        let mut screen = Screen::with_no_preview(AccelMode::Linear, inputs);
         let mut actions = vec![];
 
         screen.handle_event(

@@ -1,12 +1,11 @@
 use crate::{
     inputspeed::read_input_speed,
-    libmaccel::{sensitivity, SensXY, SensitivityParams},
-    params::Param,
     tui::{
         action::{self, Action},
         component::TuiComponent,
         context::ContextRef,
         event,
+        sens_fns::{sensitivity, SensXY},
     },
 };
 
@@ -33,9 +32,7 @@ impl LastMouseMove {
 #[derive(Debug)]
 pub struct Graph {
     last_mouse_move: LastMouseMove,
-    output_cap: f64,
-    sens_mult: f64,
-    yx_ratio: f64,
+    pub y_bounds: [f64; 2],
     data: Vec<(f64, f64)>,
     data_alt: Vec<(f64, f64)>,
     title: &'static str,
@@ -45,19 +42,23 @@ pub struct Graph {
 }
 
 impl Graph {
-    pub fn new(context: ContextRef) -> Self {
+    pub fn new(
+        context: ContextRef,
+        title: &'static str,
+        data_name: String,
+        data_alt_name: String,
+    ) -> Self {
         let mut s = Self {
-            context,
+            context: context.clone(),
             last_mouse_move: Default::default(),
-            output_cap: Param::OutputCap.get().unwrap_or_default().into(),
-            sens_mult: Param::SensMult.get().unwrap_or_default().into(),
-            yx_ratio: Param::YxRatio.get().unwrap_or_default().into(),
+            y_bounds: [0.0, 0.0],
             data: vec![],
             data_alt: vec![],
-            title: "Sensitivity Graph (Ratio = Speed_out / Speed_in)",
-            data_name: "🠠🠢 Sens".to_string(),
-            data_alt_name: "🠡🠣 Sens".to_string(),
+            title,
+            data_name,
+            data_alt_name,
         };
+
         s.update_data();
         s
     }
@@ -66,8 +67,9 @@ impl Graph {
         self.data.clear();
         self.data_alt.clear();
 
+        let params = self.context.get().params_snapshot();
         for x in (0..900).map(|x| (x as f64) * 0.1375 /* step size */) {
-            let (sens_x, sens_y) = sensitivity(x, SensitivityParams::new());
+            let (sens_x, sens_y) = sensitivity(x, &params);
             self.data.push((x, sens_x));
             if sens_x != sens_y {
                 self.data_alt.push((x, sens_y));
@@ -75,9 +77,11 @@ impl Graph {
         }
     }
 
-    /// To make the y axis bounds and labels scale with our sensitivity multiplier
-    fn auto_scaled_y_bounds(&self) -> [f64; 2] {
-        [0.0, self.sens_mult * self.output_cap * 2.0]
+    fn read_input_speed_and_resolved_sens(&self) -> (f64, SensXY) {
+        let input_speed = read_input_speed();
+        let params = self.context.get().params_snapshot();
+        debug!("last mouse move read at {} counts/ms", input_speed);
+        (input_speed, sensitivity(input_speed, &params))
     }
 }
 
@@ -93,45 +97,19 @@ impl TuiComponent for Graph {
 
     fn update(&mut self, action: &action::Action) {
         if let Action::Tick = action {
-            let (in_speed, out_sens) = read_input_speed_and_resolved_sens();
+            debug!("updating graph on tick");
+            let (in_speed, out_sens) = self.read_input_speed_and_resolved_sens();
             self.last_mouse_move = LastMouseMove {
                 in_speed,
                 out_sens_x: out_sens.0,
                 out_sens_y: out_sens.1,
             };
 
-            self.sens_mult = self
-                .context
-                .get()
-                .parameters
-                .iter()
-                .find(|p| p.param == Param::SensMult)
-                .map(|p| p.value)
-                .unwrap_or_default();
-
-            self.output_cap = self
-                .context
-                .get()
-                .parameters
-                .iter()
-                .find(|p| p.param == Param::OutputCap)
-                .map(|p| p.value)
-                .unwrap_or_default();
-
-            self.yx_ratio = self
-                .context
-                .get()
-                .parameters
-                .iter()
-                .find(|p| p.param == Param::YxRatio)
-                .map(|p| p.value)
-                .unwrap_or_default();
-
             self.update_data();
         }
     }
 
-    fn draw(&mut self, frame: &mut ratatui::Frame, area: ratatui::prelude::Rect) {
+    fn draw(&self, frame: &mut ratatui::Frame, area: ratatui::prelude::Rect) {
         let (bounds, labels) = bounds_and_labels([0.0, 128.0], 16);
         let x_axis = Axis::default()
             .title("Speed_in".magenta())
@@ -139,7 +117,7 @@ impl TuiComponent for Graph {
             .bounds(bounds)
             .labels(labels);
 
-        let (bounds, labels) = bounds_and_labels(self.auto_scaled_y_bounds(), 5);
+        let (bounds, labels) = bounds_and_labels(self.y_bounds, 5);
         let y_axis = Axis::default()
             .title("Ratio".magenta())
             .style(Style::default().white())
@@ -215,13 +193,4 @@ fn bounds_and_labels(bounds: [f64; 2], div: usize) -> ([f64; 2], Vec<Span<'stati
         .collect();
 
     (bounds, labels)
-}
-
-fn read_input_speed_and_resolved_sens() -> (f64, SensXY) {
-    let input_speed = read_input_speed();
-    debug!("last mouse move read at {} counts/ms", input_speed);
-    (
-        input_speed,
-        sensitivity(input_speed, SensitivityParams::new()),
-    )
 }

@@ -3,25 +3,34 @@ mod component;
 mod components;
 mod context;
 mod event;
+mod graph_linear;
+mod graph_natural;
+mod sens_fns;
 
 use action::Action;
 use component::TuiComponent;
-use components::Screen;
-use context::{Context, ContextRef};
+use components::{ParameterInput, Screen};
+use context::{AccelMode, ContextRef, TuiContext};
 use crossterm::{
     event::{KeyCode, KeyEventKind},
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 };
 use event::{Event, EventHandler};
+use graph_linear::LinearCurveGraph;
+use graph_natural::NaturalCurveGraph;
 use ratatui::{prelude::CrosstermBackend, Terminal};
 use tracing::debug;
 
-use crate::{inputspeed, params::Param};
+use crate::{
+    inputspeed,
+    params::{linear::ALL_LINEAR_PARAMS, natural::ALL_NATURAL_PARAMS, set_parameter, ALL_PARAMS},
+};
 
 #[derive(Debug)]
 struct App {
     context: ContextRef,
     screens: Vec<Screen>,
+    accel_mode_circ_idx: usize,
     is_running: bool,
 
     last_tick_at: Instant,
@@ -29,61 +38,111 @@ struct App {
 
 impl App {
     fn new() -> Self {
-        let context = ContextRef::new(Context {
-            parameters: vec![
-                Param::SensMult.into(),
-                Param::YxRatio.into(),
-                Param::Accel.into(),
-                Param::Offset.into(),
-                Param::OutputCap.into(),
-            ],
+        let context = ContextRef::new(TuiContext {
+            parameters: ALL_PARAMS.iter().map(|&p| (p).into()).collect(),
         });
 
-        let screen = Screen::new(context.clone());
         Self {
+            screens: vec![
+                Screen::new(
+                    AccelMode::Linear,
+                    ALL_LINEAR_PARAMS
+                        .iter()
+                        .filter_map(|&p| context.get().parameter(p).copied())
+                        .map(|param| ParameterInput::new(&param, context.clone()))
+                        .collect(),
+                    Box::new(LinearCurveGraph::new(context.clone())),
+                ),
+                Screen::new(
+                    AccelMode::Natural,
+                    ALL_NATURAL_PARAMS
+                        .iter()
+                        .filter_map(|&p| context.get().parameter(p).copied())
+                        .map(|param| ParameterInput::new(&param, context.clone()))
+                        .collect(),
+                    Box::new(NaturalCurveGraph::new(context.clone())),
+                ),
+            ],
             context,
-            screens: vec![screen],
+            accel_mode_circ_idx: 0,
             is_running: true,
             last_tick_at: Instant::now(),
         }
     }
 
     fn tick(&mut self) -> bool {
-        let do_tick = self.last_tick_at.elapsed() >= Duration::from_millis(16);
+        #[cfg(not(debug_assertions))]
+        let tick_rate = 16;
+
+        #[cfg(debug_assertions)]
+        let tick_rate = 100;
+
+        let do_tick = self.last_tick_at.elapsed() >= Duration::from_millis(tick_rate);
         do_tick.then(|| {
             self.last_tick_at = Instant::now();
         });
         do_tick
+    }
+
+    fn selected_screen_idx(&self) -> usize {
+        self.accel_mode_circ_idx % self.screens.len()
     }
 }
 
 impl App {
     fn handle_event(&mut self, event: &event::Event, actions: &mut action::Actions) {
         debug!("received event: {:?}", event);
-        if let Event::Key(key) = event {
-            if key.kind == KeyEventKind::Press && key.code == KeyCode::Char('q') {
-                self.is_running = false;
-                return;
+        if let Event::Key(crossterm::event::KeyEvent {
+            kind: KeyEventKind::Press,
+            code,
+            ..
+        }) = event
+        {
+            match code {
+                KeyCode::Char('q') => {
+                    self.is_running = false;
+                    return;
+                }
+                KeyCode::Right => {
+                    self.accel_mode_circ_idx = self.accel_mode_circ_idx.wrapping_add(1);
+                    actions.push(Action::SetMode(
+                        self.screens[self.selected_screen_idx()].accel_mode,
+                    ));
+                }
+                KeyCode::Left => {
+                    self.accel_mode_circ_idx = self.accel_mode_circ_idx.wrapping_sub(1);
+                    actions.push(Action::SetMode(
+                        self.screens[self.selected_screen_idx()].accel_mode,
+                    ));
+                }
+                _ => {}
             }
         }
 
-        for screen in self.screens.iter_mut() {
-            screen.handle_event(event, actions);
-        }
+        let screen_idx = self.selected_screen_idx();
+        let screen = &mut self.screens[screen_idx];
+        screen.handle_event(event, actions);
     }
 
     fn update(&mut self, actions: &mut Vec<action::Action>) {
         debug!("performing actions: {actions:?}");
+
         for action in actions.drain(..) {
-            for screen in self.screens.iter_mut() {
-                screen.update(&action);
+            if let Action::SetMode(accel_mode) = action {
+                set_parameter(AccelMode::PARAM_NAME, accel_mode.ordinal())
+                    .expect("Failed to set kernel param to change modes");
+                self.context.get_mut().reset_current_parameters();
             }
+
+            let screen_idx = self.selected_screen_idx();
+            let screen = &mut self.screens[screen_idx];
+            screen.update(&action);
         }
     }
 
-    fn draw(&mut self, frame: &mut ratatui::Frame, area: ratatui::prelude::Rect) {
-        let screen = &mut self.screens[0];
-        screen.draw(frame, area);
+    fn draw(&self, frame: &mut ratatui::Frame, area: ratatui::prelude::Rect) {
+        let screen_idx = self.selected_screen_idx();
+        self.screens[screen_idx].draw(frame, area);
     }
 }
 
@@ -101,16 +160,14 @@ pub fn run_tui() -> anyhow::Result<()> {
 
     let mut actions = vec![];
     while app.is_running {
-        tui.draw(&mut app)?;
-
         if let Some(event) = tui.events.next()? {
             app.handle_event(&event, &mut actions);
+            app.update(&mut actions);
         }
-
-        app.update(&mut actions);
 
         if app.tick() {
             app.update(&mut vec![Action::Tick]);
+            tui.draw(&mut app)?;
         }
     }
 
