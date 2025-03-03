@@ -4,10 +4,10 @@ use ratatui::layout::Rect;
 use ratatui::{prelude::*, widgets::*};
 use tui_input::{backend::crossterm::EventHandler, Input};
 
-use crate::params::{format_param_value, Param};
+use crate::params::Param;
 use crate::tui::action::{Action, Actions, InputAction};
 use crate::tui::component::TuiComponent;
-use crate::tui::context::ContextRef;
+use crate::tui::context::{ContextRef, Parameter};
 use crate::tui::event;
 
 #[derive(Debug, PartialEq)]
@@ -16,12 +16,10 @@ pub enum InputMode {
     Editing,
 }
 
-pub type ParamId = usize;
-
 #[derive(Debug)]
 pub struct ParameterInput {
     context: ContextRef,
-    param_id: ParamId,
+    param_tag: Param,
     input: Input,
     pub input_mode: InputMode,
     error: Option<String>,
@@ -29,19 +27,23 @@ pub struct ParameterInput {
 }
 
 impl ParameterInput {
-    pub fn new(param_id: ParamId, value: f64, context: ContextRef) -> Self {
+    pub fn new(param: &Parameter, context: ContextRef) -> Self {
         Self {
             context,
-            param_id,
+            param_tag: param.tag,
             input_mode: InputMode::Normal,
-            input: format_param_value(value).into(),
+            input: format!("{}", param.value).into(),
             error: None,
             is_selected: false,
         }
     }
 
-    fn param(&self) -> Param {
-        self.context.get().parameters[self.param_id].param
+    fn this_param(&self) -> Parameter {
+        *self
+            .context
+            .get()
+            .parameter(self.param_tag)
+            .expect("Failed to get param from context")
     }
 
     pub fn value(&self) -> &str {
@@ -54,13 +56,13 @@ impl ParameterInput {
             .parse()
             .context("should be a number")
             .and_then(|value| {
-                self.param().set(value)?;
-                Ok(value)
+                self.context
+                    .get_mut()
+                    .update_param_value(self.param_tag, value)
             });
 
         match value {
-            Ok(value) => {
-                self.context.get_mut().parameters[self.param_id].value = value;
+            Ok(_) => {
                 self.error = None;
             }
             Err(err) => {
@@ -73,8 +75,7 @@ impl ParameterInput {
     }
 
     fn reset(&mut self) {
-        let value = self.context.get().parameters[self.param_id].value;
-        self.input = format_param_value(value).into();
+        self.input = format!("{}", self.this_param().value).into();
         self.input_mode = InputMode::Normal;
     }
 }
@@ -119,6 +120,10 @@ impl TuiComponent for ParameterInput {
     }
 
     fn update(&mut self, action: &Action) {
+        if let Action::SetMode(_) = action {
+            self.reset();
+        }
+
         if !self.is_selected {
             return;
         }
@@ -134,7 +139,7 @@ impl TuiComponent for ParameterInput {
         }
     }
 
-    fn draw(&mut self, frame: &mut ratatui::Frame, area: Rect) {
+    fn draw(&self, frame: &mut ratatui::Frame, area: Rect) {
         let input_group_layout = Layout::new(
             Direction::Vertical,
             [Constraint::Min(0), Constraint::Length(2)],
@@ -157,7 +162,7 @@ impl TuiComponent for ParameterInput {
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title(self.param().display_name()),
+                    .title(self.this_param().tag.display_name()),
             );
 
         match self.input_mode {

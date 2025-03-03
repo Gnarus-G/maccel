@@ -1,3 +1,5 @@
+use super::context::AccelMode;
+
 #[derive(Debug, PartialEq)]
 pub enum InputAction {
     Enter,
@@ -11,6 +13,7 @@ pub enum Action {
     Input(InputAction),
     SelectNextInput,
     SelectPreviousInput,
+    SetMode(AccelMode),
 }
 
 pub type Actions = Vec<Action>;

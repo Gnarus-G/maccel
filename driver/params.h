@@ -1,13 +1,14 @@
 #ifndef _PARAM_H_
 #define _PARAM_H_
 
+#include "accel/mode.h"
 #include "fixedptc.h"
 #include "linux/moduleparam.h"
 
 #define RW_USER_GROUP 0664
 
-#define PARAM(param, default, desc)                                            \
-  char *PARAM_##param = #default;                                              \
+#define PARAM(param, default_value, desc)                                      \
+  char *PARAM_##param = #default_value;                                        \
   module_param_named(param, PARAM_##param, charp, RW_USER_GROUP);              \
   MODULE_PARM_DESC(param, desc);
 
@@ -25,8 +26,21 @@ PARAM(YX_RATIO, 65536, // 1 << 16
       "A factor (Y/X) by which the final sensitivity calculated is multiplied "
       "to produce the sensitivity applied to the Y axis.");
 #endif
+
 PARAM(ACCEL, 0, "Control the sensitivity calculation.");
 PARAM(OFFSET, 0, "Control the input speed past which to allow acceleration.");
 PARAM(OUTPUT_CAP, 0, "Control the maximum sensitivity.");
+
+// For Natural Mode
+PARAM(DECAY_RATE, 0, "Decay rate of the Natural curve");
+PARAM(LIMIT, 0, "Limit of the Natural curve");
+
+// Flags
+#define PARAM_FLAG(param, default_value, desc)                                 \
+  unsigned char PARAM_##param = default_value;                                 \
+  module_param_named(param, PARAM_##param, byte, RW_USER_GROUP);               \
+  MODULE_PARM_DESC(param, desc);
+
+PARAM_FLAG(MODE, linear, "Desired type of acceleration.");
 
 #endif // !_PARAM_H_

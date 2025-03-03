@@ -19,7 +19,7 @@ pub struct EventHandler {
 
 impl EventHandler {
     pub fn new() -> Self {
-        let tick_rate = std::time::Duration::from_millis(250);
+        let tick_rate = std::time::Duration::from_millis(33);
         let (tx, rx) = std::sync::mpsc::channel();
         std::thread::spawn(move || -> anyhow::Result<()> {
             loop {

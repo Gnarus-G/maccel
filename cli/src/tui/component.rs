@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use ratatui::{layout::Rect, Frame};
 
 use super::{
@@ -5,7 +7,7 @@ use super::{
     event::{Event, KeyEvent, MouseEvent},
 };
 
-pub trait TuiComponent {
+pub trait TuiComponent: Debug {
     fn handle_event(&mut self, event: &Event, actions: &mut Actions) {
         match event {
             Event::Key(key_event) => self.handle_key_event(key_event, actions),
@@ -18,5 +20,18 @@ pub trait TuiComponent {
     /// Stuff to do on any action derived from an event
     fn update(&mut self, action: &Action);
 
-    fn draw(&mut self, frame: &mut Frame, area: Rect);
+    fn draw(&self, frame: &mut Frame, area: Rect);
+}
+
+#[derive(Debug)]
+pub struct NoopComponent;
+
+impl TuiComponent for NoopComponent {
+    fn handle_key_event(&mut self, _event: &KeyEvent, _actions: &mut Actions) {}
+
+    fn handle_mouse_event(&mut self, _event: &MouseEvent, _actions: &mut Actions) {}
+
+    fn update(&mut self, _action: &Action) {}
+
+    fn draw(&self, _frame: &mut Frame, _area: Rect) {}
 }
