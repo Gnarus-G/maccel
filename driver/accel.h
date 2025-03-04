@@ -32,20 +32,14 @@ static inline struct vector sensitivity(fixedpt input_speed,
                                         struct accel_args args) {
   fixedpt sens;
 
-  dbg("nat args: %d %lli, %lli", args.tag, args.param_sens_mult,
-      args.param_yx_ratio);
-
-  dbg("nat args: %lli, %lli, %lli", args.args.natural.decay_rate,
-      args.args.natural.offset, args.args.natural.limit);
-
   switch (args.tag) {
   case natural:
-    /* dbg("nat args: %li, %li, %li", args.args.natural.decay_rate, */
-    /*     args.args.natural.offset, args.args.natural.limit); */
+    dbg("accel mode %d: natural", args.tag);
     sens = __natural_sens_fun(input_speed, args.args.natural);
     break;
   case linear:
   default:
+    dbg("accel mode %d: linear", args.tag);
     sens = __linear_sens_fun(input_speed, args.args.linear);
   }
   sens = fixedpt_mul(sens, args.param_sens_mult);

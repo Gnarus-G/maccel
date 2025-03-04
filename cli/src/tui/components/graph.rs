@@ -65,7 +65,7 @@ impl Graph {
         self.data_alt.clear();
 
         let params = self.context.get().params_snapshot();
-        for x in (0..256).map(|x| (x as f64) * 1.0 /* step size */) {
+        for x in (0..128).map(|x| (x as f64) * 1.0 /* step size */) {
             let (sens_x, sens_y) = sensitivity(x, self.context.get().current_mode, &params);
             self.data.push((x, sens_x));
             if sens_x != sens_y {
