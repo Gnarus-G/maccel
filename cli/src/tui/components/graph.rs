@@ -69,7 +69,7 @@ impl Graph {
 
         let params = self.context.get().params_snapshot();
         for x in (0..900).map(|x| (x as f64) * 0.1375 /* step size */) {
-            let (sens_x, sens_y) = sensitivity(x, &params);
+            let (sens_x, sens_y) = sensitivity(x, self.context.get().current_mode, &params);
             self.data.push((x, sens_x));
             if sens_x != sens_y {
                 self.data_alt.push((x, sens_y));
@@ -81,7 +81,10 @@ impl Graph {
         let input_speed = read_input_speed();
         let params = self.context.get().params_snapshot();
         debug!("last mouse move read at {} counts/ms", input_speed);
-        (input_speed, sensitivity(input_speed, &params))
+        (
+            input_speed,
+            sensitivity(input_speed, self.context.get().current_mode, &params),
+        )
     }
 }
 

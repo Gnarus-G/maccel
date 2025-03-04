@@ -1,4 +1,3 @@
-#include "../accel.h"
 #include <assert.h>
 #include <linux/limits.h>
 #include <stdio.h>

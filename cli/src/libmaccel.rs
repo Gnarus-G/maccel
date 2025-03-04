@@ -12,6 +12,7 @@ pub mod fixedptc {
     }
 
     #[derive(Debug, Default, Clone, Copy, PartialEq)]
+    #[repr(transparent)]
     pub struct Fixedpt(pub i64);
 
     impl From<Fixedpt> for f64 {
@@ -39,6 +40,7 @@ pub mod fixedptc {
 }
 
 pub mod c_libmaccel {
+    use super::fixedptc;
     use std::ffi::c_char;
 
     #[repr(C)]
@@ -47,15 +49,36 @@ pub mod c_libmaccel {
         pub y: i64,
     }
 
+    #[repr(C)]
+    pub struct AccelArgs {
+        pub param_sens_mult: fixedptc::Fixedpt,
+        pub param_yx_ratio: fixedptc::Fixedpt,
+        pub args: AccelArgsChoice,
+    }
+
+    #[repr(C)]
+    pub struct LinearCurveArgs {
+        pub accel: fixedptc::Fixedpt,
+        pub offset: fixedptc::Fixedpt,
+        pub output_cap: fixedptc::Fixedpt,
+    }
+
+    #[repr(C)]
+    pub struct NaturalCurveArgs {
+        pub decay_rate: fixedptc::Fixedpt,
+        pub offset: fixedptc::Fixedpt,
+        pub limit: fixedptc::Fixedpt,
+    }
+
+    #[repr(C, u8)]
+    #[allow(dead_code)]
+    pub enum AccelArgsChoice {
+        Linear(LinearCurveArgs),
+        Natural(NaturalCurveArgs),
+    }
+
     extern "C" {
-        pub fn sensitivity_rs(
-            speed_in: i64,
-            param_sens_mult: i64,
-            param_yx_ratio: i64,
-            param_accel: i64,
-            param_offset: i64,
-            param_output_cap: i64,
-        ) -> Vector;
+        pub fn sensitivity_rs(speed_in: i64, args: AccelArgs) -> Vector;
     }
 
     extern "C" {

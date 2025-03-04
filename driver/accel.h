@@ -1,66 +1,59 @@
 #ifndef _ACCEL_H_
 #define _ACCEL_H_
 
+#include "accel/linear.h"
+#include "accel/mode.h"
+#include "accel/natural.h"
 #include "dbg.h"
 #include "fixedptc.h"
+#include "math.h"
 #include "speed.h"
-#include "vector.h"
 
-static inline fixedpt minsd(fixedpt a, fixedpt b) { return (a < b) ? a : b; }
+/* #include "accel/linear.h" */
+union __accel_args {
+  struct natural_curve_args natural;
+  struct linear_curve_args linear;
+};
 
-static inline fixedpt base_fn(fixedpt x, fixedpt accel, fixedpt input_offset) {
-  fixedpt _x = x - input_offset;
-  fixedpt _x_square = fixedpt_mul(
-      _x, _x); // because linear in rawaccel is classic with exponent = 2
-  return fixedpt_mul(accel, fixedpt_div(_x_square, x));
-}
+struct accel_args {
+  fixedpt param_sens_mult;
+  fixedpt param_yx_ratio;
 
-/**
- * Sensitivity Function for Linear Acceleration
- */
-static inline fixedpt __sensitivity(fixedpt input_speed, fixedpt param_accel,
-                                    fixedpt param_offset,
-                                    fixedpt param_output_cap) {
-  if (input_speed <= param_offset) {
-    return FIXEDPT_ONE;
-  }
-
-  fixedpt sens = base_fn(input_speed, param_accel, param_offset);
-  dbg("base_fn sens               %s", fptoa(param_accel));
-
-  fixedpt sign = FIXEDPT_ONE;
-  if (param_output_cap > 0) {
-    fixedpt cap = fixedpt_sub(param_output_cap, FIXEDPT_ONE);
-    if (cap < 0) {
-      cap = -cap;
-      sign = -sign;
-    }
-    sens = minsd(sens, cap);
-  }
-
-  return fixedpt_add(FIXEDPT_ONE, fixedpt_mul(sign, sens));
-}
+  enum accel_mode tag;
+  union __accel_args args;
+};
 
 /**
  * Calculate the factor by which to multiply the input vector
  * in order to get the desired output speed.
  *
  */
-static inline struct vector
-sensitivity(fixedpt input_speed, fixedpt param_sens_mult,
-            fixedpt param_yx_ratio, fixedpt param_accel, fixedpt param_offset,
+static inline struct vector sensitivity(fixedpt input_speed,
+                                        struct accel_args args) {
+  fixedpt sens;
 
-            fixedpt param_output_cap) {
-  fixedpt sens =
-      __sensitivity(input_speed, param_accel, param_offset, param_output_cap);
-  sens = fixedpt_mul(sens, param_sens_mult);
-  return (struct vector){sens, fixedpt_mul(sens, param_yx_ratio)};
+  dbg("nat args: %d %lli, %lli", args.tag, args.param_sens_mult,
+      args.param_yx_ratio);
+
+  dbg("nat args: %lli, %lli, %lli", args.args.natural.decay_rate,
+      args.args.natural.offset, args.args.natural.limit);
+
+  switch (args.tag) {
+  case natural:
+    /* dbg("nat args: %li, %li, %li", args.args.natural.decay_rate, */
+    /*     args.args.natural.offset, args.args.natural.limit); */
+    sens = __natural_sens_fun(input_speed, args.args.natural);
+    break;
+  case linear:
+  default:
+    sens = __linear_sens_fun(input_speed, args.args.linear);
+  }
+  sens = fixedpt_mul(sens, args.param_sens_mult);
+  return (struct vector){sens, fixedpt_mul(sens, args.param_yx_ratio)};
 }
 
 static inline void f_accelerate(int *x, int *y, fixedpt time_interval_ms,
-                                fixedpt param_sens_mult, fixedpt param_yx_ratio,
-                                fixedpt param_accel, fixedpt param_offset,
-                                fixedpt param_output_cap) {
+                                struct accel_args args) {
   /* AccelResult result = {.x = 0, .y = 0}; */
 
   static fixedpt carry_x = 0;
@@ -74,8 +67,7 @@ static inline void f_accelerate(int *x, int *y, fixedpt time_interval_ms,
   dbg("in: y (fixedpt conversion) %s", fptoa(dy));
 
   fixedpt speed_in = input_speed(dx, dy, time_interval_ms);
-  struct vector sens = sensitivity(speed_in, param_sens_mult, param_yx_ratio,
-                                   param_accel, param_offset, param_output_cap);
+  struct vector sens = sensitivity(speed_in, args);
   dbg("scale x                    %s", fptoa(sens.x));
   dbg("scale y                    %s", fptoa(sens.y));
 

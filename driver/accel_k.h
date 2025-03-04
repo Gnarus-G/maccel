@@ -2,9 +2,37 @@
 #define _ACCELK_H_
 
 #include "accel.h"
+#include "accel/linear.h"
 #include "fixedptc.h"
 #include "linux/ktime.h"
 #include "params.h"
+
+static struct accel_args collect_args(void) {
+  enum accel_mode mode = PARAM_MODE;
+  struct accel_args args = {0};
+  args.tag = mode;
+
+  args.param_sens_mult = atofp(PARAM_SENS_MULT);
+  args.param_yx_ratio = atofp(PARAM_YX_RATIO);
+
+  switch (mode) {
+  case natural: {
+    struct natural_curve_args natural;
+    natural.decay_rate = atofp(PARAM_DECAY_RATE);
+    natural.offset = atofp(PARAM_OFFSET);
+    natural.limit = atofp(PARAM_LIMIT);
+    break;
+  }
+  case linear:
+  default: {
+    struct linear_curve_args linear;
+    linear.accel = atofp(PARAM_ACCEL);
+    linear.offset = atofp(PARAM_OFFSET);
+    linear.output_cap = atofp(PARAM_OUTPUT_CAP);
+  }
+  };
+  return args;
+}
 
 #if FIXEDPT_BITS == 64
 const fixedpt UNIT_PER_MS = fixedpt_rconst(1000000); // 1 million nanoseconds
@@ -40,9 +68,7 @@ static inline void accelerate(int *x, int *y) {
       fptoa(millisecond));
 #endif
 
-  return f_accelerate(x, y, millisecond, atofp(PARAM_SENS_MULT),
-                      atofp(PARAM_YX_RATIO), atofp(PARAM_ACCEL),
-                      atofp(PARAM_OFFSET), atofp(PARAM_OUTPUT_CAP));
+  return f_accelerate(x, y, millisecond, collect_args());
 }
 
 #endif // !_ACCELK_H_

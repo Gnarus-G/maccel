@@ -1,4 +1,5 @@
 #include "../dbg.h"
+#include "../fixedptc.h"
 #include "test_utils.h"
 #include <assert.h>
 #include <stdint.h>

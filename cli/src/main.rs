@@ -10,11 +10,11 @@ use clap::{CommandFactory, Parser};
 use libmaccel::fixedptc::Fixedpt;
 use params::{
     linear::ALL_LINEAR_PARAMS, natural::ALL_NATURAL_PARAMS, set_all_linear, set_all_natural,
-    CliSubcommandGetParams, CliSubcommandSetParams, GetParamsByModesSubcommands, Param,
-    SetParamByModesSubcommands,
+    set_parameter, CliSubcommandGetParams, CliSubcommandSetParams, GetParamsByModesSubcommands,
+    Param, SetParamByModesSubcommands,
 };
 use tracing::Level;
-use tui::run_tui;
+use tui::{context::AccelMode, run_tui};
 
 #[derive(Parser)]
 #[clap(author, about, version)]
@@ -59,8 +59,16 @@ fn main() -> anyhow::Result<()> {
         CLiCommands::Set { command } => match command {
             CliSubcommandSetParams::Param { name, value } => name.set(value)?,
             CliSubcommandSetParams::All { command } => match command {
-                SetParamByModesSubcommands::Linear(param_args) => set_all_linear(param_args)?,
-                SetParamByModesSubcommands::Natural(param_args) => set_all_natural(param_args)?,
+                SetParamByModesSubcommands::Linear(param_args) => {
+                    set_parameter(AccelMode::PARAM_NAME, AccelMode::Linear.ordinal())
+                        .expect("Failed to set kernel param to change modes");
+                    set_all_linear(param_args)?
+                }
+                SetParamByModesSubcommands::Natural(param_args) => {
+                    set_parameter(AccelMode::PARAM_NAME, AccelMode::Natural.ordinal())
+                        .expect("Failed to set kernel param to change modes");
+                    set_all_natural(param_args)?
+                }
             },
         },
         CLiCommands::Get { command } => match command {

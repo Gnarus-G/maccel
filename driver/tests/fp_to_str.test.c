@@ -1,8 +1,7 @@
+#include "../fixedptc.h"
 #include "test_utils.h"
 #include <assert.h>
 #include <linux/limits.h>
-#include <stdio.h>
-#include <string.h>
 #include <unistd.h>
 
 int assert_string_value(char *filename, double value) {
