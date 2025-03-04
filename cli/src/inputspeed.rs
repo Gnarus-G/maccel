@@ -12,7 +12,7 @@ use crate::libmaccel::fixedptc::Fixedpt;
 
 pub fn read_input_speed() -> f64 {
     // Safety don't care about race conditions
-    return unsafe { INPUT_SPEED };
+    unsafe { INPUT_SPEED }
 }
 
 pub fn setup_input_speed_reader() {
