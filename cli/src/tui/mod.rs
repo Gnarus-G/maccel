@@ -114,16 +114,20 @@ impl App {
                     return;
                 }
                 KeyCode::Right => {
-                    self.accel_mode_circ_idx = self.accel_mode_circ_idx.wrapping_add(1);
-                    actions.push(Action::SetMode(
-                        self.screens[self.selected_screen_idx()].accel_mode,
-                    ));
+                    if self.screens.len() > 1 {
+                        self.accel_mode_circ_idx = self.accel_mode_circ_idx.wrapping_add(1);
+                        actions.push(Action::SetMode(
+                            self.screens[self.selected_screen_idx()].accel_mode,
+                        ));
+                    }
                 }
                 KeyCode::Left => {
-                    self.accel_mode_circ_idx = self.accel_mode_circ_idx.wrapping_sub(1);
-                    actions.push(Action::SetMode(
-                        self.screens[self.selected_screen_idx()].accel_mode,
-                    ));
+                    if self.screens.len() > 1 {
+                        self.accel_mode_circ_idx = self.accel_mode_circ_idx.wrapping_sub(1);
+                        actions.push(Action::SetMode(
+                            self.screens[self.selected_screen_idx()].accel_mode,
+                        ));
+                    }
                 }
                 _ => {}
             }

@@ -48,7 +48,7 @@ impl Graph {
         data_name: String,
         data_alt_name: String,
     ) -> Self {
-        let mut s = Self {
+        Self {
             context: context.clone(),
             last_mouse_move: Default::default(),
             y_bounds: [0.0, 0.0],
@@ -57,10 +57,7 @@ impl Graph {
             title,
             data_name,
             data_alt_name,
-        };
-
-        s.update_data();
-        s
+        }
     }
 
     fn update_data(&mut self) {
@@ -68,7 +65,7 @@ impl Graph {
         self.data_alt.clear();
 
         let params = self.context.get().params_snapshot();
-        for x in (0..900).map(|x| (x as f64) * 0.1375 /* step size */) {
+        for x in (0..256).map(|x| (x as f64) * 1.0 /* step size */) {
             let (sens_x, sens_y) = sensitivity(x, self.context.get().current_mode, &params);
             self.data.push((x, sens_x));
             if sens_x != sens_y {
@@ -86,6 +83,15 @@ impl Graph {
             sensitivity(input_speed, self.context.get().current_mode, &params),
         )
     }
+
+    fn update_last_move(&mut self) {
+        let (in_speed, out_sens) = self.read_input_speed_and_resolved_sens();
+        self.last_mouse_move = LastMouseMove {
+            in_speed,
+            out_sens_x: out_sens.0,
+            out_sens_y: out_sens.1,
+        };
+    }
 }
 
 impl TuiComponent for Graph {
@@ -101,13 +107,7 @@ impl TuiComponent for Graph {
     fn update(&mut self, action: &action::Action) {
         if let Action::Tick = action {
             debug!("updating graph on tick");
-            let (in_speed, out_sens) = self.read_input_speed_and_resolved_sens();
-            self.last_mouse_move = LastMouseMove {
-                in_speed,
-                out_sens_x: out_sens.0,
-                out_sens_y: out_sens.1,
-            };
-
+            self.update_last_move();
             self.update_data();
         }
     }
@@ -142,8 +142,12 @@ impl TuiComponent for Graph {
                 .data(&self.data),
             // current instance of user input speed and output sensitivity
             Dataset::default()
-                .name("• Current")
-                .marker(symbols::Marker::Braille)
+                .name(format!(
+                    "• ({:.3}, {:.3})",
+                    self.last_mouse_move.in_speed, self.last_mouse_move.out_sens_x
+                ))
+                .marker(symbols::Marker::Dot)
+                .graph_type(GraphType::Scatter)
                 .style(Style::default().red())
                 .data(highlight_point_x),
         ];
@@ -154,19 +158,18 @@ impl TuiComponent for Graph {
                     .name(self.data_alt_name.clone())
                     .marker(symbols::Marker::Braille)
                     .graph_type(GraphType::Line)
-                    .style(if self.data_alt.is_empty() {
-                        Style::default().green()
-                    } else {
-                        Style::default().yellow()
-                    })
+                    .style(Style::default().yellow())
                     .data(&self.data_alt),
             );
 
             chart_plots.push(
                 Dataset::default()
-                    .name("• Current")
-                    .marker(symbols::Marker::Braille)
-                    .style(Style::default().blue())
+                    .name(format!(
+                        "• ({:.3}, {:.3})",
+                        self.last_mouse_move.in_speed, self.last_mouse_move.out_sens_y
+                    ))
+                    .marker(symbols::Marker::Dot)
+                    .style(Style::default().blue().bold())
                     .data(highlight_point_y),
             );
         }
