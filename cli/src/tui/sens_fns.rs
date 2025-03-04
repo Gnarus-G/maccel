@@ -35,8 +35,8 @@ pub type SensXY = (f64, f64);
 
 /// Ratio of Output speed to Input speed
 pub fn sensitivity(s_in: f64, mode: AccelMode, params: &AllParamArgs) -> SensXY {
-    let s_in: Fixedpt = s_in.into();
-    let sens = unsafe { c_libmaccel::sensitivity_rs(s_in.0, params.convert_to_accel_args(mode)) };
+    let sens =
+        unsafe { c_libmaccel::sensitivity_rs(s_in.into(), params.convert_to_accel_args(mode)) };
     let ratio_x: f64 = Fixedpt(sens.x).into();
     let ratio_y: f64 = Fixedpt(sens.y).into();
 

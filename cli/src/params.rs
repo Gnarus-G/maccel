@@ -7,6 +7,7 @@ use std::{
     fs::File,
     io::Read,
     path::{Path, PathBuf},
+    str::FromStr,
 };
 
 const SYS_MODULE_PATH: &str = "/sys/module/maccel";
@@ -129,7 +130,12 @@ impl Param {
     }
 
     pub fn get(&self) -> anyhow::Result<Fixedpt> {
-        get_paramater(self.name()).map(Fixedpt)
+        let value = get_paramater(self.name())?;
+        let value = Fixedpt::from_str(&value).context(format!(
+            "couldn't interpret the parameter's value {}",
+            value
+        ))?;
+        Ok(value)
     }
 
     /// The canonical name of the parameter, as defined by the kernel module,
@@ -156,10 +162,6 @@ impl Param {
             Param::DecayRate => "Decay-Rate",
             Param::Limit => "Limit",
         }
-    }
-
-    fn path(&self) -> anyhow::Result<PathBuf> {
-        parameter_path(self.name())
     }
 }
 
@@ -188,7 +190,7 @@ fn save_parameter_reset_script(name: &'static str, value: i64) -> anyhow::Result
     Ok(())
 }
 
-pub fn get_paramater(name: &'static str) -> anyhow::Result<i64> {
+pub fn get_paramater(name: &'static str) -> anyhow::Result<String> {
     let path = parameter_path(name)?;
     let mut file = File::open(&path)
         .context(anyhow!(
@@ -202,12 +204,7 @@ pub fn get_paramater(name: &'static str) -> anyhow::Result<i64> {
     file.read_to_string(&mut buf)
         .context("failed to read the parameter's value")?;
 
-    let value: i64 = buf
-        .trim()
-        .parse()
-        .context(format!("couldn't interpret the parameter's value {}", buf))?;
-
-    Ok(value)
+    Ok(buf)
 }
 
 pub fn set_parameter(name: &'static str, value: i64) -> anyhow::Result<()> {
