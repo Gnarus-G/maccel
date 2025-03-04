@@ -24,12 +24,16 @@ static inline fixedpt linear_base_fn(fixedpt x, fixedpt accel,
  */
 static inline fixedpt __linear_sens_fun(fixedpt input_speed,
                                         struct linear_curve_args args) {
+  dbg("linear: accel             %s", fptoa(args.accel));
+  dbg("linear: offset            %s", fptoa(args.offset));
+  dbg("linear: output_cap        %s", fptoa(args.output_cap));
+
   if (input_speed <= args.offset) {
     return FIXEDPT_ONE;
   }
 
   fixedpt sens = linear_base_fn(input_speed, args.accel, args.offset);
-  /* dbg("linear: base_fn sens               %s", fptoa(args.accel)); */
+  dbg("linear: base_fn sens       %s", fptoa(args.accel));
 
   fixedpt sign = FIXEDPT_ONE;
   if (args.output_cap > 0) {

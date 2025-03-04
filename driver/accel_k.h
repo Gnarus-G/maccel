@@ -6,32 +6,32 @@
 #include "fixedptc.h"
 #include "linux/ktime.h"
 #include "params.h"
+#include "speed.h"
 
 static struct accel_args collect_args(void) {
-  enum accel_mode mode = PARAM_MODE;
-  struct accel_args args = {0};
-  args.tag = mode;
+  struct accel_args accel = {0};
 
-  args.param_sens_mult = atofp(PARAM_SENS_MULT);
-  args.param_yx_ratio = atofp(PARAM_YX_RATIO);
+  enum accel_mode mode = PARAM_MODE;
+  accel.tag = mode;
+
+  accel.param_sens_mult = atofp(PARAM_SENS_MULT);
+  accel.param_yx_ratio = atofp(PARAM_YX_RATIO);
 
   switch (mode) {
   case natural: {
-    struct natural_curve_args natural;
-    natural.decay_rate = atofp(PARAM_DECAY_RATE);
-    natural.offset = atofp(PARAM_OFFSET);
-    natural.limit = atofp(PARAM_LIMIT);
+    accel.args.natural.decay_rate = atofp(PARAM_DECAY_RATE);
+    accel.args.natural.offset = atofp(PARAM_OFFSET);
+    accel.args.natural.limit = atofp(PARAM_LIMIT);
     break;
   }
   case linear:
   default: {
-    struct linear_curve_args linear;
-    linear.accel = atofp(PARAM_ACCEL);
-    linear.offset = atofp(PARAM_OFFSET);
-    linear.output_cap = atofp(PARAM_OUTPUT_CAP);
+    accel.args.linear.accel = atofp(PARAM_ACCEL);
+    accel.args.linear.offset = atofp(PARAM_OFFSET);
+    accel.args.linear.output_cap = atofp(PARAM_OUTPUT_CAP);
   }
   };
-  return args;
+  return accel;
 }
 
 #if FIXEDPT_BITS == 64
