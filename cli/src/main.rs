@@ -59,17 +59,13 @@ fn main() -> anyhow::Result<()> {
         CLiCommands::Set { command } => match command {
             CliSubcommandSetParams::Param { name, value } => name.set(value)?,
             CliSubcommandSetParams::All { command } => match command {
-                SetParamByModesSubcommands::Linear(param_args) => {
-                    set_parameter(AccelMode::PARAM_NAME, AccelMode::Linear.ordinal())
-                        .expect("Failed to set kernel param to change modes");
-                    set_all_linear(param_args)?
-                }
-                SetParamByModesSubcommands::Natural(param_args) => {
-                    set_parameter(AccelMode::PARAM_NAME, AccelMode::Natural.ordinal())
-                        .expect("Failed to set kernel param to change modes");
-                    set_all_natural(param_args)?
-                }
+                SetParamByModesSubcommands::Linear(param_args) => set_all_linear(param_args)?,
+                SetParamByModesSubcommands::Natural(param_args) => set_all_natural(param_args)?,
             },
+            CliSubcommandSetParams::Mode { mode } => {
+                set_parameter(AccelMode::PARAM_NAME, mode.ordinal())
+                    .expect("Failed to set kernel param to change modes");
+            }
         },
         CLiCommands::Get { command } => match command {
             CliSubcommandGetParams::Param { name } => {

@@ -1,4 +1,5 @@
 use crate::libmaccel::fixedptc::Fixedpt;
+use crate::tui::context::AccelMode;
 use anyhow::{anyhow, Context};
 use clap::ValueEnum;
 use paste::paste;
@@ -58,6 +59,8 @@ macro_rules! declare_params {
             pub enum CliSubcommandSetParams {
                 /// Set the value for a single parameter
                 Param { name: super::Param, value: f64 },
+                /// Set the acceleration mode (curve)
+                Mode { mode: AccelMode },
                 /// Set the values for all parameters for a curve in order
                 All {
                     #[clap(subcommand)]
