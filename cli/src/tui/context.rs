@@ -31,8 +31,7 @@ impl Parameter {
         self.value = self
             .tag
             .get()
-            .expect("failed to read and initialize a parameter's value")
-            .into();
+            .expect("failed to read and initialize a parameter's value");
     }
 }
 
@@ -46,7 +45,7 @@ impl From<Param> for Parameter {
     }
 }
 
-#[derive(Debug, Default, PartialEq, Clone, Copy)]
+#[derive(Debug, Default, PartialEq, Clone, Copy, clap::ValueEnum)]
 #[repr(C)]
 pub enum AccelMode {
     #[default]
