@@ -1,7 +1,7 @@
 mod action;
 mod component;
 mod components;
-mod context;
+pub mod context;
 mod event;
 mod graph_linear;
 mod graph_natural;
@@ -23,7 +23,10 @@ use tracing::debug;
 
 use crate::{
     inputspeed,
-    params::{linear::ALL_LINEAR_PARAMS, natural::ALL_NATURAL_PARAMS, set_parameter, ALL_PARAMS},
+    params::{
+        get_paramater, linear::ALL_LINEAR_PARAMS, natural::ALL_NATURAL_PARAMS, set_parameter,
+        ALL_PARAMS,
+    },
 };
 
 #[derive(Debug)]
@@ -39,6 +42,13 @@ struct App {
 impl App {
     fn new() -> Self {
         let context = ContextRef::new(TuiContext {
+            current_mode: get_paramater(AccelMode::PARAM_NAME)
+                .map(|mode_tag| match mode_tag {
+                    0 => AccelMode::Linear,
+                    1 => AccelMode::Natural,
+                    _ => AccelMode::Linear,
+                })
+                .expect("Failed to read a kernel parameter to get the acceleration mode desired"),
             parameters: ALL_PARAMS.iter().map(|&p| (p).into()).collect(),
         });
 
@@ -63,8 +73,8 @@ impl App {
                     Box::new(NaturalCurveGraph::new(context.clone())),
                 ),
             ],
+            accel_mode_circ_idx: context.clone().get().current_mode.ordinal() as usize,
             context,
-            accel_mode_circ_idx: 0,
             is_running: true,
             last_tick_at: Instant::now(),
         }
@@ -129,6 +139,7 @@ impl App {
 
         for action in actions.drain(..) {
             if let Action::SetMode(accel_mode) = action {
+                self.context.get_mut().current_mode = accel_mode;
                 set_parameter(AccelMode::PARAM_NAME, accel_mode.ordinal())
                     .expect("Failed to set kernel param to change modes");
                 self.context.get_mut().reset_current_parameters();

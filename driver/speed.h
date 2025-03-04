@@ -3,7 +3,7 @@
 
 #include "dbg.h"
 #include "fixedptc.h"
-#include "vector.h"
+#include "math.h"
 
 /**
  * Track this to enable the UI to show the last noted

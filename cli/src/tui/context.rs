@@ -64,6 +64,7 @@ impl AccelMode {
 
 #[derive(Debug)]
 pub struct TuiContext {
+    pub current_mode: AccelMode,
     pub parameters: Vec<Parameter>,
 }
 

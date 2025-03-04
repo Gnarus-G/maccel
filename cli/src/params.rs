@@ -129,25 +129,7 @@ impl Param {
     }
 
     pub fn get(&self) -> anyhow::Result<Fixedpt> {
-        let path = self.path()?;
-        let mut file = File::open(&path)
-            .context(anyhow!(
-                "failed to open the parameter's file for reading: {}",
-                path.display()
-            ))
-            .context("this shouldn't happen unless the maccel kernel module is not installed.")?;
-
-        let mut buf = String::new();
-
-        file.read_to_string(&mut buf)
-            .context("failed to read the parameter's value")?;
-
-        let value: i64 = buf
-            .trim()
-            .parse()
-            .context(format!("couldn't interpret the parameter's value {}", buf))?;
-
-        Ok(Fixedpt(value))
+        get_paramater(self.name()).map(Fixedpt)
     }
 
     /// The canonical name of the parameter, as defined by the kernel module,
@@ -204,6 +186,28 @@ fn save_parameter_reset_script(name: &'static str, value: i64) -> anyhow::Result
     )
     .context("failed to write reset script")?;
     Ok(())
+}
+
+pub fn get_paramater(name: &'static str) -> anyhow::Result<i64> {
+    let path = parameter_path(name)?;
+    let mut file = File::open(&path)
+        .context(anyhow!(
+            "failed to open the parameter's file for reading: {}",
+            path.display()
+        ))
+        .context("this shouldn't happen unless the maccel kernel module is not installed.")?;
+
+    let mut buf = String::new();
+
+    file.read_to_string(&mut buf)
+        .context("failed to read the parameter's value")?;
+
+    let value: i64 = buf
+        .trim()
+        .parse()
+        .context(format!("couldn't interpret the parameter's value {}", buf))?;
+
+    Ok(value)
 }
 
 pub fn set_parameter(name: &'static str, value: i64) -> anyhow::Result<()> {

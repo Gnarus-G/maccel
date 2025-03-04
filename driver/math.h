@@ -1,5 +1,5 @@
-#ifndef _VECTOR_H_
-#define _VECTOR_H_
+#ifndef _MATH_H_
+#define _MATH_H_
 
 #include "fixedptc.h"
 
@@ -20,4 +20,6 @@ static inline fixedpt magnitude(struct vector v) {
   return fixedpt_sqrt(x_square_plus_y_square);
 }
 
-#endif // !_VECTOR_H_
+static inline fixedpt minsd(fixedpt a, fixedpt b) { return (a < b) ? a : b; }
+
+#endif // !_MATH_H_
