@@ -43,9 +43,9 @@ impl App {
     fn new() -> Self {
         let context = ContextRef::new(TuiContext {
             current_mode: get_paramater(AccelMode::PARAM_NAME)
-                .map(|mode_tag| match mode_tag {
-                    0 => AccelMode::Linear,
-                    1 => AccelMode::Natural,
+                .map(|mode_tag| match mode_tag.as_str() {
+                    "0" => AccelMode::Linear,
+                    "1" => AccelMode::Natural,
                     _ => AccelMode::Linear,
                 })
                 .expect("Failed to read a kernel parameter to get the acceleration mode desired"),

@@ -147,7 +147,6 @@ impl TuiComponent for Graph {
                     self.last_mouse_move.in_speed, self.last_mouse_move.out_sens_x
                 ))
                 .marker(symbols::Marker::Dot)
-                .graph_type(GraphType::Scatter)
                 .style(Style::default().red())
                 .data(highlight_point_x),
         ];
