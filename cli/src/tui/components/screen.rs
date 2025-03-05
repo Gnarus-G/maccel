@@ -61,13 +61,14 @@ impl Screen {
         self.param_idx.current()
     }
 
-    fn help_text_mode(&self) -> HelpTextMode {
-        let is_in_editing_mode = self
-            .parameters
+    pub fn is_in_editing_mode(&self) -> bool {
+        self.parameters
             .iter()
-            .any(|p| p.input_mode == InputMode::Editing);
+            .any(|p| p.input_mode == InputMode::Editing)
+    }
 
-        if is_in_editing_mode {
+    fn help_text_mode(&self) -> HelpTextMode {
+        if self.is_in_editing_mode() {
             HelpTextMode::EditMode
         } else {
             HelpTextMode::NormalMode

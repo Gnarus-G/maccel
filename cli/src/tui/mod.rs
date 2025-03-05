@@ -127,6 +127,20 @@ impl App {
         });
         do_tick
     }
+
+    fn current_screen_mut(&mut self) -> &mut Screen {
+        let screen_idx = self.screen_idx.current();
+        &mut self.screens[screen_idx]
+    }
+
+    fn current_screen(&self) -> &Screen {
+        let screen_idx = self.screen_idx.current();
+        &self.screens[screen_idx]
+    }
+
+    fn can_switch_screens(&self) -> bool {
+        self.screens.len() > 1 && !self.current_screen().is_in_editing_mode()
+    }
 }
 
 impl App {
@@ -144,32 +158,26 @@ impl App {
                     return;
                 }
                 KeyCode::Right => {
-                    if self.screens.len() > 1 {
-                        debug!("bef: {}", self.screen_idx.current());
+                    if self.can_switch_screens() {
                         self.screen_idx.forward();
                         actions.push(Action::SetMode(
                             self.screens[self.screen_idx.current()].accel_mode,
                         ));
-                        debug!("af: {}", self.screen_idx.current());
                     }
                 }
                 KeyCode::Left => {
-                    if self.screens.len() > 1 {
-                        debug!("bef: {}", self.screen_idx.current());
+                    if self.can_switch_screens() {
                         self.screen_idx.back();
                         actions.push(Action::SetMode(
                             self.screens[self.screen_idx.current()].accel_mode,
                         ));
-                        debug!("af: {}", self.screen_idx.current());
                     }
                 }
                 _ => {}
             }
         }
 
-        let screen_idx = self.screen_idx.current();
-        let screen = &mut self.screens[screen_idx];
-        screen.handle_event(event, actions);
+        self.current_screen_mut().handle_event(event, actions);
     }
 
     fn update(&mut self, actions: &mut Vec<action::Action>) {
@@ -183,15 +191,12 @@ impl App {
                 self.context.get_mut().reset_current_parameters();
             }
 
-            let screen_idx = self.screen_idx.current();
-            let screen = &mut self.screens[screen_idx];
-            screen.update(&action);
+            self.current_screen_mut().update(&action);
         }
     }
 
     fn draw(&self, frame: &mut ratatui::Frame, area: ratatui::prelude::Rect) {
-        let screen_idx = self.screen_idx.current();
-        self.screens[screen_idx].draw(frame, area);
+        self.current_screen().draw(frame, area);
     }
 }
 
