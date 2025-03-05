@@ -13,4 +13,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Test acceleration function
-        run: cd driver && make test
+        run: make test
+      - name: Test CLI
+        run: cd cli && cargo test --all
