@@ -1,10 +1,9 @@
 # maccel
 
-Linear mouse acceleration.
-![image](https://github.com/user-attachments/assets/a879f941-d9ef-49ad-9118-c67e2514de7e)
+Mouse pointer acceleration driver. A CLI tool and TUI allows you to easily edit a curve's parameters.
 
-
-## Acceleration Function
+## Linear Acceleration Function
+![image](https://github.com/user-attachments/assets/a9e42195-41f9-419a-9de9-2f7ad83604aa)
 
 $$V = \frac{\sqrt{dx_0^2 + dy_0^2}}{i}$$
 
@@ -20,6 +19,13 @@ acceleration factor.
 The more general function, which is relevant with a set input offset, is:
 
 $$(dx_f, dy_f) = (dx_0, dy_0) * (1 + a * (V - offset_in)^2 / V)$$
+
+## Other Curves
+- [X] **Natural**
+![image](https://github.com/user-attachments/assets/d14d0fa3-f762-4ad6-911c-cf564227d1ac)
+
+- [ ] **Motivity** (or Synchronous?)
+- [ ] **Look up table**
 
 ## Install
 

@@ -1,4 +1,4 @@
-## Linear Mouse Acceleration on Linux.
+## Mouse Pointer Acceleration on Linux.
 
 ### Why?
 
