@@ -30,7 +30,7 @@ impl NaturalCurveGraph {
     }
 
     fn set_graph_y_bounds(&mut self) {
-        self.graph.y_bounds = [0.0, self.sens_mult * self.limit.min(1.0) * 2.0];
+        self.graph.y_bounds = [0.0, self.sens_mult * self.limit.max(1.0) * 2.0];
     }
 }
 
