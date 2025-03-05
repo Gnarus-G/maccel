@@ -4,7 +4,7 @@ use ratatui::{prelude::*, widgets::*};
 use crate::tui::action::{Action, Actions};
 use crate::tui::component::TuiComponent;
 use crate::tui::context::AccelMode;
-use crate::tui::event;
+use crate::tui::{event, CyclingIdx};
 
 use super::param_input::InputMode;
 use super::ParameterInput;
@@ -19,7 +19,7 @@ pub enum HelpTextMode {
 #[derive(Debug)]
 pub struct Screen {
     pub accel_mode: AccelMode,
-    tab_tick: u8,
+    param_idx: CyclingIdx,
     parameters: Vec<ParameterInput>,
     preview_slot: Box<dyn TuiComponent>,
 }
@@ -40,7 +40,7 @@ impl Screen {
         preview: Box<dyn TuiComponent>,
     ) -> Self {
         let mut s = Self {
-            tab_tick: 0,
+            param_idx: CyclingIdx::new(parameters.len()),
             accel_mode: mode,
             parameters,
             preview_slot: preview,
@@ -58,7 +58,7 @@ impl Screen {
     }
 
     fn selected_parameter_index(&self) -> usize {
-        self.tab_tick as usize % self.parameters.len()
+        self.param_idx.current()
     }
 
     fn help_text_mode(&self) -> HelpTextMode {
@@ -95,15 +95,19 @@ impl TuiComponent for Screen {
     fn update(&mut self, action: &Action) {
         match action {
             Action::SelectNextInput => {
-                self.tab_tick = self.tab_tick.wrapping_add(1);
+                self.param_idx.forward();
             }
             Action::SelectPreviousInput => {
-                self.tab_tick = self.tab_tick.wrapping_sub(1);
+                self.param_idx.back();
             }
             _ => {}
         }
 
         let selected_param_idx = self.selected_parameter_index();
+        // debug!(
+        //     "selected parameter {} on current screen, tick = {}",
+        //     selected_param_idx, self.param_idx
+        // );
         for (idx, param) in self.parameters.iter_mut().enumerate() {
             param.is_selected = selected_param_idx == idx;
             param.update(action);
