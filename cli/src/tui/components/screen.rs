@@ -228,6 +228,7 @@ mod test {
             Parameter::new_with_float_value(crate::params::Param::Accel, 1.0),
         ];
         let context = ContextRef::new(crate::tui::context::TuiContext {
+            current_mode: AccelMode::Linear,
             parameters: parameters.clone(),
         });
 
@@ -276,6 +277,7 @@ mod test {
             Parameter::new_with_float_value(crate::params::Param::Accel, 1.0),
         ];
         let context = ContextRef::new(crate::tui::context::TuiContext {
+            current_mode: AccelMode::Linear,
             parameters: parameters.clone(),
         });
 
@@ -310,6 +312,7 @@ mod test {
             Parameter::new_with_float_value(crate::params::Param::Accel, 1.0),
         ];
         let context = ContextRef::new(crate::tui::context::TuiContext {
+            current_mode: AccelMode::Linear,
             parameters: parameters.clone(),
         });
 
@@ -340,7 +343,7 @@ mod test {
 
         assert_eq!(
             screen.parameters[screen.selected_parameter_index()].value(),
-            "1.000001"
+            "11" // 0's are to be trimmed from the right
         );
 
         screen.handle_event(
@@ -350,7 +353,7 @@ mod test {
 
         assert_eq!(
             screen.parameters[screen.selected_parameter_index()].value(),
-            "1.0000019"
+            "119"
         );
     }
 }
