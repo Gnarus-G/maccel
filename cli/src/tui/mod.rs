@@ -46,7 +46,7 @@ impl App {
                 .map(|mode_tag| match mode_tag.as_str() {
                     "0" => AccelMode::Linear,
                     "1" => AccelMode::Natural,
-                    _ => AccelMode::Linear,
+                    id => unimplemented!("no mode id'd with {:?} exists", id),
                 })
                 .expect("Failed to read a kernel parameter to get the acceleration mode desired"),
             parameters: ALL_PARAMS.iter().map(|&p| (p).into()).collect(),
