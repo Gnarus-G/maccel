@@ -207,7 +207,7 @@ pub fn get_paramater(name: &'static str) -> anyhow::Result<String> {
     file.read_to_string(&mut buf)
         .context("failed to read the parameter's value")?;
 
-    Ok(buf)
+    Ok(buf.trim().to_string())
 }
 
 pub fn set_parameter(name: &'static str, value: i64) -> anyhow::Result<()> {
