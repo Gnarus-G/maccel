@@ -146,7 +146,7 @@ impl TuiComponent for Graph {
                     "• ({:.3}, {:.3})",
                     self.last_mouse_move.in_speed, self.last_mouse_move.out_sens_x
                 ))
-                .marker(symbols::Marker::Dot)
+                .marker(symbols::Marker::Braille)
                 .style(Style::default().red())
                 .data(highlight_point_x),
         ];
@@ -167,7 +167,7 @@ impl TuiComponent for Graph {
                         "• ({:.3}, {:.3})",
                         self.last_mouse_move.in_speed, self.last_mouse_move.out_sens_y
                     ))
-                    .marker(symbols::Marker::Dot)
+                    .marker(symbols::Marker::Braille)
                     .style(Style::default().blue().bold())
                     .data(highlight_point_y),
             );
