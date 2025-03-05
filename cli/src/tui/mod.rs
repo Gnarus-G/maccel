@@ -30,10 +30,41 @@ use crate::{
 };
 
 #[derive(Debug)]
+pub struct CyclingIdx {
+    idx: usize,
+    n: usize,
+}
+
+impl CyclingIdx {
+    pub fn new(n: usize) -> Self {
+        Self { idx: 0, n }
+    }
+
+    pub fn current(&self) -> usize {
+        debug_assert!(self.idx < self.n);
+        self.idx
+    }
+
+    pub fn forward(&mut self) {
+        self.idx += 1;
+        if self.idx >= self.n {
+            self.idx = 0
+        }
+    }
+
+    pub fn back(&mut self) {
+        if self.idx == 0 {
+            self.idx = self.n
+        }
+        self.idx -= 1
+    }
+}
+
+#[derive(Debug)]
 struct App {
     context: ContextRef,
     screens: Vec<Screen>,
-    accel_mode_circ_idx: usize,
+    screen_idx: CyclingIdx,
     is_running: bool,
 
     last_tick_at: Instant,
@@ -73,7 +104,10 @@ impl App {
                     Box::new(NaturalCurveGraph::new(context.clone())),
                 ),
             ],
-            accel_mode_circ_idx: context.clone().get().current_mode.ordinal() as usize,
+            screen_idx: CyclingIdx {
+                idx: context.clone().get().current_mode.ordinal() as usize,
+                n: 2,
+            },
             context,
             is_running: true,
             last_tick_at: Instant::now(),
@@ -93,10 +127,6 @@ impl App {
         });
         do_tick
     }
-
-    fn selected_screen_idx(&self) -> usize {
-        self.accel_mode_circ_idx % self.screens.len()
-    }
 }
 
 impl App {
@@ -115,25 +145,29 @@ impl App {
                 }
                 KeyCode::Right => {
                     if self.screens.len() > 1 {
-                        self.accel_mode_circ_idx = self.accel_mode_circ_idx.wrapping_add(1);
+                        debug!("bef: {}", self.screen_idx.current());
+                        self.screen_idx.forward();
                         actions.push(Action::SetMode(
-                            self.screens[self.selected_screen_idx()].accel_mode,
+                            self.screens[self.screen_idx.current()].accel_mode,
                         ));
+                        debug!("af: {}", self.screen_idx.current());
                     }
                 }
                 KeyCode::Left => {
                     if self.screens.len() > 1 {
-                        self.accel_mode_circ_idx = self.accel_mode_circ_idx.wrapping_sub(1);
+                        debug!("bef: {}", self.screen_idx.current());
+                        self.screen_idx.back();
                         actions.push(Action::SetMode(
-                            self.screens[self.selected_screen_idx()].accel_mode,
+                            self.screens[self.screen_idx.current()].accel_mode,
                         ));
+                        debug!("af: {}", self.screen_idx.current());
                     }
                 }
                 _ => {}
             }
         }
 
-        let screen_idx = self.selected_screen_idx();
+        let screen_idx = self.screen_idx.current();
         let screen = &mut self.screens[screen_idx];
         screen.handle_event(event, actions);
     }
@@ -149,14 +183,14 @@ impl App {
                 self.context.get_mut().reset_current_parameters();
             }
 
-            let screen_idx = self.selected_screen_idx();
+            let screen_idx = self.screen_idx.current();
             let screen = &mut self.screens[screen_idx];
             screen.update(&action);
         }
     }
 
     fn draw(&self, frame: &mut ratatui::Frame, area: ratatui::prelude::Rect) {
-        let screen_idx = self.selected_screen_idx();
+        let screen_idx = self.screen_idx.current();
         self.screens[screen_idx].draw(frame, area);
     }
 }
