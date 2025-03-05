@@ -92,6 +92,10 @@ impl Graph {
             out_sens_y: out_sens.1,
         };
     }
+
+    fn formatted_current_point(&self, x: f64, y: f64) -> String {
+        format!("• ({:0<6.3}, {:0<6.3})", x, y)
+    }
 }
 
 impl TuiComponent for Graph {
@@ -142,9 +146,9 @@ impl TuiComponent for Graph {
                 .data(&self.data),
             // current instance of user input speed and output sensitivity
             Dataset::default()
-                .name(format!(
-                    "• ({:.3}, {:.3})",
-                    self.last_mouse_move.in_speed, self.last_mouse_move.out_sens_x
+                .name(self.formatted_current_point(
+                    self.last_mouse_move.in_speed,
+                    self.last_mouse_move.out_sens_x,
                 ))
                 .marker(symbols::Marker::Braille)
                 .style(Style::default().red())
@@ -163,9 +167,9 @@ impl TuiComponent for Graph {
 
             chart_plots.push(
                 Dataset::default()
-                    .name(format!(
-                        "• ({:.3}, {:.3})",
-                        self.last_mouse_move.in_speed, self.last_mouse_move.out_sens_y
+                    .name(self.formatted_current_point(
+                        self.last_mouse_move.in_speed,
+                        self.last_mouse_move.out_sens_y,
                     ))
                     .marker(symbols::Marker::Braille)
                     .style(Style::default().blue().bold())
