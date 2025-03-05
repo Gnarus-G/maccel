@@ -79,6 +79,28 @@ impl TuiContext {
             .find(|p| p.tag == param_id)
             .context("Unknown parameter, cannot update")?;
 
+        match param.tag {
+            Param::SensMult => {}
+            Param::YxRatio => {}
+            Param::Accel => {}
+            Param::OutputCap => {}
+            Param::Offset => {
+                if value < 0.0 {
+                    anyhow::bail!("offset cannot be less than 0");
+                }
+            }
+            Param::DecayRate => {
+                if value < 0.0 {
+                    anyhow::bail!("decay rate cannot be less than 0");
+                }
+            }
+            Param::Limit => {
+                if value < 1.0 {
+                    anyhow::bail!("limit cannot be less than 1");
+                }
+            }
+        }
+
         param.value = value.into();
         param.tag.set(value)
     }
