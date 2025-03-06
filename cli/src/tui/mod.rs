@@ -60,6 +60,16 @@ impl CyclingIdx {
     }
 }
 
+pub fn get_current_accel_mode() -> crate::tui::context::AccelMode {
+    get_paramater(AccelMode::PARAM_NAME)
+        .map(|mode_tag| match mode_tag.as_str() {
+            "0" => AccelMode::Linear,
+            "1" => AccelMode::Natural,
+            id => unimplemented!("no mode id'd with {:?} exists", id),
+        })
+        .expect("Failed to read a kernel parameter to get the acceleration mode desired")
+}
+
 #[derive(Debug)]
 struct App {
     context: ContextRef,
@@ -73,13 +83,7 @@ struct App {
 impl App {
     fn new() -> Self {
         let context = ContextRef::new(TuiContext {
-            current_mode: get_paramater(AccelMode::PARAM_NAME)
-                .map(|mode_tag| match mode_tag.as_str() {
-                    "0" => AccelMode::Linear,
-                    "1" => AccelMode::Natural,
-                    id => unimplemented!("no mode id'd with {:?} exists", id),
-                })
-                .expect("Failed to read a kernel parameter to get the acceleration mode desired"),
+            current_mode: get_current_accel_mode(),
             parameters: ALL_PARAMS.iter().map(|&p| (p).into()).collect(),
         });
 

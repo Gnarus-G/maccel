@@ -81,6 +81,8 @@ macro_rules! declare_params {
             pub enum CliSubcommandGetParams {
                 /// Get the value for a single parameter
                 Param { name: super::Param },
+                /// Get the current acceleration mode (curve)
+                Mode,
                 /// Get the values for all parameters for a curve in order
                 All {
                     /// Print the values in one line, separated by a space

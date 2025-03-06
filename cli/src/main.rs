@@ -14,7 +14,7 @@ use params::{
     Param, SetParamByModesSubcommands,
 };
 use tracing::Level;
-use tui::{context::AccelMode, run_tui};
+use tui::{context::AccelMode, get_current_accel_mode, run_tui};
 
 #[derive(Parser)]
 #[clap(author, about, version)]
@@ -85,6 +85,19 @@ fn main() -> anyhow::Result<()> {
                     print_all_params(ALL_NATURAL_PARAMS.iter(), oneline, quiet)?;
                 }
             },
+            CliSubcommandGetParams::Mode => {
+                let mode = get_current_accel_mode();
+                match mode {
+                    AccelMode::Linear => {
+                        println!("{}\n", mode.as_title());
+                        print_all_params(ALL_LINEAR_PARAMS.iter(), false, false)?;
+                    }
+                    AccelMode::Natural => {
+                        println!("{}\n", mode.as_title());
+                        print_all_params(ALL_NATURAL_PARAMS.iter(), false, false)?;
+                    }
+                }
+            }
         },
         CLiCommands::Tui => run_tui()?,
         CLiCommands::Completion { shell } => {
