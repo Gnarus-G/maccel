@@ -32,10 +32,18 @@ PARAM(OFFSET, 0, "Control the input speed past which to allow acceleration.");
 PARAM(OUTPUT_CAP, 0, "Control the maximum sensitivity.");
 
 // For Natural Mode
+
+#if FIXEDPT_BITS == 64
 PARAM(DECAY_RATE, 429496730, // 0.1 << 32
       "Decay rate of the Natural curve");
 PARAM(LIMIT, 6442450944, // 1.5 << 32
       "Limit of the Natural curve");
+#else
+PARAM(DECAY_RATE, 6554, // 0.1 << 16
+      "Decay rate of the Natural curve");
+PARAM(LIMIT, 98304, // 1.5 << 16
+      "Limit of the Natural curve");
+#endif
 
 // Flags
 #define PARAM_FLAG(param, default_value, desc)                                 \

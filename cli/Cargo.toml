@@ -26,7 +26,8 @@ tracing-subscriber = "0.3.19"
 tui-input = "*"
 
 [features]
-debug = []
+dbg = []
+long_bit_32 = []
 
 [build-dependencies]
 cc = "1.2.3"

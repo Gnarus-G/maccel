@@ -3,7 +3,7 @@ obj-m += maccel.o
 KVER ?= $(shell uname -r)
 KDIR ?= /lib/modules/$(KVER)/build
 
-override EXTRA_CFLAGS += -DFIXEDPT_BITS=$(shell getconf LONG_BIT)
+EXTRA_CFLAGS ?= -DFIXEDPT_BITS=$(shell getconf LONG_BIT)
 
 ifneq ($(CC),clang)
 	CC=gcc

@@ -10,6 +10,9 @@ fn main() {
 
     let fixedpt_bits = match ARCH {
         "x86" => "32",
+        #[cfg(feature = "long_bit_32")]
+        "x86_64" => "32",
+        #[cfg(not(feature = "long_bit_32"))]
         "x86_64" => "64",
         a => panic!("unsupported/untested architecture: {a}"),
     };
@@ -18,7 +21,7 @@ fn main() {
         .file("src/libmaccel.c")
         .define("FIXEDPT_BITS", fixedpt_bits);
 
-    if cfg!(feature = "debug") {
+    if cfg!(feature = "dbg") {
         compiler.define("DEBUG", "1");
         compiler.debug(true);
     }

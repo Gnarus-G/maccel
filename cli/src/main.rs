@@ -45,6 +45,18 @@ enum CLiCommands {
         // The shell for which to generate completions
         shell: clap_complete::Shell,
     },
+
+    #[cfg(debug_assertions)]
+    Debug {
+        #[clap(subcommand)]
+        command: DebugCommands,
+    },
+}
+
+#[cfg(debug_assertions)]
+#[derive(Debug, clap::Subcommand)]
+enum DebugCommands {
+    Print { nums: Vec<f64> },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -103,6 +115,14 @@ fn main() -> anyhow::Result<()> {
         CLiCommands::Completion { shell } => {
             clap_complete::generate(shell, &mut Cli::command(), "maccel", &mut std::io::stdout())
         }
+        #[cfg(debug_assertions)]
+        CLiCommands::Debug { command } => match command {
+            DebugCommands::Print { nums } => {
+                for n in nums {
+                    println!("{}", Fixedpt::from(n).0);
+                }
+            }
+        },
     }
 
     Ok(())
