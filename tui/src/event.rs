@@ -1,15 +1,12 @@
 use std::sync::mpsc::TryRecvError;
 
 use crossterm::event::Event as CrosstermEvent;
-
-pub use crossterm::event::KeyEvent;
-pub use crossterm::event::MouseEvent;
 use crossterm::event::MouseEventKind;
 
 #[derive(Debug)]
 pub enum Event {
-    Key(KeyEvent),
-    Mouse(MouseEvent),
+    Key(crossterm::event::KeyEvent),
+    Mouse(crossterm::event::MouseEvent),
 }
 
 #[derive(Debug)]

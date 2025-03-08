@@ -1,0 +1,17 @@
+[package]
+name = "maccel-core"
+version = "0.0.0"
+edition = "2024"
+
+[dependencies]
+anyhow.workspace = true
+clap = { workspace = true, optional = true }
+paste = { workspace = true }
+
+[features]
+dbg = []
+long_bit_32 = []
+clap = ["dep:clap"]
+
+[build-dependencies]
+cc = "1.2.3"

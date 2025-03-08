@@ -30,9 +30,10 @@ fn main() {
 
     println!("cargo:rust-link-search=static={}", out.display());
 
+    const DRIVER_DIR: &str = "../../driver";
     println!("cargo:rerun-if-changed=src/libmaccel.c");
-    println!("cargo:rerun-if-changed=../driver/accel/natural.h");
-    println!("cargo:rerun-if-changed=../driver/accel.h");
-    println!("cargo:rerun-if-changed=../driver/accel_rs.h");
-    println!("cargo:rerun-if-changed=../driver/fixedptc.h");
+    println!("cargo:rerun-if-changed={DRIVER_DIR}/accel/natural.h");
+    println!("cargo:rerun-if-changed={DRIVER_DIR}/accel.h");
+    println!("cargo:rerun-if-changed={DRIVER_DIR}/accel_rs.h");
+    println!("cargo:rerun-if-changed={DRIVER_DIR}/fixedptc.h");
 }

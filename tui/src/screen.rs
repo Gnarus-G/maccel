@@ -1,13 +1,14 @@
+use crossterm::event;
 use ratatui::layout::Rect;
 use ratatui::{prelude::*, widgets::*};
 
-use crate::tui::action::{Action, Actions};
-use crate::tui::component::TuiComponent;
-use crate::tui::context::AccelMode;
-use crate::tui::{event, CyclingIdx};
+use crate::action::{Action, Actions};
+use crate::component::TuiComponent;
+use crate::param_input::ParameterInput;
+use crate::utils::CyclingIdx;
+use maccel_core::AccelMode;
 
 use super::param_input::InputMode;
-use super::ParameterInput;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub enum HelpTextMode {
@@ -22,15 +23,6 @@ pub struct Screen {
     param_idx: CyclingIdx,
     parameters: Vec<ParameterInput>,
     preview_slot: Box<dyn TuiComponent>,
-}
-
-impl AccelMode {
-    pub fn as_title(&self) -> &'static str {
-        match self {
-            AccelMode::Linear => "Linear Acceleration",
-            AccelMode::Natural => "Natural (w/ Gain)",
-        }
-    }
 }
 
 impl Screen {
@@ -53,7 +45,7 @@ impl Screen {
 
     #[cfg(test)]
     pub fn with_no_preview(mode: AccelMode, parameters: Vec<ParameterInput>) -> Self {
-        use crate::tui::component::NoopComponent;
+        use crate::component::NoopComponent;
         Self::new(mode, parameters, Box::new(NoopComponent))
     }
 
@@ -215,24 +207,33 @@ impl TuiComponent for Screen {
 
 #[cfg(test)]
 mod test {
+    use maccel_core::{AccelMode, ContextRef};
+
     use crossterm::event::KeyCode;
 
-    use crate::tui::{
-        action::Action,
-        component::TuiComponent,
-        components::{HelpTextMode, ParameterInput},
-        context::{AccelMode, ContextRef, Parameter},
+    use crate::{
+        action::Action, component::TuiComponent, param_input::ParameterInput, screen::HelpTextMode,
     };
 
     use super::Screen;
+    use maccel_core::Param;
+
+    use maccel_core as core;
+
+    struct Parameter;
+    impl Parameter {
+        pub fn new_with_float_value(param: Param, value: f64) -> core::Parameter {
+            core::Parameter::new(param, value.into())
+        }
+    }
 
     #[test]
     fn can_select_input() {
         let parameters = vec![
-            Parameter::new_with_float_value(crate::params::Param::SensMult, 1.0),
-            Parameter::new_with_float_value(crate::params::Param::Accel, 1.0),
+            Parameter::new_with_float_value(core::Param::SensMult, 1.0),
+            Parameter::new_with_float_value(core::Param::Accel, 1.0),
         ];
-        let context = ContextRef::new(crate::tui::context::TuiContext {
+        let context = ContextRef::new(core::TuiContext {
             current_mode: AccelMode::Linear,
             parameters: parameters.clone(),
         });
@@ -249,7 +250,7 @@ mod test {
         let mut actions = vec![];
 
         screen.handle_event(
-            &crate::tui::event::Event::Key(KeyCode::Down.into()),
+            &crate::event::Event::Key(KeyCode::Down.into()),
             &mut actions,
         );
 
@@ -263,10 +264,7 @@ mod test {
 
         actions.clear();
 
-        screen.handle_event(
-            &crate::tui::event::Event::Key(KeyCode::Up.into()),
-            &mut actions,
-        );
+        screen.handle_event(&crate::event::Event::Key(KeyCode::Up.into()), &mut actions);
 
         assert_eq!(actions, vec![Action::SelectPreviousInput]);
 
@@ -278,10 +276,10 @@ mod test {
     #[test]
     fn can_show_edit_mode_help_text() {
         let parameters = vec![
-            Parameter::new_with_float_value(crate::params::Param::SensMult, 1.0),
-            Parameter::new_with_float_value(crate::params::Param::Accel, 1.0),
+            Parameter::new_with_float_value(core::Param::SensMult, 1.0),
+            Parameter::new_with_float_value(core::Param::Accel, 1.0),
         ];
-        let context = ContextRef::new(crate::tui::context::TuiContext {
+        let context = ContextRef::new(core::TuiContext {
             current_mode: AccelMode::Linear,
             parameters: parameters.clone(),
         });
@@ -297,13 +295,13 @@ mod test {
 
         let mut actions = vec![];
         screen.handle_event(
-            &crate::tui::event::Event::Key(KeyCode::Char('i').into()),
+            &crate::event::Event::Key(KeyCode::Char('i').into()),
             &mut actions,
         );
 
         assert_eq!(
             actions,
-            vec![Action::Input(crate::tui::action::InputAction::Focus)]
+            vec![Action::Input(crate::action::InputAction::Focus)]
         );
 
         screen.update(&actions[0]);
@@ -313,10 +311,10 @@ mod test {
     #[test]
     fn can_edit_input() {
         let parameters = vec![
-            Parameter::new_with_float_value(crate::params::Param::SensMult, 1.0),
-            Parameter::new_with_float_value(crate::params::Param::Accel, 1.0),
+            Parameter::new_with_float_value(core::Param::SensMult, 1.0),
+            Parameter::new_with_float_value(core::Param::Accel, 1.0),
         ];
-        let context = ContextRef::new(crate::tui::context::TuiContext {
+        let context = ContextRef::new(core::TuiContext {
             current_mode: AccelMode::Linear,
             parameters: parameters.clone(),
         });
@@ -330,18 +328,18 @@ mod test {
         let mut actions = vec![];
 
         screen.handle_event(
-            &crate::tui::event::Event::Key(KeyCode::Char('i').into()),
+            &crate::event::Event::Key(KeyCode::Char('i').into()),
             &mut actions,
         );
         assert_eq!(
             actions,
-            vec![Action::Input(crate::tui::action::InputAction::Focus)]
+            vec![Action::Input(crate::action::InputAction::Focus)]
         );
         screen.update(&actions[0]);
         actions.clear();
 
         screen.handle_event(
-            &crate::tui::event::Event::Key(KeyCode::Char('1').into()),
+            &crate::event::Event::Key(KeyCode::Char('1').into()),
             &mut actions,
         );
         assert_eq!(actions, vec![]);
@@ -352,7 +350,7 @@ mod test {
         );
 
         screen.handle_event(
-            &crate::tui::event::Event::Key(KeyCode::Char('9').into()),
+            &crate::event::Event::Key(KeyCode::Char('9').into()),
             &mut actions,
         );
 

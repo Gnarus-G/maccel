@@ -1,6 +1,6 @@
-use crate::get_param_value_from_ctx;
+use maccel_core::{get_param_value_from_ctx, ContextRef};
 
-use super::{component::TuiComponent, components::Graph, context::ContextRef};
+use crate::{component::TuiComponent, graph::Graph};
 
 #[derive(Debug)]
 pub struct NaturalCurveGraph {

@@ -1,87 +1,15 @@
-mod action;
-mod component;
-mod components;
-pub mod context;
-mod event;
-mod graph_linear;
-mod graph_natural;
-mod sens_fns;
-
-use action::Action;
-use component::TuiComponent;
-use components::{ParameterInput, Screen};
-use context::{AccelMode, ContextRef, TuiContext};
-use crossterm::{
-    event::{KeyCode, KeyEventKind},
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen},
-};
-use event::{Event, EventHandler};
-use graph_linear::LinearCurveGraph;
-use graph_natural::NaturalCurveGraph;
-use ratatui::{prelude::CrosstermBackend, Terminal};
-use tracing::debug;
-
-use crate::{
-    inputspeed,
-    params::{
-        get_paramater, linear::ALL_LINEAR_PARAMS, natural::ALL_NATURAL_PARAMS, set_parameter,
-        ALL_PARAMS,
-    },
-};
-
 #[derive(Debug)]
-pub struct CyclingIdx {
-    idx: usize,
-    n: usize,
-}
-
-impl CyclingIdx {
-    pub fn new(n: usize) -> Self {
-        Self { idx: 0, n }
-    }
-
-    pub fn current(&self) -> usize {
-        debug_assert!(self.idx < self.n);
-        self.idx
-    }
-
-    pub fn forward(&mut self) {
-        self.idx += 1;
-        if self.idx >= self.n {
-            self.idx = 0
-        }
-    }
-
-    pub fn back(&mut self) {
-        if self.idx == 0 {
-            self.idx = self.n
-        }
-        self.idx -= 1
-    }
-}
-
-pub fn get_current_accel_mode() -> crate::tui::context::AccelMode {
-    get_paramater(AccelMode::PARAM_NAME)
-        .map(|mode_tag| match mode_tag.as_str() {
-            "0" => AccelMode::Linear,
-            "1" => AccelMode::Natural,
-            id => unimplemented!("no mode id'd with {:?} exists", id),
-        })
-        .expect("Failed to read a kernel parameter to get the acceleration mode desired")
-}
-
-#[derive(Debug)]
-struct App {
+pub struct App {
     context: ContextRef,
     screens: Vec<Screen>,
     screen_idx: CyclingIdx,
-    is_running: bool,
+    pub(crate) is_running: bool,
 
     last_tick_at: Instant,
 }
 
 impl App {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let context = ContextRef::new(TuiContext {
             current_mode: get_current_accel_mode(),
             parameters: ALL_PARAMS.iter().map(|&p| (p).into()).collect(),
@@ -108,17 +36,17 @@ impl App {
                     Box::new(NaturalCurveGraph::new(context.clone())),
                 ),
             ],
-            screen_idx: CyclingIdx {
-                idx: context.clone().get().current_mode.ordinal() as usize,
-                n: 2,
-            },
+            screen_idx: CyclingIdx::new_starting_at(
+                2,
+                context.clone().get().current_mode.ordinal() as usize,
+            ),
             context,
             is_running: true,
             last_tick_at: Instant::now(),
         }
     }
 
-    fn tick(&mut self) -> bool {
+    pub(crate) fn tick(&mut self) -> bool {
         #[cfg(not(debug_assertions))]
         let tick_rate = 16;
 
@@ -148,7 +76,7 @@ impl App {
 }
 
 impl App {
-    fn handle_event(&mut self, event: &event::Event, actions: &mut action::Actions) {
+    pub(crate) fn handle_event(&mut self, event: &Event, actions: &mut Actions) {
         debug!("received event: {:?}", event);
         if let Event::Key(crossterm::event::KeyEvent {
             kind: KeyEventKind::Press,
@@ -184,7 +112,7 @@ impl App {
         self.current_screen_mut().handle_event(event, actions);
     }
 
-    fn update(&mut self, actions: &mut Vec<action::Action>) {
+    pub(crate) fn update(&mut self, actions: &mut Vec<Action>) {
         debug!("performing actions: {actions:?}");
 
         for action in actions.drain(..) {
@@ -199,51 +127,37 @@ impl App {
         }
     }
 
-    fn draw(&self, frame: &mut ratatui::Frame, area: ratatui::prelude::Rect) {
+    pub(crate) fn draw(&self, frame: &mut ratatui::Frame, area: ratatui::prelude::Rect) {
         self.current_screen().draw(frame, area);
     }
 }
 
-pub fn run_tui() -> anyhow::Result<()> {
-    let mut app = App::new();
-
-    let backend = CrosstermBackend::new(io::stdout());
-    let terminal = Terminal::new(backend)?;
-    let events = EventHandler::new();
-
-    let mut tui = Tui::new(terminal, events);
-    tui.init()?;
-
-    inputspeed::setup_input_speed_reader();
-
-    let mut actions = vec![];
-    while app.is_running {
-        if let Some(event) = tui.events.next()? {
-            app.handle_event(&event, &mut actions);
-            app.update(&mut actions);
-        }
-
-        if app.tick() {
-            app.update(&mut vec![Action::Tick]);
-            tui.draw(&mut app)?;
-        }
-    }
-
-    tui.exit()?;
-    Ok(())
-}
-
-use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
+use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
+use maccel_core::linear::ALL_LINEAR_PARAMS;
+use maccel_core::natural::ALL_NATURAL_PARAMS;
+use maccel_core::{set_parameter, AccelMode, ContextRef, TuiContext, ALL_PARAMS};
 use ratatui::backend::Backend;
+use ratatui::crossterm::event::{DisableMouseCapture, EnableMouseCapture, KeyCode, KeyEventKind};
+use ratatui::Terminal;
 use std::{io, time::Instant};
 use std::{panic, time::Duration};
+use tracing::debug;
+
+use crate::action::{Action, Actions};
+use crate::component::TuiComponent;
+use crate::event::{Event, EventHandler};
+use crate::graph_linear::LinearCurveGraph;
+use crate::graph_natural::NaturalCurveGraph;
+use crate::param_input::ParameterInput;
+use crate::screen::Screen;
+use crate::utils::{get_current_accel_mode, CyclingIdx};
 
 /// Representation of a terminal user interface.
 ///
 /// It is responsible for setting up the terminal,
 /// initializing the interface and handling the draw events.
 #[derive(Debug)]
-struct Tui<B: Backend> {
+pub struct Tui<B: Backend> {
     /// Interface to the Terminal.
     terminal: Terminal<B>,
     /// Terminal event handler.
@@ -281,7 +195,7 @@ impl<B: Backend> Tui<B> {
     /// [`Draw`]: ratatui::Terminal::draw
     /// [`rendering`]: crate::ui::render
     pub fn draw(&mut self, app: &mut App) -> anyhow::Result<()> {
-        self.terminal.draw(|frame| app.draw(frame, frame.size()))?;
+        self.terminal.draw(|frame| app.draw(frame, frame.area()))?;
         Ok(())
     }
 

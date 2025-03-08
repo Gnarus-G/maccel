@@ -1,8 +1,10 @@
 use crate::libmaccel::fixedptc::Fixedpt;
-use crate::tui::context::AccelMode;
 use anyhow::{anyhow, Context};
-use clap::ValueEnum;
 use paste::paste;
+
+#[cfg(feature = "clap")]
+use clap::ValueEnum;
+
 use std::{
     fmt::Display,
     fs::File,
@@ -15,7 +17,14 @@ const SYS_MODULE_PATH: &str = "/sys/module/maccel";
 
 macro_rules! declare_all_params {
     ($($name:tt,)+) => {
+        #[cfg(feature = "clap")]
         #[derive(Debug, Clone, Copy, ValueEnum, PartialEq)]
+        pub enum Param {
+            $($name),+
+        }
+
+        #[cfg(not(feature = "clap"))]
+        #[derive(Debug, Clone, Copy, PartialEq)]
         pub enum Param {
             $($name),+
         }
@@ -36,65 +45,75 @@ macro_rules! declare_params {
         paste! {
             $(
                 pub mod [< $mode:lower >]{
+                    #[cfg(feature = "clap")]
                     use clap::{Args};
 
                     pub const [< ALL_ $mode:upper _PARAMS >]: &[super::Param] = &[ $( super::Param::$name),+ ];
 
+                    #[cfg(feature = "clap")]
                     #[derive(Debug, Clone, Copy, Args, PartialEq)]
+                    pub struct ParamArgs {
+                        $( pub [< $name:snake:lower >]: f64 ),+
+                    }
+                    #[cfg(not(feature = "clap"))]
+                    #[derive(Debug, Clone, Copy, PartialEq)]
                     pub struct ParamArgs {
                         $( pub [< $name:snake:lower >]: f64 ),+
                     }
                 }
             )+
 
-            #[derive(clap::Subcommand)]
-            pub enum SetParamByModesSubcommands {
-                $(
-                    #[doc = "Set all the parameters for the " $mode " curve" ]
-                    $mode([< $mode:lower >]::ParamArgs),
-                )+
-            }
+            #[cfg(feature = "clap")]
+            pub mod subcommads {
+                #[derive(clap::Subcommand)]
+                pub enum SetParamByModesSubcommands {
+                    $(
+                        #[doc = "Set all the parameters for the " $mode " curve" ]
+                        $mode(super::[< $mode:lower >]::ParamArgs),
+                    )+
+                }
 
-            #[derive(clap::Subcommand)]
-            pub enum CliSubcommandSetParams {
-                /// Set the value for a single parameter
-                Param { name: super::Param, value: f64 },
-                /// Set the acceleration mode (curve)
-                Mode { mode: AccelMode },
-                /// Set the values for all parameters for a curve in order
-                All {
-                    #[clap(subcommand)]
-                    command: SetParamByModesSubcommands
-                },
-            }
+                #[derive(clap::Subcommand)]
+                pub enum CliSubcommandSetParams {
+                    /// Set the value for a single parameter
+                    Param { name: crate::params::Param, value: f64 },
+                    /// Set the acceleration mode (curve)
+                    Mode { mode: crate::context::AccelMode },
+                    /// Set the values for all parameters for a curve in order
+                    All {
+                        #[clap(subcommand)]
+                        command: SetParamByModesSubcommands
+                    },
+                }
 
-            #[derive(clap::Subcommand)]
-            pub enum GetParamsByModesSubcommands {
+                #[derive(clap::Subcommand)]
+                pub enum GetParamsByModesSubcommands {
 
-                $(
-                    #[doc = "Get all the parameters for the " $mode " curve" ]
-                    $mode
-                 ),+
-            }
+                    $(
+                        #[doc = "Get all the parameters for the " $mode " curve" ]
+                        $mode
+                     ),+
+                }
 
-            #[derive(clap::Subcommand)]
-            pub enum CliSubcommandGetParams {
-                /// Get the value for a single parameter
-                Param { name: super::Param },
-                /// Get the current acceleration mode (curve)
-                Mode,
-                /// Get the values for all parameters for a curve in order
-                All {
-                    /// Print the values in one line, separated by a space
-                    #[arg(long)]
-                    oneline: bool,
-                    #[arg(short, long)]
-                    /// Print only the values
-                    quiet: bool,
+                #[derive(clap::Subcommand)]
+                pub enum CliSubcommandGetParams {
+                    /// Get the value for a single parameter
+                    Param { name: crate::params::Param },
+                    /// Get the current acceleration mode (curve)
+                    Mode,
+                    /// Get the values for all parameters for a curve in order
+                    All {
+                        /// Print the values in one line, separated by a space
+                        #[arg(long)]
+                        oneline: bool,
+                        #[arg(short, long)]
+                        /// Print only the values
+                        quiet: bool,
 
-                    #[clap(subcommand)]
-                    command: GetParamsByModesSubcommands
-                },
+                        #[clap(subcommand)]
+                        command: GetParamsByModesSubcommands
+                    },
+                }
             }
         }
     };

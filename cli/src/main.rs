@@ -1,20 +1,10 @@
-mod inputspeed;
-mod libmaccel;
-mod params;
-mod tui;
-
-use std::fs::File;
-
 use anyhow::Context;
 use clap::{CommandFactory, Parser};
-use libmaccel::fixedptc::Fixedpt;
-use params::{
-    linear::ALL_LINEAR_PARAMS, natural::ALL_NATURAL_PARAMS, set_all_linear, set_all_natural,
-    set_parameter, CliSubcommandGetParams, CliSubcommandSetParams, GetParamsByModesSubcommands,
-    Param, SetParamByModesSubcommands,
+use maccel_core::{
+    fixedptc::Fixedpt, linear::ALL_LINEAR_PARAMS, natural::ALL_NATURAL_PARAMS, set_all_linear,
+    set_all_natural, set_parameter, subcommads::*, AccelMode, Param,
 };
-use tracing::Level;
-use tui::{context::AccelMode, get_current_accel_mode, run_tui};
+use maccel_tui::{get_current_accel_mode, run_tui};
 
 #[derive(Parser)]
 #[clap(author, about, version)]
@@ -62,10 +52,10 @@ enum DebugCommands {
 fn main() -> anyhow::Result<()> {
     let args = Cli::parse();
 
-    tracing_subscriber::fmt()
-        .with_max_level(Level::DEBUG)
-        .with_writer(File::create("./maccel.log")?)
-        .init();
+    // tracing_subscriber::fmt()
+    //     .with_max_level(Level::DEBUG)
+    //     .with_writer(File::create("./maccel.log")?)
+    //     .init();
 
     match args.command.unwrap_or_default() {
         CLiCommands::Set { command } => match command {

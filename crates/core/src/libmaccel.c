@@ -1,5 +1,5 @@
-#include "../../driver/accel_rs.h"
-#include "../../driver/fixedptc.h"
+#include "../../../driver/accel_rs.h"
+#include "../../../driver/fixedptc.h"
 
 char *fixedpt_to_str(fixedpt num);
 fixedpt str_to_fixedpt(char *string);

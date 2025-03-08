@@ -14,20 +14,13 @@ path = "src/main.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.79"
-clap = { version = "4.4.18", features = ["derive"] }
+anyhow = { workspace = true }
 clap_complete = "4.4.9"
-crossterm = "0.27.0"
-glob = "0.3.1"
-paste = "1.0.15"
-ratatui = "0.25.0"
-tracing = "0.1.41"
-tracing-subscriber = "0.3.19"
-tui-input = "*"
-
-[features]
-dbg = []
-long_bit_32 = []
+clap = { workspace = true }
+maccel-core = { path = "../crates/core/", features = ["clap"] }
+maccel-tui = { path = "./../tui/" }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
 
 [build-dependencies]
 cc = "1.2.3"

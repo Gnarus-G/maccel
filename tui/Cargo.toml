@@ -1,0 +1,12 @@
+[package]
+name = "maccel-tui"
+version = "0.0.0"
+edition = "2024"
+
+[dependencies]
+ratatui = "0.29.0"
+crossterm = "0.28.1"
+tui-input = "*"
+anyhow = { workspace = true }
+tracing = { workspace = true }
+maccel-core = { workspace = true }

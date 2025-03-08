@@ -22,11 +22,6 @@ impl Parameter {
         Self { tag: param, value }
     }
 
-    #[cfg(test)]
-    pub fn new_with_float_value(param: Param, value: f64) -> Self {
-        Self::new(param, value.into())
-    }
-
     fn reset(&mut self) {
         self.value = self
             .tag
@@ -42,22 +37,6 @@ impl From<Param> for Parameter {
             .expect("failed to read and initialize a parameter's value");
 
         Self::new(param, value)
-    }
-}
-
-#[derive(Debug, Default, PartialEq, Clone, Copy, clap::ValueEnum)]
-#[repr(C)]
-pub enum AccelMode {
-    #[default]
-    Linear,
-    Natural,
-}
-
-impl AccelMode {
-    pub const PARAM_NAME: &'static str = "MODE";
-
-    pub fn ordinal(&self) -> i64 {
-        (*self as i8).into()
     }
 }
 
@@ -138,7 +117,7 @@ impl TuiContext {
 #[macro_export]
 macro_rules! get_param_value_from_ctx {
     ($ctx:expr, $param_tag:tt) => {{
-        use $crate::params::Param;
+        use maccel_core::Param;
         let x = $ctx
             .get()
             .parameter(Param::$param_tag)
@@ -176,3 +155,41 @@ impl ContextRef {
         self.inner.deref().borrow_mut()
     }
 }
+
+mod mode {
+    #[cfg(feature = "clap")]
+    #[derive(Debug, Default, PartialEq, Clone, Copy, clap::ValueEnum)]
+    #[repr(C)]
+    pub enum AccelMode {
+        #[default]
+        Linear,
+        Natural,
+    }
+    #[cfg(not(feature = "clap"))]
+    #[derive(Debug, Default, PartialEq, Clone, Copy)]
+    #[repr(C)]
+    pub enum AccelMode {
+        #[default]
+        Linear,
+        Natural,
+    }
+
+    impl AccelMode {
+        pub fn as_title(&self) -> &'static str {
+            match self {
+                AccelMode::Linear => "Linear Acceleration",
+                AccelMode::Natural => "Natural (w/ Gain)",
+            }
+        }
+    }
+
+    impl AccelMode {
+        pub const PARAM_NAME: &'static str = "MODE";
+
+        pub fn ordinal(&self) -> i64 {
+            (*self as i8).into()
+        }
+    }
+}
+
+pub use mode::*;

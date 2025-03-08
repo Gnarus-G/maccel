@@ -1,14 +1,13 @@
 use anyhow::Context;
-use crossterm::event::KeyCode;
+use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::layout::Rect;
 use ratatui::{prelude::*, widgets::*};
-use tui_input::{backend::crossterm::EventHandler, Input};
+use tui_input::backend::crossterm::EventHandler;
+use tui_input::Input;
 
-use crate::params::Param;
-use crate::tui::action::{Action, Actions, InputAction};
-use crate::tui::component::TuiComponent;
-use crate::tui::context::{ContextRef, Parameter};
-use crate::tui::event;
+use crate::action::{Action, Actions, InputAction};
+use crate::component::TuiComponent;
+use maccel_core::{ContextRef, Param, Parameter};
 
 #[derive(Debug, PartialEq)]
 pub enum InputMode {
@@ -81,7 +80,7 @@ impl ParameterInput {
 }
 
 impl TuiComponent for ParameterInput {
-    fn handle_key_event(&mut self, key: &event::KeyEvent, actions: &mut Actions) {
+    fn handle_key_event(&mut self, key: &KeyEvent, actions: &mut Actions) {
         if !self.is_selected {
             return;
         }
@@ -103,7 +102,9 @@ impl TuiComponent for ParameterInput {
                 KeyCode::Enter => InputAction::Enter,
                 KeyCode::Esc => InputAction::Reset,
                 _ => {
-                    let _ = self.input.handle_event(&crossterm::event::Event::Key(*key));
+                    let _ = self
+                        .input
+                        .handle_event(&::crossterm::event::Event::Key(*key));
                     return;
                 }
             },
@@ -114,7 +115,7 @@ impl TuiComponent for ParameterInput {
 
     fn handle_mouse_event(
         &mut self,
-        _event: &crossterm::event::MouseEvent,
+        _event: &::crossterm::event::MouseEvent,
         _actions: &mut Actions,
     ) {
     }
@@ -172,7 +173,7 @@ impl TuiComponent for ParameterInput {
 
             InputMode::Editing => {
                 // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
-                frame.set_cursor(
+                frame.set_cursor_position((
                     // Put cursor past the end of the input text
                     input_layout.x
                         + ((self.input.visual_cursor()).max(input_scroll_position)
@@ -180,7 +181,7 @@ impl TuiComponent for ParameterInput {
                         + 1,
                     // Move one line down, from the border to the input line
                     input_layout.y + 1,
-                )
+                ))
             }
         }
 

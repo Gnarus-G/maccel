@@ -40,10 +40,10 @@ reinstall_debug: uninstall
 	@sudo make install_debug
 
 dev_cli:
-	cargo watch -C cli -x 'run'
+	cargo watch -x 'run'
 
 build_cli:
-	cargo build --release --manifest-path=cli/Cargo.toml
+	cargo build --bin maccel --release
 
 install_cli: build_cli
 	sudo install -m 755 `pwd`/cli/target/release/maccel /usr/local/bin/maccel

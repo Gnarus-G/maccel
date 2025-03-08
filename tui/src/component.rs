@@ -1,10 +1,11 @@
 use std::fmt::Debug;
 
+use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{layout::Rect, Frame};
 
 use super::{
     action::{Action, Actions},
-    event::{Event, KeyEvent, MouseEvent},
+    event::Event,
 };
 
 pub trait TuiComponent: Debug {

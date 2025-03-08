@@ -12,3 +12,8 @@
 
 # misc
 compile_commands.json
+
+
+# Added by cargo
+
+/target

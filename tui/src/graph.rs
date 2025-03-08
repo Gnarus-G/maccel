@@ -1,14 +1,8 @@
-use crate::{
-    inputspeed::read_input_speed,
-    tui::{
-        action::{self, Action},
-        component::TuiComponent,
-        context::ContextRef,
-        event,
-        sens_fns::{sensitivity, SensXY},
-    },
-};
+use maccel_core::{sensitivity, ContextRef, SensXY};
 
+use crate::{action, component::TuiComponent};
+
+use crossterm::event::KeyEvent;
 use ratatui::{prelude::*, widgets::*};
 use tracing::debug;
 
@@ -66,7 +60,8 @@ impl Graph {
 
         let params = self.context.get().params_snapshot();
         for x in (0..128).map(|x| (x as f64) * 1.0 /* step size */) {
-            let (sens_x, sens_y) = sensitivity(x, self.context.get().current_mode, &params);
+            let (sens_x, sens_y) =
+                maccel_core::sensitivity(x, self.context.get().current_mode, &params);
             self.data.push((x, sens_x));
             if sens_x != sens_y {
                 self.data_alt.push((x, sens_y));
@@ -75,7 +70,7 @@ impl Graph {
     }
 
     fn read_input_speed_and_resolved_sens(&self) -> (f64, SensXY) {
-        let input_speed = read_input_speed();
+        let input_speed = maccel_core::inputspeed::read_input_speed();
         let params = self.context.get().params_snapshot();
         debug!("last mouse move read at {} counts/ms", input_speed);
         (
@@ -99,7 +94,7 @@ impl Graph {
 }
 
 impl TuiComponent for Graph {
-    fn handle_key_event(&mut self, _event: &event::KeyEvent, _actions: &mut action::Actions) {}
+    fn handle_key_event(&mut self, _event: &KeyEvent, _actions: &mut action::Actions) {}
 
     fn handle_mouse_event(
         &mut self,
@@ -109,7 +104,7 @@ impl TuiComponent for Graph {
     }
 
     fn update(&mut self, action: &action::Action) {
-        if let Action::Tick = action {
+        if let action::Action::Tick = action {
             debug!("updating graph on tick");
             self.update_last_move();
             self.update_data();
