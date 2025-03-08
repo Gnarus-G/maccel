@@ -1,3 +1,25 @@
+use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
+use maccel_core::Param;
+use maccel_core::ALL_COMMON_PARAMS;
+use maccel_core::ALL_LINEAR_PARAMS;
+use maccel_core::ALL_NATURAL_PARAMS;
+use maccel_core::{set_parameter, AccelMode, ContextRef, TuiContext, ALL_PARAMS};
+use ratatui::backend::Backend;
+use ratatui::crossterm::event::{DisableMouseCapture, EnableMouseCapture, KeyCode, KeyEventKind};
+use ratatui::Terminal;
+use std::{io, time::Instant};
+use std::{panic, time::Duration};
+use tracing::debug;
+
+use crate::action::{Action, Actions};
+use crate::component::TuiComponent;
+use crate::event::{Event, EventHandler};
+use crate::graph_linear::LinearCurveGraph;
+use crate::graph_natural::NaturalCurveGraph;
+use crate::param_input::ParameterInput;
+use crate::screen::Screen;
+use crate::utils::{get_current_accel_mode, CyclingIdx};
+
 #[derive(Debug)]
 pub struct App {
     context: ContextRef,
@@ -6,6 +28,15 @@ pub struct App {
     pub(crate) is_running: bool,
 
     last_tick_at: Instant,
+}
+
+pub fn collect_inputs_for_params(params: &[Param], context: ContextRef) -> Vec<ParameterInput> {
+    ALL_COMMON_PARAMS
+        .iter()
+        .chain(params)
+        .filter_map(|&p| context.get().parameter(p).copied())
+        .map(|param| ParameterInput::new(&param, context.clone()))
+        .collect()
 }
 
 impl App {
@@ -19,20 +50,12 @@ impl App {
             screens: vec![
                 Screen::new(
                     AccelMode::Linear,
-                    ALL_LINEAR_PARAMS
-                        .iter()
-                        .filter_map(|&p| context.get().parameter(p).copied())
-                        .map(|param| ParameterInput::new(&param, context.clone()))
-                        .collect(),
+                    collect_inputs_for_params(ALL_LINEAR_PARAMS, context.clone()),
                     Box::new(LinearCurveGraph::new(context.clone())),
                 ),
                 Screen::new(
                     AccelMode::Natural,
-                    ALL_NATURAL_PARAMS
-                        .iter()
-                        .filter_map(|&p| context.get().parameter(p).copied())
-                        .map(|param| ParameterInput::new(&param, context.clone()))
-                        .collect(),
+                    collect_inputs_for_params(ALL_NATURAL_PARAMS, context.clone()),
                     Box::new(NaturalCurveGraph::new(context.clone())),
                 ),
             ],
@@ -131,26 +154,6 @@ impl App {
         self.current_screen().draw(frame, area);
     }
 }
-
-use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
-use maccel_core::linear::ALL_LINEAR_PARAMS;
-use maccel_core::natural::ALL_NATURAL_PARAMS;
-use maccel_core::{set_parameter, AccelMode, ContextRef, TuiContext, ALL_PARAMS};
-use ratatui::backend::Backend;
-use ratatui::crossterm::event::{DisableMouseCapture, EnableMouseCapture, KeyCode, KeyEventKind};
-use ratatui::Terminal;
-use std::{io, time::Instant};
-use std::{panic, time::Duration};
-use tracing::debug;
-
-use crate::action::{Action, Actions};
-use crate::component::TuiComponent;
-use crate::event::{Event, EventHandler};
-use crate::graph_linear::LinearCurveGraph;
-use crate::graph_natural::NaturalCurveGraph;
-use crate::param_input::ParameterInput;
-use crate::screen::Screen;
-use crate::utils::{get_current_accel_mode, CyclingIdx};
 
 /// Representation of a terminal user interface.
 ///

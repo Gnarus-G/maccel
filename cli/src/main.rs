@@ -1,8 +1,8 @@
 use anyhow::Context;
 use clap::{CommandFactory, Parser};
 use maccel_core::{
-    fixedptc::Fixedpt, linear::ALL_LINEAR_PARAMS, natural::ALL_NATURAL_PARAMS, set_all_linear,
-    set_all_natural, set_parameter, subcommads::*, AccelMode, Param,
+    fixedptc::Fixedpt, set_all_common, set_all_linear, set_all_natural, set_parameter,
+    subcommads::*, AccelMode, Param, ALL_COMMON_PARAMS, ALL_LINEAR_PARAMS, ALL_NATURAL_PARAMS,
 };
 use maccel_tui::{get_current_accel_mode, run_tui};
 
@@ -63,6 +63,7 @@ fn main() -> anyhow::Result<()> {
             CliSubcommandSetParams::All { command } => match command {
                 SetParamByModesSubcommands::Linear(param_args) => set_all_linear(param_args)?,
                 SetParamByModesSubcommands::Natural(param_args) => set_all_natural(param_args)?,
+                SetParamByModesSubcommands::Common(param_args) => set_all_common(param_args)?,
             },
             CliSubcommandSetParams::Mode { mode } => {
                 set_parameter(AccelMode::PARAM_NAME, mode.ordinal())
@@ -85,6 +86,9 @@ fn main() -> anyhow::Result<()> {
                 }
                 GetParamsByModesSubcommands::Natural => {
                     print_all_params(ALL_NATURAL_PARAMS.iter(), oneline, quiet)?;
+                }
+                GetParamsByModesSubcommands::Common => {
+                    print_all_params(ALL_COMMON_PARAMS.iter(), oneline, quiet)?;
                 }
             },
             CliSubcommandGetParams::Mode => {

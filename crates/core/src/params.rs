@@ -1,9 +1,7 @@
+use crate::libmaccel::fixedptc;
 use crate::libmaccel::fixedptc::Fixedpt;
 use anyhow::{anyhow, Context};
 use paste::paste;
-
-#[cfg(feature = "clap")]
-use clap::ValueEnum;
 
 use std::{
     fmt::Display,
@@ -15,61 +13,101 @@ use std::{
 
 const SYS_MODULE_PATH: &str = "/sys/module/maccel";
 
-macro_rules! declare_all_params {
-    ($($name:tt,)+) => {
-        #[cfg(feature = "clap")]
-        #[derive(Debug, Clone, Copy, ValueEnum, PartialEq)]
-        pub enum Param {
-            $($name),+
-        }
-
-        #[cfg(not(feature = "clap"))]
+/// Declare an enum for every parameter.
+macro_rules! declare_common_params {
+    ($($param:tt,)+) => {
+        #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
         #[derive(Debug, Clone, Copy, PartialEq)]
         pub enum Param {
-            $($name),+
+            $($param),+
         }
 
         paste!(
             #[derive(Debug)]
             pub struct AllParamArgs {
-                $( pub [< $name:snake:lower >]: Fixedpt ),+
+                $( pub [< $param:snake:lower >]: Fixedpt ),+
             }
         );
 
-        pub const ALL_PARAMS: &[Param] = &[ $(Param::$name),+ ];
+        pub const ALL_PARAMS: &[Param] = &[ $(Param::$param),+ ];
     };
 }
 
 macro_rules! declare_params {
-    ( $( $mode:tt { $($name:tt,)+ }, )+) => {
+    ( Common { $($common_param:tt),+$(,)? } , $( $mode:tt { $($param:tt),+$(,)? }, )+) => {
+        declare_common_params! {
+            $( $common_param, )+
+            $( $( $param, )+ )+
+        }
+
+        /// Array of all the common parameters for convenience.
+        pub const ALL_COMMON_PARAMS: &[Param] = &[ $( Param::$common_param),+ ];
+
+
+        #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
+        #[derive(Debug, Default, PartialEq, Clone, Copy)]
+        #[repr(C)]
+        pub enum AccelMode {
+            #[default]
+            $( $mode, )+
+        }
+
+        paste! {
+            /// Define the complete shape (and memory layout) of the argument
+            /// of the sensitivity function as it is expected to be in `C`
+            #[repr(C)]
+            pub struct AccelParams {
+                $( pub [< $common_param:snake:lower >] : fixedptc::Fixedpt, )+
+                pub by_mode: AccelParamsByMode,
+            }
+
+            /// Represents the tagged union of curve-specific parameters.
+            #[repr(C, u8)]
+            pub enum AccelParamsByMode {
+                $(
+                    $mode([< $mode CurveParams >] ),
+                )+
+            }
+
+            /// Represents the common parameters and their float values.
+            /// Use it to bulk set the common parameters.
+            #[cfg_attr(feature = "clap", derive(clap::Args))]
+            #[derive(Debug, Clone, Copy, PartialEq)]
+            pub struct CommonParamArgs {
+                $( pub [< $common_param:snake:lower >]: f64 ),+
+            }
+        }
+
         paste! {
             $(
-                pub mod [< $mode:lower >]{
-                    #[cfg(feature = "clap")]
-                    use clap::{Args};
+                /// Represents curve-specific parameters.
+                #[repr(C)]
+                pub struct [< $mode CurveParams >] {
+                    $( pub [< $param:snake:lower >]: fixedptc::Fixedpt ),+
+                }
 
-                    pub const [< ALL_ $mode:upper _PARAMS >]: &[super::Param] = &[ $( super::Param::$name),+ ];
+                #[doc = "Array of all parameters for the `"  $mode "` mode for convenience." ]
+                pub const [< ALL_ $mode:upper _PARAMS >]: &[Param] = &[ $( Param::$param),+ ];
 
-                    #[cfg(feature = "clap")]
-                    #[derive(Debug, Clone, Copy, Args, PartialEq)]
-                    pub struct ParamArgs {
-                        $( pub [< $name:snake:lower >]: f64 ),+
-                    }
-                    #[cfg(not(feature = "clap"))]
-                    #[derive(Debug, Clone, Copy, PartialEq)]
-                    pub struct ParamArgs {
-                        $( pub [< $name:snake:lower >]: f64 ),+
-                    }
+                #[doc = "Represents the parameters for `" $mode "` curve and their float values"]
+                /// Use it to bulk set the curve's parameters.
+                #[cfg_attr(feature = "clap", derive(clap::Args))]
+                #[derive(Debug, Clone, Copy, PartialEq)]
+                pub struct [< $mode ParamArgs >] {
+                    $( pub [< $param:snake:lower >]: f64 ),+
                 }
             )+
 
+            /// Subcommands for the CLI
             #[cfg(feature = "clap")]
             pub mod subcommads {
                 #[derive(clap::Subcommand)]
                 pub enum SetParamByModesSubcommands {
+                    /// Set all the common parameters
+                    Common(super::CommonParamArgs),
                     $(
                         #[doc = "Set all the parameters for the " $mode " curve" ]
-                        $mode(super::[< $mode:lower >]::ParamArgs),
+                        $mode(super::[< $mode ParamArgs >]),
                     )+
                 }
 
@@ -78,7 +116,7 @@ macro_rules! declare_params {
                     /// Set the value for a single parameter
                     Param { name: crate::params::Param, value: f64 },
                     /// Set the acceleration mode (curve)
-                    Mode { mode: crate::context::AccelMode },
+                    Mode { mode: crate::params::AccelMode },
                     /// Set the values for all parameters for a curve in order
                     All {
                         #[clap(subcommand)]
@@ -88,7 +126,8 @@ macro_rules! declare_params {
 
                 #[derive(clap::Subcommand)]
                 pub enum GetParamsByModesSubcommands {
-
+                    /// Get all the common parameters
+                    Common,
                     $(
                         #[doc = "Get all the parameters for the " $mode " curve" ]
                         $mode
@@ -119,32 +158,36 @@ macro_rules! declare_params {
     };
 }
 
-declare_all_params! {
-    SensMult,
-    YxRatio,
-    Accel,
-    Offset,
-    OutputCap,
-    DecayRate,
-    Limit,
-}
-
 declare_params!(
+    Common { SensMult, YxRatio },
     Linear {
-        SensMult,
-        YxRatio,
         Accel,
-        Offset,
+        OffsetLinear,
         OutputCap,
     },
     Natural {
-        SensMult,
-        YxRatio,
         DecayRate,
-        Offset,
+        OffsetNatural,
         Limit,
     },
 );
+
+impl AccelMode {
+    pub fn as_title(&self) -> &'static str {
+        match self {
+            AccelMode::Linear => "Linear Acceleration",
+            AccelMode::Natural => "Natural (w/ Gain)",
+        }
+    }
+}
+
+impl AccelMode {
+    pub const PARAM_NAME: &'static str = "MODE";
+
+    pub fn ordinal(&self) -> i64 {
+        (*self as i8).into()
+    }
+}
 
 impl Param {
     pub fn set(&self, value: f64) -> anyhow::Result<()> {
@@ -169,7 +212,8 @@ impl Param {
             Param::SensMult => "SENS_MULT",
             Param::YxRatio => "YX_RATIO",
             Param::Accel => "ACCEL",
-            Param::Offset => "OFFSET",
+            Param::OffsetLinear => "OFFSET",
+            Param::OffsetNatural => "OFFSET",
             Param::OutputCap => "OUTPUT_CAP",
             Param::DecayRate => "DECAY_RATE",
             Param::Limit => "LIMIT",
@@ -180,7 +224,8 @@ impl Param {
         match self {
             Param::SensMult => "Sens-Multiplier",
             Param::Accel => "Accel",
-            Param::Offset => "Offset",
+            Param::OffsetLinear => "Offset",
+            Param::OffsetNatural => "Offset",
             Param::OutputCap => "Output-Cap",
             Param::YxRatio => "Y/x Ratio",
             Param::DecayRate => "Decay-Rate",
@@ -244,37 +289,41 @@ pub fn set_parameter(name: &'static str, value: i64) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn set_all_linear(args: linear::ParamArgs) -> anyhow::Result<()> {
-    let linear::ParamArgs {
+pub fn set_all_common(args: CommonParamArgs) -> anyhow::Result<()> {
+    let CommonParamArgs {
         sens_mult,
         yx_ratio,
-        accel,
-        offset,
-        output_cap,
     } = args;
 
     Param::SensMult.set(sens_mult)?;
     Param::YxRatio.set(yx_ratio)?;
+
+    Ok(())
+}
+
+pub fn set_all_linear(args: LinearParamArgs) -> anyhow::Result<()> {
+    let LinearParamArgs {
+        accel,
+        offset_linear,
+        output_cap,
+    } = args;
+
     Param::Accel.set(accel)?;
-    Param::Offset.set(offset)?;
+    Param::OffsetLinear.set(offset_linear)?;
     Param::OutputCap.set(output_cap)?;
 
     Ok(())
 }
 
-pub fn set_all_natural(args: natural::ParamArgs) -> anyhow::Result<()> {
-    let natural::ParamArgs {
-        sens_mult,
-        yx_ratio,
+pub fn set_all_natural(args: NaturalParamArgs) -> anyhow::Result<()> {
+    let NaturalParamArgs {
         decay_rate,
-        offset,
         limit,
+        offset_natural,
     } = args;
 
-    Param::SensMult.set(sens_mult)?;
-    Param::YxRatio.set(yx_ratio)?;
     Param::DecayRate.set(decay_rate)?;
-    Param::Offset.set(offset)?;
+    Param::OffsetNatural.set(offset_natural)?;
     Param::Limit.set(limit)?;
 
     Ok(())

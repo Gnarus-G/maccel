@@ -53,40 +53,13 @@ pub struct Vector {
     pub y: i64,
 }
 
-#[repr(C)]
-pub struct AccelArgs {
-    pub param_sens_mult: fixedptc::Fixedpt,
-    pub param_yx_ratio: fixedptc::Fixedpt,
-    pub args: AccelArgsChoice,
-}
-
-#[repr(C)]
-pub struct LinearCurveArgs {
-    pub accel: fixedptc::Fixedpt,
-    pub offset: fixedptc::Fixedpt,
-    pub output_cap: fixedptc::Fixedpt,
-}
-
-#[repr(C)]
-pub struct NaturalCurveArgs {
-    pub decay_rate: fixedptc::Fixedpt,
-    pub offset: fixedptc::Fixedpt,
-    pub limit: fixedptc::Fixedpt,
-}
-
-#[repr(C, u8)]
-#[allow(dead_code)]
-pub enum AccelArgsChoice {
-    Linear(LinearCurveArgs),
-    Natural(NaturalCurveArgs),
-}
-
 mod c_libmaccel {
-    use super::{fixedptc, AccelArgs, Vector};
+    use super::{fixedptc, Vector};
+    use crate::params::AccelParams;
     use std::ffi::c_char;
 
     unsafe extern "C" {
-        pub fn sensitivity_rs(speed_in: fixedptc::Fixedpt, args: AccelArgs) -> Vector;
+        pub fn sensitivity_rs(speed_in: fixedptc::Fixedpt, args: AccelParams) -> Vector;
     }
 
     unsafe extern "C" {

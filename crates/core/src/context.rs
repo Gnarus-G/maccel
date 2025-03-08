@@ -9,6 +9,7 @@ use anyhow::Context;
 use crate::{
     libmaccel::fixedptc::Fixedpt,
     params::{AllParamArgs, Param},
+    AccelMode,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -63,7 +64,7 @@ impl TuiContext {
             Param::YxRatio => {}
             Param::Accel => {}
             Param::OutputCap => {}
-            Param::Offset => {
+            Param::OffsetLinear | Param::OffsetNatural => {
                 if value < 0.0 {
                     anyhow::bail!("offset cannot be less than 0");
                 }
@@ -106,7 +107,8 @@ impl TuiContext {
             sens_mult: get!(SensMult),
             yx_ratio: get!(YxRatio),
             accel: get!(Accel),
-            offset: get!(Offset),
+            offset_linear: get!(OffsetLinear),
+            offset_natural: get!(OffsetNatural),
             output_cap: get!(OutputCap),
             decay_rate: get!(DecayRate),
             limit: get!(Limit),
@@ -155,41 +157,3 @@ impl ContextRef {
         self.inner.deref().borrow_mut()
     }
 }
-
-mod mode {
-    #[cfg(feature = "clap")]
-    #[derive(Debug, Default, PartialEq, Clone, Copy, clap::ValueEnum)]
-    #[repr(C)]
-    pub enum AccelMode {
-        #[default]
-        Linear,
-        Natural,
-    }
-    #[cfg(not(feature = "clap"))]
-    #[derive(Debug, Default, PartialEq, Clone, Copy)]
-    #[repr(C)]
-    pub enum AccelMode {
-        #[default]
-        Linear,
-        Natural,
-    }
-
-    impl AccelMode {
-        pub fn as_title(&self) -> &'static str {
-            match self {
-                AccelMode::Linear => "Linear Acceleration",
-                AccelMode::Natural => "Natural (w/ Gain)",
-            }
-        }
-    }
-
-    impl AccelMode {
-        pub const PARAM_NAME: &'static str = "MODE";
-
-        pub fn ordinal(&self) -> i64 {
-            (*self as i8).into()
-        }
-    }
-}
-
-pub use mode::*;

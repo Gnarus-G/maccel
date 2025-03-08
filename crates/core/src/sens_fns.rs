@@ -1,31 +1,30 @@
 use crate::{
-    libmaccel::{
-        self, fixedptc::Fixedpt, AccelArgs, AccelArgsChoice, LinearCurveArgs, NaturalCurveArgs,
-    },
+    libmaccel::{self, fixedptc::Fixedpt},
     params::AllParamArgs,
+    AccelParams, AccelParamsByMode, LinearCurveParams, NaturalCurveParams,
 };
 
-use super::context::AccelMode;
+use crate::AccelMode;
 
 impl AllParamArgs {
-    fn convert_to_accel_args(&self, mode: AccelMode) -> AccelArgs {
-        let choice_args = match mode {
-            AccelMode::Linear => AccelArgsChoice::Linear(LinearCurveArgs {
+    fn convert_to_accel_args(&self, mode: AccelMode) -> AccelParams {
+        let params_by_mode = match mode {
+            AccelMode::Linear => AccelParamsByMode::Linear(LinearCurveParams {
                 accel: self.accel,
-                offset: self.offset,
+                offset_linear: self.offset_linear,
                 output_cap: self.output_cap,
             }),
-            AccelMode::Natural => AccelArgsChoice::Natural(NaturalCurveArgs {
+            AccelMode::Natural => AccelParamsByMode::Natural(NaturalCurveParams {
                 decay_rate: self.decay_rate,
-                offset: self.offset,
+                offset_natural: self.offset_natural,
                 limit: self.limit,
             }),
         };
 
-        AccelArgs {
-            param_sens_mult: self.sens_mult,
-            param_yx_ratio: self.yx_ratio,
-            args: choice_args,
+        AccelParams {
+            sens_mult: self.sens_mult,
+            yx_ratio: self.yx_ratio,
+            by_mode: params_by_mode,
         }
     }
 }
