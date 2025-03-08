@@ -9,6 +9,7 @@ use anyhow::Context;
 use crate::{
     libmaccel::fixedptc::Fixedpt,
     params::{AllParamArgs, Param},
+    persist::ParamStore,
     AccelMode,
 };
 
@@ -22,32 +23,32 @@ impl Parameter {
     pub fn new(param: Param, value: Fixedpt) -> Self {
         Self { tag: param, value }
     }
-
-    fn reset(&mut self) {
-        self.value = self
-            .tag
-            .get()
-            .expect("failed to read and initialize a parameter's value");
-    }
-}
-
-impl From<Param> for Parameter {
-    fn from(param: Param) -> Self {
-        let value = param
-            .get()
-            .expect("failed to read and initialize a parameter's value");
-
-        Self::new(param, value)
-    }
 }
 
 #[derive(Debug)]
-pub struct TuiContext {
+pub struct TuiContext<PS: ParamStore> {
     pub current_mode: AccelMode,
-    pub parameters: Vec<Parameter>,
+    parameters: Vec<Parameter>,
+    parameter_store: PS,
 }
 
-impl TuiContext {
+impl<PS: ParamStore> TuiContext<PS> {
+    pub fn new(parameter_store: PS, parameters: &[Param]) -> Self {
+        Self {
+            current_mode: PS::get_current_accel_mode(),
+            parameters: parameters
+                .iter()
+                .map(|&p| {
+                    let value = parameter_store
+                        .get(&p)
+                        .expect("Failed to get a param from store while initializing TuiContext");
+                    Parameter::new(p, value)
+                })
+                .collect(),
+            parameter_store,
+        }
+    }
+
     pub fn parameter(&self, param: Param) -> Option<&Parameter> {
         self.parameters.iter().find(|p| p.tag == param)
     }
@@ -82,12 +83,15 @@ impl TuiContext {
         }
 
         param.value = value.into();
-        param.tag.set(value)
+        self.parameter_store.set(param.tag, value)
     }
 
     pub fn reset_current_parameters(&mut self) {
         for p in self.parameters.iter_mut() {
-            p.reset();
+            p.value = self
+                .parameter_store
+                .get(&p.tag)
+                .expect("failed to read and initialize a parameter's value");
         }
     }
 
@@ -130,11 +134,11 @@ macro_rules! get_param_value_from_ctx {
 }
 
 #[derive(Debug)]
-pub struct ContextRef {
-    inner: Rc<RefCell<TuiContext>>,
+pub struct ContextRef<PS: ParamStore> {
+    inner: Rc<RefCell<TuiContext<PS>>>,
 }
 
-impl Clone for ContextRef {
+impl<PS: ParamStore> Clone for ContextRef<PS> {
     fn clone(&self) -> Self {
         Self {
             inner: Rc::clone(&self.inner),
@@ -142,18 +146,18 @@ impl Clone for ContextRef {
     }
 }
 
-impl ContextRef {
-    pub fn new(value: TuiContext) -> Self {
+impl<PS: ParamStore> ContextRef<PS> {
+    pub fn new(value: TuiContext<PS>) -> Self {
         Self {
             inner: Rc::new(RefCell::new(value)),
         }
     }
 
-    pub fn get(&self) -> Ref<'_, TuiContext> {
+    pub fn get(&self) -> Ref<'_, TuiContext<PS>> {
         self.inner.borrow()
     }
 
-    pub fn get_mut(&mut self) -> RefMut<TuiContext> {
+    pub fn get_mut(&mut self) -> RefMut<TuiContext<PS>> {
         self.inner.deref().borrow_mut()
     }
 }

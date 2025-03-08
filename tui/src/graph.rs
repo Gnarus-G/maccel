@@ -1,4 +1,4 @@
-use maccel_core::{sensitivity, ContextRef, SensXY};
+use maccel_core::{persist::ParamStore, sensitivity, ContextRef, SensXY};
 
 use crate::{action, component::TuiComponent};
 
@@ -24,7 +24,7 @@ impl LastMouseMove {
 }
 
 #[derive(Debug)]
-pub struct Graph {
+pub struct Graph<PS: ParamStore> {
     last_mouse_move: LastMouseMove,
     pub y_bounds: [f64; 2],
     data: Vec<(f64, f64)>,
@@ -32,12 +32,12 @@ pub struct Graph {
     title: &'static str,
     data_name: String,
     data_alt_name: String,
-    context: ContextRef,
+    context: ContextRef<PS>,
 }
 
-impl Graph {
+impl<PS: ParamStore> Graph<PS> {
     pub fn new(
-        context: ContextRef,
+        context: ContextRef<PS>,
         title: &'static str,
         data_name: String,
         data_alt_name: String,
@@ -93,7 +93,7 @@ impl Graph {
     }
 }
 
-impl TuiComponent for Graph {
+impl<PS: ParamStore> TuiComponent for Graph<PS> {
     fn handle_key_event(&mut self, _event: &KeyEvent, _actions: &mut action::Actions) {}
 
     fn handle_mouse_event(

@@ -1,10 +1,12 @@
 use anyhow::Context;
 use clap::{CommandFactory, Parser};
 use maccel_core::{
-    fixedptc::Fixedpt, set_all_common, set_all_linear, set_all_natural, set_parameter,
-    subcommads::*, AccelMode, Param, ALL_COMMON_PARAMS, ALL_LINEAR_PARAMS, ALL_NATURAL_PARAMS,
+    fixedptc::Fixedpt,
+    persist::{ParamStore, SysFsStore},
+    subcommads::*,
+    AccelMode, Param, ALL_COMMON_PARAMS, ALL_LINEAR_PARAMS, ALL_NATURAL_PARAMS,
 };
-use maccel_tui::{get_current_accel_mode, run_tui};
+use maccel_tui::run_tui;
 
 #[derive(Parser)]
 #[clap(author, about, version)]
@@ -57,22 +59,27 @@ fn main() -> anyhow::Result<()> {
     //     .with_writer(File::create("./maccel.log")?)
     //     .init();
 
+    let mut param_store = SysFsStore;
+
     match args.command.unwrap_or_default() {
         CLiCommands::Set { command } => match command {
-            CliSubcommandSetParams::Param { name, value } => name.set(value)?,
+            CliSubcommandSetParams::Param { name, value } => param_store.set(name, value)?,
             CliSubcommandSetParams::All { command } => match command {
-                SetParamByModesSubcommands::Linear(param_args) => set_all_linear(param_args)?,
-                SetParamByModesSubcommands::Natural(param_args) => set_all_natural(param_args)?,
-                SetParamByModesSubcommands::Common(param_args) => set_all_common(param_args)?,
+                SetParamByModesSubcommands::Linear(param_args) => {
+                    param_store.set_all_linear(param_args)?
+                }
+                SetParamByModesSubcommands::Natural(param_args) => {
+                    param_store.set_all_natural(param_args)?
+                }
+                SetParamByModesSubcommands::Common(param_args) => {
+                    param_store.set_all_common(param_args)?
+                }
             },
-            CliSubcommandSetParams::Mode { mode } => {
-                set_parameter(AccelMode::PARAM_NAME, mode.ordinal())
-                    .expect("Failed to set kernel param to change modes");
-            }
+            CliSubcommandSetParams::Mode { mode } => SysFsStore::set_current_accel_mode(mode),
         },
         CLiCommands::Get { command } => match command {
             CliSubcommandGetParams::Param { name } => {
-                let value = name.get()?;
+                let value = param_store.get(&name)?;
                 let string_value: &str = (&value).try_into()?;
                 println!("{}", string_value);
             }
@@ -92,7 +99,7 @@ fn main() -> anyhow::Result<()> {
                 }
             },
             CliSubcommandGetParams::Mode => {
-                let mode = get_current_accel_mode();
+                let mode = SysFsStore::get_current_accel_mode();
                 match mode {
                     AccelMode::Linear => {
                         println!("{}\n", mode.as_title());
@@ -131,7 +138,7 @@ fn print_all_params<'p>(
 
     let params = params
         .map(|p| {
-            p.get().and_then(|_p: Fixedpt| {
+            SysFsStore.get(p).and_then(|_p: Fixedpt| {
                 let value: &str = (&_p).try_into()?;
                 Ok((p.display_name(), value.to_string()))
             })

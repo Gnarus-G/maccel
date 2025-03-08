@@ -1,4 +1,7 @@
+use std::fmt::Debug;
+
 use anyhow::Context;
+use maccel_core::persist::ParamStore;
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::layout::Rect;
 use ratatui::{prelude::*, widgets::*};
@@ -16,8 +19,8 @@ pub enum InputMode {
 }
 
 #[derive(Debug)]
-pub struct ParameterInput {
-    context: ContextRef,
+pub struct ParameterInput<PS: ParamStore> {
+    context: ContextRef<PS>,
     param_tag: Param,
     input: Input,
     pub input_mode: InputMode,
@@ -25,8 +28,8 @@ pub struct ParameterInput {
     pub is_selected: bool,
 }
 
-impl ParameterInput {
-    pub fn new(param: &Parameter, context: ContextRef) -> Self {
+impl<PS: ParamStore> ParameterInput<PS> {
+    pub fn new(param: &Parameter, context: ContextRef<PS>) -> Self {
         Self {
             context,
             param_tag: param.tag,
@@ -79,7 +82,7 @@ impl ParameterInput {
     }
 }
 
-impl TuiComponent for ParameterInput {
+impl<PS: ParamStore + Debug> TuiComponent for ParameterInput<PS> {
     fn handle_key_event(&mut self, key: &KeyEvent, actions: &mut Actions) {
         if !self.is_selected {
             return;

@@ -1,5 +1,3 @@
-use maccel_core::{get_paramater, AccelMode};
-
 #[derive(Debug)]
 pub struct CyclingIdx {
     idx: usize,
@@ -35,12 +33,60 @@ impl CyclingIdx {
     }
 }
 
-pub fn get_current_accel_mode() -> AccelMode {
-    get_paramater(AccelMode::PARAM_NAME)
-        .map(|mode_tag| match mode_tag.as_str() {
-            "0" => AccelMode::Linear,
-            "1" => AccelMode::Natural,
-            id => unimplemented!("no mode id'd with {:?} exists", id),
-        })
-        .expect("Failed to read a kernel parameter to get the acceleration mode desired")
+#[cfg(test)]
+pub(crate) mod test_utils {
+    use maccel_core::{fixedptc::Fixedpt, ContextRef, Parameter};
+    use mocks::MockStore;
+
+    pub fn new_context() -> (ContextRef<MockStore>, Vec<Parameter>) {
+        let params = [
+            (maccel_core::Param::SensMult, 1.0),
+            (maccel_core::Param::Accel, 1.0),
+        ];
+
+        let params = params.map(|(p, v)| (p, Fixedpt::from(v)));
+        let context = ContextRef::new(maccel_core::TuiContext::new(
+            MockStore {
+                list: params.to_vec(),
+            },
+            &params.map(|(p, _)| p),
+        ));
+
+        (context, params.map(|(p, v)| Parameter::new(p, v)).to_vec())
+    }
+
+    mod mocks {
+        use anyhow::Context;
+        use maccel_core::{fixedptc::Fixedpt, persist::ParamStore, AccelMode, Param};
+
+        #[derive(Debug)]
+        pub struct MockStore {
+            pub list: Vec<(Param, Fixedpt)>,
+        }
+
+        impl ParamStore for MockStore {
+            fn set(&mut self, param: Param, value: f64) -> anyhow::Result<()> {
+                if !self.list.iter().any(|(p, _)| p == &param) {
+                    self.list.push((param, value.into()));
+                }
+                Ok(())
+            }
+
+            fn get(&self, param: &Param) -> anyhow::Result<Fixedpt> {
+                self.list
+                    .iter()
+                    .find(|(p, _)| p == param)
+                    .map(|(_, v)| v)
+                    .copied()
+                    .context("failed to get param")
+            }
+
+            fn set_current_accel_mode(_mode: maccel_core::AccelMode) {
+                unimplemented!()
+            }
+            fn get_current_accel_mode() -> maccel_core::AccelMode {
+                AccelMode::Linear
+            }
+        }
+    }
 }

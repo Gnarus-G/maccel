@@ -24,6 +24,24 @@ pub mod fixedptc {
         }
     }
 
+    #[cfg(test)]
+    #[test]
+    fn fixedpt_and_float_conversion_to_and_fro() {
+        macro_rules! assert_for {
+            ($value:literal) => {{
+                let fp = Fixedpt::from($value);
+                assert_eq!(f64::from(fp), $value);
+            }};
+        }
+
+        assert_for!(1.5);
+        assert_for!(4.5);
+        assert_for!(1.0);
+        assert_for!(0.0);
+        assert_for!(0.125);
+        assert_for!(0.5);
+    }
+
     impl<'a> TryFrom<&'a Fixedpt> for &'a str {
         type Error = anyhow::Error;
 

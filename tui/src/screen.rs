@@ -1,4 +1,7 @@
+use std::fmt::Debug;
+
 use crossterm::event;
+use maccel_core::persist::ParamStore;
 use ratatui::layout::Rect;
 use ratatui::{prelude::*, widgets::*};
 
@@ -18,17 +21,17 @@ pub enum HelpTextMode {
 }
 
 #[derive(Debug)]
-pub struct Screen {
+pub struct Screen<PS: ParamStore> {
     pub accel_mode: AccelMode,
     param_idx: CyclingIdx,
-    parameters: Vec<ParameterInput>,
+    parameters: Vec<ParameterInput<PS>>,
     preview_slot: Box<dyn TuiComponent>,
 }
 
-impl Screen {
+impl<PS: ParamStore> Screen<PS> {
     pub fn new(
         mode: AccelMode,
-        parameters: Vec<ParameterInput>,
+        parameters: Vec<ParameterInput<PS>>,
         preview: Box<dyn TuiComponent>,
     ) -> Self {
         let mut s = Self {
@@ -41,12 +44,6 @@ impl Screen {
         s.parameters[0].is_selected = true;
 
         s
-    }
-
-    #[cfg(test)]
-    pub fn with_no_preview(mode: AccelMode, parameters: Vec<ParameterInput>) -> Self {
-        use crate::component::NoopComponent;
-        Self::new(mode, parameters, Box::new(NoopComponent))
     }
 
     fn selected_parameter_index(&self) -> usize {
@@ -68,7 +65,7 @@ impl Screen {
     }
 }
 
-impl TuiComponent for Screen {
+impl<PS: ParamStore + Debug> TuiComponent for Screen<PS> {
     fn handle_key_event(&mut self, event: &event::KeyEvent, actions: &mut Actions) {
         let selected_param_idx = self.selected_parameter_index();
         for (idx, param) in self.parameters.iter_mut().enumerate() {
@@ -207,37 +204,28 @@ impl TuiComponent for Screen {
 
 #[cfg(test)]
 mod test {
-    use maccel_core::{AccelMode, ContextRef};
+    use maccel_core::{persist::ParamStore, AccelMode};
 
     use crossterm::event::KeyCode;
 
     use crate::{
         action::Action, component::TuiComponent, param_input::ParameterInput, screen::HelpTextMode,
+        utils::test_utils::new_context,
     };
 
     use super::Screen;
-    use maccel_core::Param;
 
-    use maccel_core as core;
-
-    struct Parameter;
-    impl Parameter {
-        pub fn new_with_float_value(param: Param, value: f64) -> core::Parameter {
-            core::Parameter::new(param, value.into())
+    impl<PS: ParamStore> Screen<PS> {
+        #[cfg(test)]
+        pub fn with_no_preview(mode: AccelMode, parameters: Vec<ParameterInput<PS>>) -> Self {
+            use crate::component::NoopComponent;
+            Self::new(mode, parameters, Box::new(NoopComponent))
         }
     }
 
     #[test]
     fn can_select_input() {
-        let parameters = vec![
-            Parameter::new_with_float_value(core::Param::SensMult, 1.0),
-            Parameter::new_with_float_value(core::Param::Accel, 1.0),
-        ];
-        let context = ContextRef::new(core::TuiContext {
-            current_mode: AccelMode::Linear,
-            parameters: parameters.clone(),
-        });
-
+        let (context, parameters) = new_context();
         let inputs = parameters
             .iter()
             .map(|p| ParameterInput::new(p, context.clone()))
@@ -275,14 +263,7 @@ mod test {
 
     #[test]
     fn can_show_edit_mode_help_text() {
-        let parameters = vec![
-            Parameter::new_with_float_value(core::Param::SensMult, 1.0),
-            Parameter::new_with_float_value(core::Param::Accel, 1.0),
-        ];
-        let context = ContextRef::new(core::TuiContext {
-            current_mode: AccelMode::Linear,
-            parameters: parameters.clone(),
-        });
+        let (context, parameters) = new_context();
 
         let inputs = parameters
             .iter()
@@ -310,14 +291,7 @@ mod test {
 
     #[test]
     fn can_edit_input() {
-        let parameters = vec![
-            Parameter::new_with_float_value(core::Param::SensMult, 1.0),
-            Parameter::new_with_float_value(core::Param::Accel, 1.0),
-        ];
-        let context = ContextRef::new(core::TuiContext {
-            current_mode: AccelMode::Linear,
-            parameters: parameters.clone(),
-        });
+        let (context, parameters) = new_context();
 
         let inputs = parameters
             .iter()

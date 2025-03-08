@@ -15,8 +15,6 @@ mod param_input;
 mod screen;
 mod utils;
 
-pub use utils::get_current_accel_mode;
-
 pub fn run_tui() -> anyhow::Result<()> {
     let mut app = app::App::new();
 

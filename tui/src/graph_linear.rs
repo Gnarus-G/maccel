@@ -1,17 +1,17 @@
-use maccel_core::{get_param_value_from_ctx, ContextRef};
+use maccel_core::{get_param_value_from_ctx, persist::ParamStore, ContextRef};
 
 use crate::{component::TuiComponent, graph::Graph};
 
 #[derive(Debug)]
-pub struct LinearCurveGraph {
-    context: ContextRef,
+pub struct LinearCurveGraph<PS: ParamStore> {
+    context: ContextRef<PS>,
     output_cap: f64,
     sens_mult: f64,
-    graph: Graph,
+    graph: Graph<PS>,
 }
 
-impl LinearCurveGraph {
-    pub fn new(context: ContextRef) -> Self {
+impl<PS: ParamStore> LinearCurveGraph<PS> {
+    pub fn new(context: ContextRef<PS>) -> Self {
         let mut s = Self {
             output_cap: get_param_value_from_ctx!(context, OutputCap).into(),
             sens_mult: get_param_value_from_ctx!(context, SensMult).into(),
@@ -35,7 +35,7 @@ impl LinearCurveGraph {
     }
 }
 
-impl TuiComponent for LinearCurveGraph {
+impl<PS: ParamStore> TuiComponent for LinearCurveGraph<PS> {
     fn handle_key_event(
         &mut self,
         event: &crossterm::event::KeyEvent,

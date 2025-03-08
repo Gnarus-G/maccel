@@ -15,4 +15,4 @@ jobs:
       - name: Test acceleration function
         run: make test
       - name: Test CLI
-        run: cd cli && cargo test --all
+        run: cargo test --all

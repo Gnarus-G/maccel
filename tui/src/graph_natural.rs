@@ -1,17 +1,17 @@
-use maccel_core::{get_param_value_from_ctx, ContextRef};
+use maccel_core::{get_param_value_from_ctx, persist::ParamStore, ContextRef};
 
 use crate::{component::TuiComponent, graph::Graph};
 
 #[derive(Debug)]
-pub struct NaturalCurveGraph {
-    context: ContextRef,
+pub struct NaturalCurveGraph<PS: ParamStore> {
+    context: ContextRef<PS>,
     limit: f64,
     sens_mult: f64,
-    graph: Graph,
+    graph: Graph<PS>,
 }
 
-impl NaturalCurveGraph {
-    pub fn new(context: ContextRef) -> Self {
+impl<PS: ParamStore> NaturalCurveGraph<PS> {
+    pub fn new(context: ContextRef<PS>) -> Self {
         let mut s = Self {
             limit: get_param_value_from_ctx!(context, Limit).into(),
             sens_mult: get_param_value_from_ctx!(context, SensMult).into(),
@@ -34,7 +34,7 @@ impl NaturalCurveGraph {
     }
 }
 
-impl TuiComponent for NaturalCurveGraph {
+impl<PS: ParamStore> TuiComponent for NaturalCurveGraph<PS> {
     fn handle_key_event(
         &mut self,
         event: &crossterm::event::KeyEvent,

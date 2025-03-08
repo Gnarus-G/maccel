@@ -1,9 +1,11 @@
 use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
+use maccel_core::persist::ParamStore;
+use maccel_core::persist::SysFsStore;
 use maccel_core::Param;
 use maccel_core::ALL_COMMON_PARAMS;
 use maccel_core::ALL_LINEAR_PARAMS;
 use maccel_core::ALL_NATURAL_PARAMS;
-use maccel_core::{set_parameter, AccelMode, ContextRef, TuiContext, ALL_PARAMS};
+use maccel_core::{AccelMode, ContextRef, TuiContext, ALL_PARAMS};
 use ratatui::backend::Backend;
 use ratatui::crossterm::event::{DisableMouseCapture, EnableMouseCapture, KeyCode, KeyEventKind};
 use ratatui::Terminal;
@@ -18,19 +20,22 @@ use crate::graph_linear::LinearCurveGraph;
 use crate::graph_natural::NaturalCurveGraph;
 use crate::param_input::ParameterInput;
 use crate::screen::Screen;
-use crate::utils::{get_current_accel_mode, CyclingIdx};
+use crate::utils::CyclingIdx;
 
 #[derive(Debug)]
 pub struct App {
-    context: ContextRef,
-    screens: Vec<Screen>,
+    context: ContextRef<SysFsStore>,
+    screens: Vec<Screen<SysFsStore>>,
     screen_idx: CyclingIdx,
     pub(crate) is_running: bool,
 
     last_tick_at: Instant,
 }
 
-pub fn collect_inputs_for_params(params: &[Param], context: ContextRef) -> Vec<ParameterInput> {
+pub fn collect_inputs_for_params(
+    params: &[Param],
+    context: ContextRef<SysFsStore>,
+) -> Vec<ParameterInput<SysFsStore>> {
     ALL_COMMON_PARAMS
         .iter()
         .chain(params)
@@ -41,10 +46,7 @@ pub fn collect_inputs_for_params(params: &[Param], context: ContextRef) -> Vec<P
 
 impl App {
     pub fn new() -> Self {
-        let context = ContextRef::new(TuiContext {
-            current_mode: get_current_accel_mode(),
-            parameters: ALL_PARAMS.iter().map(|&p| (p).into()).collect(),
-        });
+        let context = ContextRef::new(TuiContext::new(SysFsStore, ALL_PARAMS));
 
         Self {
             screens: vec![
@@ -83,12 +85,12 @@ impl App {
         do_tick
     }
 
-    fn current_screen_mut(&mut self) -> &mut Screen {
+    fn current_screen_mut(&mut self) -> &mut Screen<SysFsStore> {
         let screen_idx = self.screen_idx.current();
         &mut self.screens[screen_idx]
     }
 
-    fn current_screen(&self) -> &Screen {
+    fn current_screen(&self) -> &Screen<SysFsStore> {
         let screen_idx = self.screen_idx.current();
         &self.screens[screen_idx]
     }
@@ -141,8 +143,7 @@ impl App {
         for action in actions.drain(..) {
             if let Action::SetMode(accel_mode) = action {
                 self.context.get_mut().current_mode = accel_mode;
-                set_parameter(AccelMode::PARAM_NAME, accel_mode.ordinal())
-                    .expect("Failed to set kernel param to change modes");
+                SysFsStore::set_current_accel_mode(accel_mode);
                 self.context.get_mut().reset_current_parameters();
             }
 

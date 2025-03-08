@@ -1,17 +1,8 @@
 use crate::libmaccel::fixedptc;
 use crate::libmaccel::fixedptc::Fixedpt;
-use anyhow::{anyhow, Context};
 use paste::paste;
 
-use std::{
-    fmt::Display,
-    fs::File,
-    io::Read,
-    path::{Path, PathBuf},
-    str::FromStr,
-};
-
-const SYS_MODULE_PATH: &str = "/sys/module/maccel";
+use std::{fmt::Display, str::FromStr};
 
 /// Declare an enum for every parameter.
 macro_rules! declare_common_params {
@@ -189,22 +180,168 @@ impl AccelMode {
     }
 }
 
-impl Param {
-    pub fn set(&self, value: f64) -> anyhow::Result<()> {
-        let value: Fixedpt = value.into();
-        let value = value.0;
-        set_parameter(self.name(), value)
+pub mod persist {
+    use std::{
+        fmt::Debug,
+        io::Read,
+        path::{Path, PathBuf},
+    };
+
+    use anyhow::{anyhow, Context};
+
+    use crate::fixedptc::Fixedpt;
+
+    use super::*;
+
+    pub trait ParamStore: Debug {
+        fn set(&mut self, param: super::Param, value: f64) -> anyhow::Result<()>;
+        fn get(&self, param: &super::Param) -> anyhow::Result<Fixedpt>;
+
+        fn set_current_accel_mode(mode: AccelMode);
+        fn get_current_accel_mode() -> AccelMode;
     }
 
-    pub fn get(&self) -> anyhow::Result<Fixedpt> {
-        let value = get_paramater(self.name())?;
-        let value = Fixedpt::from_str(&value).context(format!(
-            "couldn't interpret the parameter's value {}",
-            value
+    const SYS_MODULE_PATH: &str = "/sys/module/maccel";
+
+    #[derive(Debug)]
+    pub struct SysFsStore;
+
+    impl ParamStore for SysFsStore {
+        fn set(&mut self, param: super::Param, value: f64) -> anyhow::Result<()> {
+            let value: Fixedpt = value.into();
+            let value = value.0;
+            set_parameter(param.name(), value)
+        }
+
+        fn get(&self, param: &super::Param) -> anyhow::Result<Fixedpt> {
+            let value = get_paramater(param.name())?;
+            let value = Fixedpt::from_str(&value).context(format!(
+                "couldn't interpret the parameter's value {}",
+                value
+            ))?;
+            Ok(value)
+        }
+
+        fn set_current_accel_mode(mode: AccelMode) {
+            set_parameter(AccelMode::PARAM_NAME, mode.ordinal())
+                .expect("Failed to set kernel param to change modes");
+        }
+        fn get_current_accel_mode() -> AccelMode {
+            get_paramater(AccelMode::PARAM_NAME)
+                .map(|mode_tag| match mode_tag.as_str() {
+                    "0" => AccelMode::Linear,
+                    "1" => AccelMode::Natural,
+                    id => unimplemented!("no mode id'd with {:?} exists", id),
+                })
+                .expect("Failed to read a kernel parameter to get the acceleration mode desired")
+        }
+    }
+
+    impl SysFsStore {
+        pub fn set_all_common(&mut self, args: CommonParamArgs) -> anyhow::Result<()> {
+            let CommonParamArgs {
+                sens_mult,
+                yx_ratio,
+            } = args;
+
+            self.set(Param::SensMult, sens_mult)?;
+            self.set(Param::YxRatio, yx_ratio)?;
+
+            Ok(())
+        }
+
+        pub fn set_all_linear(&mut self, args: LinearParamArgs) -> anyhow::Result<()> {
+            let LinearParamArgs {
+                accel,
+                offset_linear,
+                output_cap,
+            } = args;
+
+            self.set(Param::Accel, accel)?;
+            self.set(Param::OffsetLinear, offset_linear)?;
+            self.set(Param::OutputCap, output_cap)?;
+
+            Ok(())
+        }
+
+        pub fn set_all_natural(&mut self, args: NaturalParamArgs) -> anyhow::Result<()> {
+            let NaturalParamArgs {
+                decay_rate,
+                limit,
+                offset_natural,
+            } = args;
+
+            self.set(Param::DecayRate, decay_rate)?;
+            self.set(Param::OffsetNatural, offset_natural)?;
+            self.set(Param::Limit, limit)?;
+
+            Ok(())
+        }
+    }
+
+    fn parameter_path(name: &'static str) -> anyhow::Result<PathBuf> {
+        let params_path = Path::new(SYS_MODULE_PATH).join("parameters").join(name);
+
+        if !params_path.exists() {
+            return Err(anyhow!("no such path: {}", params_path.display()))
+                .context(anyhow!("no such parameter {:?}", name));
+        }
+
+        Ok(params_path)
+    }
+
+    fn save_parameter_reset_script(name: &'static str, value: i64) -> anyhow::Result<()> {
+        let script_dir = "/var/opt/maccel/resets";
+        if !Path::new(script_dir).exists() {
+            std::fs::create_dir_all(script_dir).context(format!("failed create directory: {}", script_dir))
+                .context("failed to create the directory where we'd save the parameter value to apply on reboot")?;
+        }
+        std::fs::write(
+            format!("{script_dir}/set_last_{}_value.sh", name),
+            format!("echo {} > /sys/module/maccel/parameters/{};", value, name),
+        )
+        .context("failed to write reset script")?;
+        Ok(())
+    }
+
+    fn get_paramater(name: &'static str) -> anyhow::Result<String> {
+        let path = parameter_path(name)?;
+        let mut file = std::fs::File::open(&path)
+            .context(anyhow!(
+                "failed to open the parameter's file for reading: {}",
+                path.display()
+            ))
+            .context("this shouldn't happen unless the maccel kernel module is not installed.")?;
+
+        let mut buf = String::new();
+
+        file.read_to_string(&mut buf)
+            .context("failed to read the parameter's value")?;
+
+        Ok(buf.trim().to_string())
+    }
+
+    fn set_parameter(name: &'static str, value: i64) -> anyhow::Result<()> {
+        let path = parameter_path(name)?;
+
+        std::fs::write(&path, format!("{}", value)).context(anyhow!(
+            "failed to write to parameter file: {}",
+            path.display()
         ))?;
-        Ok(value)
+
+        save_parameter_reset_script(name, value)?;
+
+        Ok(())
     }
 
+    impl Display for Fixedpt {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.write_str(&format_param_value(f64::from(*self)))
+        }
+    }
+}
+
+impl Param {
     /// The canonical name of the parameter, as defined by the kernel module,
     /// and exactly what can be read from /sys/module/maccel/parameters
     pub fn name(&self) -> &'static str {
@@ -234,107 +371,6 @@ impl Param {
     }
 }
 
-fn parameter_path(name: &'static str) -> anyhow::Result<PathBuf> {
-    let params_path = Path::new(SYS_MODULE_PATH).join("parameters").join(name);
-
-    if !params_path.exists() {
-        return Err(anyhow!("no such path: {}", params_path.display()))
-            .context(anyhow!("no such parameter {:?}", name));
-    }
-
-    Ok(params_path)
-}
-
-fn save_parameter_reset_script(name: &'static str, value: i64) -> anyhow::Result<()> {
-    let script_dir = "/var/opt/maccel/resets";
-    if !Path::new(script_dir).exists() {
-        std::fs::create_dir_all(script_dir).context(format!("failed create directory: {}", script_dir))
-                .context("failed to create the directory where we'd save the parameter value to apply on reboot")?;
-    }
-    std::fs::write(
-        format!("{script_dir}/set_last_{}_value.sh", name),
-        format!("echo {} > /sys/module/maccel/parameters/{};", value, name),
-    )
-    .context("failed to write reset script")?;
-    Ok(())
-}
-
-pub fn get_paramater(name: &'static str) -> anyhow::Result<String> {
-    let path = parameter_path(name)?;
-    let mut file = File::open(&path)
-        .context(anyhow!(
-            "failed to open the parameter's file for reading: {}",
-            path.display()
-        ))
-        .context("this shouldn't happen unless the maccel kernel module is not installed.")?;
-
-    let mut buf = String::new();
-
-    file.read_to_string(&mut buf)
-        .context("failed to read the parameter's value")?;
-
-    Ok(buf.trim().to_string())
-}
-
-pub fn set_parameter(name: &'static str, value: i64) -> anyhow::Result<()> {
-    let path = parameter_path(name)?;
-
-    std::fs::write(&path, format!("{}", value)).context(anyhow!(
-        "failed to write to parameter file: {}",
-        path.display()
-    ))?;
-
-    save_parameter_reset_script(name, value)?;
-
-    Ok(())
-}
-
-pub fn set_all_common(args: CommonParamArgs) -> anyhow::Result<()> {
-    let CommonParamArgs {
-        sens_mult,
-        yx_ratio,
-    } = args;
-
-    Param::SensMult.set(sens_mult)?;
-    Param::YxRatio.set(yx_ratio)?;
-
-    Ok(())
-}
-
-pub fn set_all_linear(args: LinearParamArgs) -> anyhow::Result<()> {
-    let LinearParamArgs {
-        accel,
-        offset_linear,
-        output_cap,
-    } = args;
-
-    Param::Accel.set(accel)?;
-    Param::OffsetLinear.set(offset_linear)?;
-    Param::OutputCap.set(output_cap)?;
-
-    Ok(())
-}
-
-pub fn set_all_natural(args: NaturalParamArgs) -> anyhow::Result<()> {
-    let NaturalParamArgs {
-        decay_rate,
-        limit,
-        offset_natural,
-    } = args;
-
-    Param::DecayRate.set(decay_rate)?;
-    Param::OffsetNatural.set(offset_natural)?;
-    Param::Limit.set(limit)?;
-
-    Ok(())
-}
-
-impl Display for Fixedpt {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&format_param_value(f64::from(*self)))
-    }
-}
-
 fn format_param_value(value: f64) -> String {
     let mut number = format!("{:.5}", value);
 
@@ -348,40 +384,3 @@ fn format_param_value(value: f64) -> String {
 
     number
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use std::path::PathBuf;
-//
-//     use crate::libmaccel::fixedptc::Fixedpt;
-//
-//     use super::Param;
-//
-//     fn test(param: Param) {
-//         param.set(3.0).unwrap();
-//         assert_eq!(param.get().unwrap(), Fixedpt(12884901888));
-//
-//         param.set(4.0).unwrap();
-//         assert_eq!(param.get().unwrap(), Fixedpt(17179869184));
-//
-//         param.set(4.5).unwrap();
-//         assert_eq!(param.get().unwrap(), (4.5).into());
-//
-//         let save_script = PathBuf::from(format!(
-//             "/var/opt/maccel/resets/set_last_{}_value.sh",
-//             param.name()
-//         ));
-//
-//         assert!(save_script.exists());
-//     }
-//
-//     #[test]
-//     fn getters_setters_work() {
-//         use Param::*;
-//
-//         test(SensMult);
-//         test(Accel);
-//         test(Offset);
-//         test(OutputCap);
-//     }
-// }
