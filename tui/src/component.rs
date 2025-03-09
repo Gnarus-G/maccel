@@ -8,7 +8,7 @@ use super::{
     event::Event,
 };
 
-pub trait TuiComponent: Debug {
+pub trait TuiComponent {
     fn handle_event(&mut self, event: &Event, actions: &mut Actions) {
         match event {
             Event::Key(key_event) => self.handle_key_event(key_event, actions),

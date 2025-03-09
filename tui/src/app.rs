@@ -1,4 +1,5 @@
 use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
+use maccel_core::get_param_value_from_ctx;
 use maccel_core::persist::ParamStore;
 use maccel_core::persist::SysFsStore;
 use maccel_core::Param;
@@ -16,13 +17,11 @@ use tracing::debug;
 use crate::action::{Action, Actions};
 use crate::component::TuiComponent;
 use crate::event::{Event, EventHandler};
-use crate::graph_linear::LinearCurveGraph;
-use crate::graph_natural::NaturalCurveGraph;
+use crate::graph::SensitivityGraph;
 use crate::param_input::ParameterInput;
 use crate::screen::Screen;
 use crate::utils::CyclingIdx;
 
-#[derive(Debug)]
 pub struct App {
     context: ContextRef<SysFsStore>,
     screens: Vec<Screen<SysFsStore>>,
@@ -53,12 +52,30 @@ impl App {
                 Screen::new(
                     AccelMode::Linear,
                     collect_inputs_for_params(ALL_LINEAR_PARAMS, context.clone()),
-                    Box::new(LinearCurveGraph::new(context.clone())),
+                    Box::new(
+                        SensitivityGraph::new(context.clone()).on_y_axix_bounds_update(|ctx| {
+                            // Appropriate dynamic bounds for the Linear sens graph
+                            let upper_bound = f64::from(get_param_value_from_ctx!(ctx, SensMult))
+                                * f64::from(get_param_value_from_ctx!(ctx, OutputCap)).max(1.0)
+                                * 2.0;
+
+                            [0.0, upper_bound]
+                        }),
+                    ),
                 ),
                 Screen::new(
                     AccelMode::Natural,
                     collect_inputs_for_params(ALL_NATURAL_PARAMS, context.clone()),
-                    Box::new(NaturalCurveGraph::new(context.clone())),
+                    Box::new(
+                        SensitivityGraph::new(context.clone()).on_y_axix_bounds_update(|ctx| {
+                            // Appropriate dynamic bounds for the Natural sens graph
+                            let upper_bound = f64::from(get_param_value_from_ctx!(ctx, SensMult))
+                                * f64::from(get_param_value_from_ctx!(ctx, Limit)).max(1.0)
+                                * 2.0;
+
+                            [0.0, upper_bound]
+                        }),
+                    ),
                 ),
             ],
             screen_idx: CyclingIdx::new_starting_at(
