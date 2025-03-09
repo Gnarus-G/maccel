@@ -144,8 +144,8 @@ install_cli() {
 
   if [ $BUILD_CLI_FROM_SOURCE -eq 1 ]; then
     export RUSTUP_TOOLCHAIN=stable
-    cargo build --release --manifest-path=cli/Cargo.toml
-    sudo install -m 755 `pwd`/cli/target/release/maccel /usr/local/bin/maccel
+    cargo build --bin maccel --release
+    sudo install -m 755 `pwd`/target/release/maccel /usr/local/bin/maccel
   else
     print_bold "Preparing to download and install the CLI tool...\n"
     printf "If you want to build the CLI tool from source, then next time run: \n"

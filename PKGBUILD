@@ -22,7 +22,7 @@ prepare() {
 
   platform="$(rustc -vV | sed -n 's/host: //p')"
 
-  cargo fetch --locked --target "${platform}" --manifest-path="${srcdir}/maccel/cli/Cargo.toml"
+  cargo fetch --locked --target "${platform}" --manifest-path="${srcdir}/maccel/Cargo.toml"
 }
 
 build() {
@@ -30,7 +30,7 @@ build() {
   export CARGO_TARGET_DIR=target
 
   # Build the CLI
-  cargo build --profile=release-with-debug --frozen --all-features --manifest-path="${srcdir}/maccel/cli/Cargo.toml"
+  cargo build --bin maccel --profile=release-with-debug --frozen --all-features --manifest-path="${srcdir}/maccel/Cargo.toml"
 }
 
 package() {

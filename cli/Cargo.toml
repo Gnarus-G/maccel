@@ -3,10 +3,6 @@ name = "maccel-cli"
 version = "0.5.0"
 edition = "2021"
 
-[profile.release-with-debug]
-inherits = "release"
-debug = true
-
 [[bin]]
 name = "maccel"
 path = "src/main.rs"

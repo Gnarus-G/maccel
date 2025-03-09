@@ -2,6 +2,10 @@
 resolver = "2"
 members = ["cli", "tui", "crates/*"]
 
+[profile.release-with-debug]
+inherits = "release"
+debug = true
+
 [workspace.dependencies]
 anyhow = "1.0.79"
 tracing = "0.1.41"
