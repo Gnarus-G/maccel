@@ -165,6 +165,12 @@ declare_params!(
         OffsetNatural,
         Limit,
     },
+    Synchronous {
+        Gamma,
+        Smooth,
+        Motivity,
+        SyncSpeed,
+    },
 );
 
 impl AccelMode {
@@ -172,6 +178,7 @@ impl AccelMode {
         match self {
             AccelMode::Linear => "Linear Acceleration",
             AccelMode::Natural => "Natural (w/ Gain)",
+            AccelMode::Synchronous => "Synchronous",
         }
     }
 }
@@ -364,6 +371,10 @@ impl Param {
             Param::OutputCap => "OUTPUT_CAP",
             Param::DecayRate => "DECAY_RATE",
             Param::Limit => "LIMIT",
+            Param::Gamma => "GAMMA",
+            Param::Smooth => "SMOOTH",
+            Param::Motivity => "MOTIVITY",
+            Param::SyncSpeed => "SYNC_SPEED",
         }
     }
 
@@ -378,6 +389,10 @@ impl Param {
             Param::YxRatio => "Y/x Ratio",
             Param::DecayRate => "Decay-Rate",
             Param::Limit => "Limit",
+            Param::Gamma => "Gamma",
+            Param::Smooth => "Smooth",
+            Param::Motivity => "Motivity",
+            Param::SyncSpeed => "Sync Speed",
         }
     }
 }
@@ -436,6 +451,26 @@ mod validate {
             Param::Limit => {
                 if value < 1.0 {
                     anyhow::bail!("limit cannot be less than 1");
+                }
+            }
+            Param::Gamma => {
+                if value <= 0.0 {
+                    anyhow::bail!("Gamma must be positive");
+                }
+            }
+            Param::Smooth => {
+                if !(0.0..=1.0).contains(&value) {
+                    anyhow::bail!("Smooth must be between 0 and 1");
+                }
+            }
+            Param::Motivity => {
+                if value <= 1.0 {
+                    anyhow::bail!("Motivity must be greater than 1");
+                }
+            }
+            Param::SyncSpeed => {
+                if value <= 0.0 {
+                    anyhow::bail!("'Synchronous speed' must be positive");
                 }
             }
         }
