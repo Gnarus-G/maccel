@@ -188,5 +188,5 @@ Subject line:
 [See more](https://github.com/Gnarus-G/maccel/blob/main/CONTRIBUTING.md)
 
 ### Add new acceleration curves/modes
-See PR #60 which implements the `Synchronous` mode for a walkthrough of how 
+See PR https://github.com/Gnarus-G/maccel/pull/60 which implements the `Synchronous` mode for a walkthrough of how 
 to do it.
