@@ -34,7 +34,7 @@ jobs:
 
           BIN=maccel
           ARCHIVE=$BIN-cli.tar.gz
-          BIN_PATH=cli/target/release/$BIN
+          BIN_PATH=target/release/$BIN
 
           strip $BIN_PATH;
 
