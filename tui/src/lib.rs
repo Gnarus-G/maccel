@@ -9,8 +9,6 @@ mod action;
 mod app;
 mod component;
 mod graph;
-mod graph_linear;
-mod graph_natural;
 mod param_input;
 mod screen;
 mod utils;

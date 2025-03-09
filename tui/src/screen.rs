@@ -20,7 +20,6 @@ pub enum HelpTextMode {
     NormalMode,
 }
 
-#[derive(Debug)]
 pub struct Screen<PS: ParamStore> {
     pub accel_mode: AccelMode,
     param_idx: CyclingIdx,

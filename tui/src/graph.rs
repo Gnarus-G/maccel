@@ -1,4 +1,6 @@
-use maccel_core::{persist::ParamStore, sensitivity, ContextRef, SensXY};
+use std::fmt::Debug;
+
+use maccel_core::{get_param_value_from_ctx, persist::ParamStore, sensitivity, ContextRef, SensXY};
 
 use crate::{action, component::TuiComponent};
 
@@ -23,8 +25,9 @@ impl LastMouseMove {
     }
 }
 
-#[derive(Debug)]
-pub struct Graph<PS: ParamStore> {
+pub type GetNewYAxisBounds<PS> = dyn FnMut(ContextRef<PS>) -> [f64; 2];
+
+pub struct SensitivityGraph<PS: ParamStore> {
     last_mouse_move: LastMouseMove,
     pub y_bounds: [f64; 2],
     data: Vec<(f64, f64)>,
@@ -33,25 +36,35 @@ pub struct Graph<PS: ParamStore> {
     data_name: String,
     data_alt_name: String,
     context: ContextRef<PS>,
+    on_y_axis_update_fn: Box<GetNewYAxisBounds<PS>>,
 }
 
-impl<PS: ParamStore> Graph<PS> {
-    pub fn new(
-        context: ContextRef<PS>,
-        title: &'static str,
-        data_name: String,
-        data_alt_name: String,
-    ) -> Self {
+impl<PS: ParamStore> SensitivityGraph<PS> {
+    pub fn new(context: ContextRef<PS>) -> Self {
         Self {
             context: context.clone(),
             last_mouse_move: Default::default(),
             y_bounds: [0.0, 0.0],
             data: vec![],
             data_alt: vec![],
-            title,
-            data_name,
-            data_alt_name,
+            title: "Sensitivity Graph (Ratio = Speed_out / Speed_in)",
+            data_name: "🠠🠢 Sens".to_string(),
+            data_alt_name: "🠡🠣 Sens".to_string(),
+            on_y_axis_update_fn: Box::new(|ctx| {
+                [
+                    0.0,
+                    f64::from(get_param_value_from_ctx!(ctx, SensMult)) * 2.0,
+                ]
+            }),
         }
+    }
+
+    pub fn on_y_axix_bounds_update(
+        mut self,
+        updater: impl FnMut(ContextRef<PS>) -> [f64; 2] + 'static,
+    ) -> Self {
+        self.on_y_axis_update_fn = Box::new(updater);
+        self
     }
 
     fn update_data(&mut self) {
@@ -93,7 +106,7 @@ impl<PS: ParamStore> Graph<PS> {
     }
 }
 
-impl<PS: ParamStore> TuiComponent for Graph<PS> {
+impl<PS: ParamStore> TuiComponent for SensitivityGraph<PS> {
     fn handle_key_event(&mut self, _event: &KeyEvent, _actions: &mut action::Actions) {}
 
     fn handle_mouse_event(
@@ -108,6 +121,7 @@ impl<PS: ParamStore> TuiComponent for Graph<PS> {
             debug!("updating graph on tick");
             self.update_last_move();
             self.update_data();
+            self.y_bounds = (self.on_y_axis_update_fn)(self.context.clone());
         }
     }
 
