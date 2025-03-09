@@ -24,7 +24,9 @@ $$(dx_f, dy_f) = (dx_0, dy_0) * (1 + a * (V - offset_in)^2 / V)$$
 - [X] **Natural**
 ![image](https://github.com/user-attachments/assets/d14d0fa3-f762-4ad6-911c-cf564227d1ac)
 
-- [ ] **Motivity** (or Synchronous?)
+- [X] **Synchronous**
+![image](https://github.com/user-attachments/assets/cd0aefaa-43d1-4f31-8326-334fac2a2210)
+
 - [ ] **Look up table**
 
 ## Install
@@ -169,6 +171,7 @@ This debugging experience might be lacking still. Feel free to report any issue
 - https://gist.github.com/fstiehle/17fca11d7d1b4c2b8dfd982e1cf39caf
 - https://man.archlinux.org/man/PKGBUILD.5#OPTIONS_AND_DIRECTIVES
 - https://stackoverflow.com/questions/669452/are-double-square-brackets-preferable-over-single-square-brackets-in-b
+- https://github.com/Kuuuube/rawaccel_convert
 
 ## Contributing
 

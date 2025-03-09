@@ -53,6 +53,7 @@ PARAM(LIMIT, 98304, // 1.5 << 16
 
 // For Synchronous Mode
 
+#if FIXEDPT_BITS == 64
 PARAM(GAMMA, 4294967296, // 1 << 32
       "Control how fast you get from low to fast around the midpoint");
 PARAM(SMOOTH, 2147483648, // 0.5 << 32
@@ -62,6 +63,17 @@ PARAM(MOTIVITY, 6442450944, // 1.5 << 32
       "1/MOTIVITY");
 PARAM(SYNC_SPEED, 21474836480, // 5 << 32
       "Set The middle sensitivity between you min and max sensitivity");
+#else
+PARAM(GAMMA, 65536, // 1 << 16
+      "Control how fast you get from low to fast around the midpoint");
+PARAM(SMOOTH, 32768, // 0.5 << 16
+      "Control the suddeness of the sensitivity increase.");
+PARAM(MOTIVITY, 98304, // 1.5 << 16
+      "Set the maximum sensitivity while also setting the minimum to "
+      "1/MOTIVITY");
+PARAM(SYNC_SPEED, 327680, // 5 << 16
+      "Set The middle sensitivity between you min and max sensitivity");
+#endif
 
 // Flags
 #define PARAM_FLAG(param, default_value, desc)                                 \
