@@ -24,6 +24,7 @@ impl AllParamArgs {
         AccelParams {
             sens_mult: self.sens_mult,
             yx_ratio: self.yx_ratio,
+            input_dpi: self.input_dpi,
             by_mode: params_by_mode,
         }
     }

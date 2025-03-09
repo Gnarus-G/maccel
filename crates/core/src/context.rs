@@ -63,6 +63,11 @@ impl<PS: ParamStore> TuiContext<PS> {
         match param.tag {
             Param::SensMult => {}
             Param::YxRatio => {}
+            Param::InputDpi => {
+                if value <= 0.0 {
+                    anyhow::bail!("Input DPI must be positive");
+                }
+            }
             Param::Accel => {}
             Param::OutputCap => {}
             Param::OffsetLinear | Param::OffsetNatural => {
@@ -71,8 +76,8 @@ impl<PS: ParamStore> TuiContext<PS> {
                 }
             }
             Param::DecayRate => {
-                if value < 0.0 {
-                    anyhow::bail!("decay rate cannot be less than 0");
+                if value <= 0.0 {
+                    anyhow::bail!("decay rate must be positive");
                 }
             }
             Param::Limit => {
@@ -110,6 +115,7 @@ impl<PS: ParamStore> TuiContext<PS> {
         AllParamArgs {
             sens_mult: get!(SensMult),
             yx_ratio: get!(YxRatio),
+            input_dpi: get!(InputDpi),
             accel: get!(Accel),
             offset_linear: get!(OffsetLinear),
             offset_natural: get!(OffsetNatural),

@@ -150,7 +150,11 @@ macro_rules! declare_params {
 }
 
 declare_params!(
-    Common { SensMult, YxRatio },
+    Common {
+        SensMult,
+        YxRatio,
+        InputDpi
+    },
     Linear {
         Accel,
         OffsetLinear,
@@ -242,10 +246,12 @@ pub mod persist {
             let CommonParamArgs {
                 sens_mult,
                 yx_ratio,
+                input_dpi,
             } = args;
 
             self.set(Param::SensMult, sens_mult)?;
             self.set(Param::YxRatio, yx_ratio)?;
+            self.set(Param::InputDpi, input_dpi)?;
 
             Ok(())
         }
@@ -348,6 +354,7 @@ impl Param {
         match self {
             Param::SensMult => "SENS_MULT",
             Param::YxRatio => "YX_RATIO",
+            Param::InputDpi => "INPUT_DPI",
             Param::Accel => "ACCEL",
             Param::OffsetLinear => "OFFSET",
             Param::OffsetNatural => "OFFSET",
@@ -361,6 +368,7 @@ impl Param {
         match self {
             Param::SensMult => "Sens-Multiplier",
             Param::Accel => "Accel",
+            Param::InputDpi => "Input DPI",
             Param::OffsetLinear => "Offset",
             Param::OffsetNatural => "Offset",
             Param::OutputCap => "Output-Cap",
