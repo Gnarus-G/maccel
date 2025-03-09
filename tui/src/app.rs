@@ -7,6 +7,7 @@ use maccel_core::ALL_COMMON_PARAMS;
 use maccel_core::ALL_LINEAR_PARAMS;
 use maccel_core::ALL_MODES;
 use maccel_core::ALL_NATURAL_PARAMS;
+use maccel_core::ALL_SYNCHRONOUS_PARAMS;
 use maccel_core::{AccelMode, ContextRef, TuiContext, ALL_PARAMS};
 use ratatui::backend::Backend;
 use ratatui::crossterm::event::{DisableMouseCapture, EnableMouseCapture, KeyCode, KeyEventKind};
@@ -72,6 +73,20 @@ impl App {
                             // Appropriate dynamic bounds for the Natural sens graph
                             let upper_bound = f64::from(get_param_value_from_ctx!(ctx, SensMult))
                                 * f64::from(get_param_value_from_ctx!(ctx, Limit)).max(1.0)
+                                * 2.0;
+
+                            [0.0, upper_bound]
+                        }),
+                    ),
+                ),
+                Screen::new(
+                    AccelMode::Synchronous,
+                    collect_inputs_for_params(ALL_SYNCHRONOUS_PARAMS, context.clone()),
+                    Box::new(
+                        SensitivityGraph::new(context.clone()).on_y_axix_bounds_update(|ctx| {
+                            // Appropriate dynamic bounds for the Synchronous sens graph
+                            let upper_bound = f64::from(get_param_value_from_ctx!(ctx, SensMult))
+                                * f64::from(get_param_value_from_ctx!(ctx, Motivity)).max(1.0)
                                 * 2.0;
 
                             [0.0, upper_bound]
