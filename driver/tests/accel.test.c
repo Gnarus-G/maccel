@@ -69,6 +69,28 @@ static int test_natural_acceleration(const char *filename, fpt param_sens_mult,
   return test_acceleration(filename, args);
 }
 
+static int test_synchronous_acceleration(const char *filename,
+                                         fpt param_sens_mult,
+                                         fpt param_yx_ratio, fpt param_gamma,
+                                         fpt param_smooth, fpt param_motivity,
+                                         fpt param_sync_speed) {
+  struct synchronous_curve_args _args =
+      (struct synchronous_curve_args){.gamma = param_gamma,
+                                      .smooth = param_smooth,
+                                      .motivity = param_motivity,
+                                      .sync_speed = param_sync_speed};
+
+  struct accel_args args = {
+      .sens_mult = param_sens_mult,
+      .yx_ratio = param_yx_ratio,
+      .input_dpi = fpt_fromint(1000),
+      .tag = synchronous,
+      .args = (union __accel_args){.synchronous = _args},
+  };
+
+  return test_acceleration(filename, args);
+}
+
 #define test_linear(sens_mult, yx_ratio, accel, offset, cap)                   \
   assert(test_linear_acceleration(                                             \
              "SENS_MULT-" #sens_mult "-ACCEL-" #accel "-OFFSET" #offset        \
@@ -77,12 +99,22 @@ static int test_natural_acceleration(const char *filename, fpt param_sens_mult,
              fpt_rconst(offset), fpt_rconst(cap)) == 0);
 
 #define test_natural(sens_mult, yx_ratio, decay_rate, offset, limit)           \
-  assert(test_linear_acceleration("Natural__SENS_MULT-" #sens_mult             \
-                                  "-ACCEL-" #decay_rate "-OFFSET" #offset      \
-                                  "-LIMIT-" #limit ".snapshot",                \
-                                  fpt_rconst(sens_mult), fpt_rconst(yx_ratio), \
-                                  fpt_rconst(decay_rate), fpt_rconst(offset),  \
-                                  fpt_rconst(limit)) == 0);
+  assert(test_natural_acceleration(                                            \
+             "Natural__SENS_MULT-" #sens_mult "-DECAY_RATE-" #decay_rate       \
+             "-OFFSET" #offset "-LIMIT-" #limit ".snapshot",                   \
+             fpt_rconst(sens_mult), fpt_rconst(yx_ratio),                      \
+             fpt_rconst(decay_rate), fpt_rconst(offset),                       \
+             fpt_rconst(limit)) == 0);
+
+#define test_synchronous(sens_mult, yx_ratio, gamma, smooth, motivity,         \
+                         sync_speed)                                           \
+  assert(test_synchronous_acceleration(                                        \
+             "Synchronous__SENS_MULT-" #sens_mult "-GAMMA-" #gamma             \
+             "-SMOOTH" #smooth "-MOTIVITY-" #motivity                          \
+             "-SYNC_SPEED-" #sync_speed ".snapshot",                           \
+             fpt_rconst(sens_mult), fpt_rconst(yx_ratio), fpt_rconst(gamma),   \
+             fpt_rconst(smooth), fpt_rconst(motivity),                         \
+             fpt_rconst(sync_speed)) == 0);
 
 int main(void) {
   test_linear(1, 1, 0, 0, 0);
@@ -96,6 +128,8 @@ int main(void) {
   test_natural(1, 1, 0.1, 0, 0);
   test_natural(1, 1, 0.1, 8, 0);
   test_natural(1, 1, 0.03, 8, 1.5);
+
+  test_synchronous(1, 1.15, 0.8, 0.5, 1.5, 32);
 
   print_success;
 }
