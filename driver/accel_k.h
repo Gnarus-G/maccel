@@ -19,6 +19,13 @@ static struct accel_args collect_args(void) {
   accel.input_dpi = atofp(PARAM_INPUT_DPI);
 
   switch (mode) {
+  case synchronous: {
+    accel.args.synchronous.gamma = atofp(PARAM_GAMMA);
+    accel.args.synchronous.smooth = atofp(PARAM_SMOOTH);
+    accel.args.synchronous.motivity = atofp(PARAM_MOTIVITY);
+    accel.args.synchronous.sync_speed = atofp(PARAM_SYNC_SPEED);
+    break;
+  }
   case natural: {
     accel.args.natural.decay_rate = atofp(PARAM_DECAY_RATE);
     accel.args.natural.offset = atofp(PARAM_OFFSET);
