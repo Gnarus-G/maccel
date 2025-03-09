@@ -5,6 +5,7 @@ use maccel_core::{
     persist::{ParamStore, SysFsStore},
     subcommads::*,
     AccelMode, Param, ALL_COMMON_PARAMS, ALL_LINEAR_PARAMS, ALL_NATURAL_PARAMS,
+    ALL_SYNCHRONOUS_PARAMS,
 };
 use maccel_tui::run_tui;
 
@@ -74,6 +75,9 @@ fn main() -> anyhow::Result<()> {
                 SetParamByModesSubcommands::Common(param_args) => {
                     param_store.set_all_common(param_args)?
                 }
+                SetParamByModesSubcommands::Synchronous(param_args) => {
+                    param_store.set_all_synchronous(param_args)?
+                }
             },
             CliSubcommandSetParams::Mode { mode } => SysFsStore::set_current_accel_mode(mode),
         },
@@ -97,17 +101,22 @@ fn main() -> anyhow::Result<()> {
                 GetParamsByModesSubcommands::Common => {
                     print_all_params(ALL_COMMON_PARAMS.iter(), oneline, quiet)?;
                 }
+                GetParamsByModesSubcommands::Synchronous => {
+                    print_all_params(ALL_SYNCHRONOUS_PARAMS.iter(), oneline, quiet)?;
+                }
             },
             CliSubcommandGetParams::Mode => {
                 let mode = SysFsStore::get_current_accel_mode();
+                println!("{}\n", mode.as_title());
                 match mode {
                     AccelMode::Linear => {
-                        println!("{}\n", mode.as_title());
                         print_all_params(ALL_LINEAR_PARAMS.iter(), false, false)?;
                     }
                     AccelMode::Natural => {
-                        println!("{}\n", mode.as_title());
                         print_all_params(ALL_NATURAL_PARAMS.iter(), false, false)?;
+                    }
+                    AccelMode::Synchronous => {
+                        print_all_params(ALL_SYNCHRONOUS_PARAMS.iter(), false, false)?;
                     }
                 }
             }
