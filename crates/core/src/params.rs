@@ -212,6 +212,9 @@ pub mod persist {
 
     impl ParamStore for SysFsStore {
         fn set(&mut self, param: super::Param, value: f64) -> anyhow::Result<()> {
+            use validate::validate_param_value;
+            validate_param_value(param, value)?;
+
             let value: Fpt = value.into();
             let value = value.0;
             set_parameter(param.name(), value)
@@ -404,4 +407,39 @@ fn format_param_value_works() {
     assert_eq!(format_param_value(100.0), "100");
     assert_eq!(format_param_value(0.0600), "0.06");
     assert_eq!(format_param_value(0.055000), "0.055");
+}
+
+mod validate {
+    use super::Param;
+
+    pub fn validate_param_value(param_tag: Param, value: f64) -> anyhow::Result<()> {
+        match param_tag {
+            Param::SensMult => {}
+            Param::YxRatio => {}
+            Param::InputDpi => {
+                if value <= 0.0 {
+                    anyhow::bail!("Input DPI must be positive");
+                }
+            }
+            Param::Accel => {}
+            Param::OutputCap => {}
+            Param::OffsetLinear | Param::OffsetNatural => {
+                if value < 0.0 {
+                    anyhow::bail!("offset cannot be less than 0");
+                }
+            }
+            Param::DecayRate => {
+                if value <= 0.0 {
+                    anyhow::bail!("decay rate must be positive");
+                }
+            }
+            Param::Limit => {
+                if value < 1.0 {
+                    anyhow::bail!("limit cannot be less than 1");
+                }
+            }
+        }
+
+        Ok(())
+    }
 }

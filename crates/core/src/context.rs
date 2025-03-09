@@ -60,35 +60,9 @@ impl<PS: ParamStore> TuiContext<PS> {
             .find(|p| p.tag == param_id)
             .context("Unknown parameter, cannot update")?;
 
-        match param.tag {
-            Param::SensMult => {}
-            Param::YxRatio => {}
-            Param::InputDpi => {
-                if value <= 0.0 {
-                    anyhow::bail!("Input DPI must be positive");
-                }
-            }
-            Param::Accel => {}
-            Param::OutputCap => {}
-            Param::OffsetLinear | Param::OffsetNatural => {
-                if value < 0.0 {
-                    anyhow::bail!("offset cannot be less than 0");
-                }
-            }
-            Param::DecayRate => {
-                if value <= 0.0 {
-                    anyhow::bail!("decay rate must be positive");
-                }
-            }
-            Param::Limit => {
-                if value < 1.0 {
-                    anyhow::bail!("limit cannot be less than 1");
-                }
-            }
-        }
-
+        self.parameter_store.set(param.tag, value)?;
         param.value = value.into();
-        self.parameter_store.set(param.tag, value)
+        Ok(())
     }
 
     pub fn reset_current_parameters(&mut self) {
