@@ -16,12 +16,15 @@ union __accel_args {
 };
 
 struct accel_args {
-  fixedpt param_sens_mult;
-  fixedpt param_yx_ratio;
+  fixedpt sens_mult;
+  fixedpt yx_ratio;
+  fixedpt input_dpi;
 
   enum accel_mode tag;
   union __accel_args args;
 };
+
+const fixedpt NORMALIZED_DPI = fixedpt_fromint(1000);
 
 /**
  * Calculate the factor by which to multiply the input vector
@@ -42,8 +45,14 @@ static inline struct vector sensitivity(fixedpt input_speed,
     dbg("accel mode %d: linear", args.tag);
     sens = __linear_sens_fun(input_speed, args.args.linear);
   }
-  sens = fixedpt_mul(sens, args.param_sens_mult);
-  return (struct vector){sens, fixedpt_mul(sens, args.param_yx_ratio)};
+  sens = fixedpt_mul(sens, args.sens_mult);
+
+  fixedpt dpi_factor = fixedpt_div(NORMALIZED_DPI, args.input_dpi);
+  dbg("dpi factor: %s", fptoa(dpi_factor));
+  fixedpt dpi_adjusted_sens = fixedpt_mul(sens, dpi_factor);
+
+  return (struct vector){dpi_adjusted_sens,
+                         fixedpt_mul(dpi_adjusted_sens, args.yx_ratio)};
 }
 
 static inline void f_accelerate(int *x, int *y, fixedpt time_interval_ms,

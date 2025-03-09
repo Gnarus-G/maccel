@@ -19,12 +19,18 @@ PARAM(
 PARAM(YX_RATIO, 4294967296, // 1 << 32
       "A factor (Y/X) by which the final sensitivity calculated is multiplied "
       "to produce the sensitivity applied to the Y axis.");
+PARAM(INPUT_DPI, 4294967296000, // 1000 << 32
+      "The DPI of the mouse, used to normalize the effective dpi to 1 "
+      "in/sec");
 #else
 PARAM(SENS_MULT, 65536, // 1 << 16
       "A factor applied the sensitivity calculation after ACCEL is applied.");
 PARAM(YX_RATIO, 65536, // 1 << 16
       "A factor (Y/X) by which the final sensitivity calculated is multiplied "
       "to produce the sensitivity applied to the Y axis.");
+PARAM(INPUT_DPI, 65536000, // 1000 << 16
+      "The DPI of the mouse, used to normalize the effective dpi to 1 "
+      "in/sec");
 #endif
 
 PARAM(ACCEL, 0, "Control the sensitivity calculation.");
@@ -35,9 +41,9 @@ PARAM(OUTPUT_CAP, 0, "Control the maximum sensitivity.");
 
 #if FIXEDPT_BITS == 64
 PARAM(DECAY_RATE, 429496730, // 0.1 << 32
-      "Decay rate of the Natural curve");
+      "Decay rate of the Natural curve.");
 PARAM(LIMIT, 6442450944, // 1.5 << 32
-      "Limit of the Natural curve");
+      "Limit of the Natural curve.");
 #else
 PARAM(DECAY_RATE, 6554, // 0.1 << 16
       "Decay rate of the Natural curve");

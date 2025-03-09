@@ -14,8 +14,9 @@ static struct accel_args collect_args(void) {
   enum accel_mode mode = PARAM_MODE;
   accel.tag = mode;
 
-  accel.param_sens_mult = atofp(PARAM_SENS_MULT);
-  accel.param_yx_ratio = atofp(PARAM_YX_RATIO);
+  accel.sens_mult = atofp(PARAM_SENS_MULT);
+  accel.yx_ratio = atofp(PARAM_YX_RATIO);
+  accel.input_dpi = atofp(PARAM_INPUT_DPI);
 
   switch (mode) {
   case natural: {
