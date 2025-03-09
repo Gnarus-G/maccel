@@ -5,6 +5,7 @@ use maccel_core::persist::SysFsStore;
 use maccel_core::Param;
 use maccel_core::ALL_COMMON_PARAMS;
 use maccel_core::ALL_LINEAR_PARAMS;
+use maccel_core::ALL_MODES;
 use maccel_core::ALL_NATURAL_PARAMS;
 use maccel_core::{AccelMode, ContextRef, TuiContext, ALL_PARAMS};
 use ratatui::backend::Backend;
@@ -79,7 +80,7 @@ impl App {
                 ),
             ],
             screen_idx: CyclingIdx::new_starting_at(
-                2,
+                ALL_MODES.len(),
                 context.clone().get().current_mode.ordinal() as usize,
             ),
             context,
@@ -104,12 +105,22 @@ impl App {
 
     fn current_screen_mut(&mut self) -> &mut Screen<SysFsStore> {
         let screen_idx = self.screen_idx.current();
-        &mut self.screens[screen_idx]
+        self.screens.get_mut(screen_idx).unwrap_or_else(|| {
+            panic!(
+                "Failed to get a Screen for mode id {}: {:?}",
+                screen_idx, ALL_MODES[screen_idx]
+            );
+        })
     }
 
     fn current_screen(&self) -> &Screen<SysFsStore> {
         let screen_idx = self.screen_idx.current();
-        &self.screens[screen_idx]
+        self.screens.get(screen_idx).unwrap_or_else(|| {
+            panic!(
+                "Failed to get a Screen for mode id {}: {:?}",
+                screen_idx, ALL_MODES[screen_idx]
+            );
+        })
     }
 
     fn can_switch_screens(&self) -> bool {

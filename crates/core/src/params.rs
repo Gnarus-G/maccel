@@ -37,11 +37,13 @@ macro_rules! declare_params {
 
         #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
         #[derive(Debug, Default, PartialEq, Clone, Copy)]
-        #[repr(C)]
+        #[repr(u8)]
         pub enum AccelMode {
             #[default]
             $( $mode, )+
         }
+
+        pub const ALL_MODES: &[AccelMode] = &[ $( AccelMode::$mode, )+ ];
 
         paste! {
             /// Define the complete shape (and memory layout) of the argument
@@ -242,10 +244,12 @@ pub mod persist {
         }
         fn get_current_accel_mode() -> AccelMode {
             get_paramater(AccelMode::PARAM_NAME)
-                .map(|mode_tag| match mode_tag.as_str() {
-                    "0" => AccelMode::Linear,
-                    "1" => AccelMode::Natural,
-                    id => unimplemented!("no mode id'd with {:?} exists", id),
+                .map(|mode_tag| {
+                    let id: u8 = mode_tag
+                        .parse()
+                        .expect("Failed to parse an id for mode parameter");
+                    let idx = id as usize % ALL_MODES.len();
+                    ALL_MODES[idx]
                 })
                 .expect("Failed to read a kernel parameter to get the acceleration mode desired")
         }
