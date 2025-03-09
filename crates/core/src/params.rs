@@ -293,6 +293,22 @@ pub mod persist {
 
             Ok(())
         }
+
+        pub fn set_all_synchronous(&mut self, args: SynchronousParamArgs) -> anyhow::Result<()> {
+            let SynchronousParamArgs {
+                gamma,
+                smooth,
+                motivity,
+                sync_speed,
+            } = args;
+
+            self.set(Param::Gamma, gamma)?;
+            self.set(Param::Smooth, smooth)?;
+            self.set(Param::Motivity, motivity)?;
+            self.set(Param::SyncSpeed, sync_speed)?;
+
+            Ok(())
+        }
     }
 
     fn parameter_path(name: &'static str) -> anyhow::Result<PathBuf> {
