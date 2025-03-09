@@ -119,6 +119,16 @@ fn main() -> anyhow::Result<()> {
         #[cfg(debug_assertions)]
         CLiCommands::Debug { command } => match command {
             DebugCommands::Print { nums } => {
+                if nums.is_empty() {
+                    for n in std::io::stdin()
+                        .lines()
+                        .map_while(Result::ok)
+                        .flat_map(|s| s.parse::<f64>())
+                    {
+                        println!("{}", Fixedpt::from(n).0);
+                    }
+                }
+
                 for n in nums {
                     println!("{}", Fixedpt::from(n).0);
                 }

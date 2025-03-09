@@ -384,11 +384,24 @@ fn format_param_value(value: f64) -> String {
 
     for idx in (1..number.len()).rev() {
         let this_char = &number[idx..idx + 1];
-        if this_char != "0" && this_char != "." {
+        if this_char != "0" {
+            if this_char == "." {
+                number.remove(idx);
+            }
             break;
         }
         number.remove(idx);
     }
 
     number
+}
+
+#[cfg(test)]
+#[test]
+fn format_param_value_works() {
+    assert_eq!(format_param_value(1.5), "1.5");
+    assert_eq!(format_param_value(1.50), "1.5");
+    assert_eq!(format_param_value(100.0), "100");
+    assert_eq!(format_param_value(0.0600), "0.06");
+    assert_eq!(format_param_value(0.055000), "0.055");
 }
