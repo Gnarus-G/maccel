@@ -46,13 +46,7 @@ static inline struct vector sensitivity(fixedpt input_speed,
     sens = __linear_sens_fun(input_speed, args.args.linear);
   }
   sens = fixedpt_mul(sens, args.sens_mult);
-
-  fixedpt dpi_factor = fixedpt_div(NORMALIZED_DPI, args.input_dpi);
-  dbg("dpi factor: %s", fptoa(dpi_factor));
-  fixedpt dpi_adjusted_sens = fixedpt_mul(sens, dpi_factor);
-
-  return (struct vector){dpi_adjusted_sens,
-                         fixedpt_mul(dpi_adjusted_sens, args.yx_ratio)};
+  return (struct vector){sens, fixedpt_mul(sens, args.yx_ratio)};
 }
 
 static inline void f_accelerate(int *x, int *y, fixedpt time_interval_ms,
@@ -73,6 +67,11 @@ static inline void f_accelerate(int *x, int *y, fixedpt time_interval_ms,
   struct vector sens = sensitivity(speed_in, args);
   dbg("scale x                    %s", fptoa(sens.x));
   dbg("scale y                    %s", fptoa(sens.y));
+
+  fixedpt dpi_factor = fixedpt_div(NORMALIZED_DPI, args.input_dpi);
+  dbg("dpi adjustment factor:     %s", fptoa(dpi_factor));
+  sens.x = fixedpt_mul(sens.x, dpi_factor);
+  sens.y = fixedpt_mul(sens.y, dpi_factor);
 
   fixedpt dx_out = fixedpt_mul(dx, sens.x);
   fixedpt dy_out = fixedpt_mul(dy, sens.y);
