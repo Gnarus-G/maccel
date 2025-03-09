@@ -51,6 +51,18 @@ PARAM(LIMIT, 98304, // 1.5 << 16
       "Limit of the Natural curve");
 #endif
 
+// For Synchronous Mode
+
+PARAM(GAMMA, 4294967296, // 1 << 32
+      "Control how fast you get from low to fast around the midpoint");
+PARAM(SMOOTH, 2147483648, // 0.5 << 32
+      "Control the suddeness of the sensitivity increase.");
+PARAM(MOTIVITY, 6442450944, // 1.5 << 32
+      "Set the maximum sensitivity while also setting the minimum to "
+      "1/MOTIVITY");
+PARAM(SYNC_SPEED, 21474836480, // 5 << 32
+      "Set The middle sensitivity between you min and max sensitivity");
+
 // Flags
 #define PARAM_FLAG(param, default_value, desc)                                 \
   unsigned char PARAM_##param = default_value;                                 \
