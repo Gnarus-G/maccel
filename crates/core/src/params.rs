@@ -1,5 +1,5 @@
 use crate::libmaccel::fixedptc;
-use crate::libmaccel::fixedptc::Fixedpt;
+use crate::libmaccel::fixedptc::Fpt;
 use paste::paste;
 
 use std::{fmt::Display, str::FromStr};
@@ -16,7 +16,7 @@ macro_rules! declare_common_params {
         paste!(
             #[derive(Debug)]
             pub struct AllParamArgs {
-                $( pub [< $param:snake:lower >]: Fixedpt ),+
+                $( pub [< $param:snake:lower >]: Fpt ),+
             }
         );
 
@@ -48,7 +48,7 @@ macro_rules! declare_params {
             /// of the sensitivity function as it is expected to be in `C`
             #[repr(C)]
             pub struct AccelParams {
-                $( pub [< $common_param:snake:lower >] : fixedptc::Fixedpt, )+
+                $( pub [< $common_param:snake:lower >] : fixedptc::Fpt, )+
                 pub by_mode: AccelParamsByMode,
             }
 
@@ -74,7 +74,7 @@ macro_rules! declare_params {
                 /// Represents curve-specific parameters.
                 #[repr(C)]
                 pub struct [< $mode CurveParams >] {
-                    $( pub [< $param:snake:lower >]: fixedptc::Fixedpt ),+
+                    $( pub [< $param:snake:lower >]: fixedptc::Fpt ),+
                 }
 
                 #[doc = "Array of all parameters for the `"  $mode "` mode for convenience." ]
@@ -193,13 +193,13 @@ pub mod persist {
 
     use anyhow::{anyhow, Context};
 
-    use crate::fixedptc::Fixedpt;
+    use crate::fixedptc::Fpt;
 
     use super::*;
 
     pub trait ParamStore: Debug {
         fn set(&mut self, param: super::Param, value: f64) -> anyhow::Result<()>;
-        fn get(&self, param: &super::Param) -> anyhow::Result<Fixedpt>;
+        fn get(&self, param: &super::Param) -> anyhow::Result<Fpt>;
 
         fn set_current_accel_mode(mode: AccelMode);
         fn get_current_accel_mode() -> AccelMode;
@@ -212,14 +212,14 @@ pub mod persist {
 
     impl ParamStore for SysFsStore {
         fn set(&mut self, param: super::Param, value: f64) -> anyhow::Result<()> {
-            let value: Fixedpt = value.into();
+            let value: Fpt = value.into();
             let value = value.0;
             set_parameter(param.name(), value)
         }
 
-        fn get(&self, param: &super::Param) -> anyhow::Result<Fixedpt> {
+        fn get(&self, param: &super::Param) -> anyhow::Result<Fpt> {
             let value = get_paramater(param.name())?;
-            let value = Fixedpt::from_str(&value).context(format!(
+            let value = Fpt::from_str(&value).context(format!(
                 "couldn't interpret the parameter's value {}",
                 value
             ))?;
@@ -340,7 +340,7 @@ pub mod persist {
         Ok(())
     }
 
-    impl Display for Fixedpt {
+    impl Display for Fpt {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             f.write_str(&format_param_value(f64::from(*self)))
         }

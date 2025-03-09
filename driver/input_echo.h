@@ -17,13 +17,13 @@ static dev_t device_number;
 /*
  * Convert an int into an array of four/eight bytes, in big endian (MSB first)
  */
-static void fixedpt_to_int_be_bytes(fixedpt num, char bytes[sizeof(fixedpt)]) {
+static void fpt_to_int_be_bytes(fpt num, char bytes[sizeof(fpt)]) {
 #define byte(i) (FIXEDPT_BITS - (i * 8))
   bytes[0] = (num >> byte(1)) & 0xFF; // Most significant byte
   bytes[1] = (num >> byte(2)) & 0xFF;
   bytes[2] = (num >> byte(3)) & 0xFF;
 #if FIXEDPT_BITS == 64
-  if (sizeof(fixedpt) == 8) {
+  if (sizeof(fpt) == 8) {
     bytes[3] = (num >> byte(4)) & 0xFF;
     bytes[4] = (num >> byte(5)) & 0xFF;
     bytes[5] = (num >> byte(6)) & 0xFF;
@@ -40,8 +40,8 @@ static ssize_t read(struct file *f, char __user *user_buffer, size_t size,
                     loff_t *offset) {
   dbg("echoing speed to userspace: %s", fptoa(LAST_INPUT_MOUSE_SPEED));
 
-  char be_bytes_for_int[sizeof(fixedpt)] = {0};
-  fixedpt_to_int_be_bytes(LAST_INPUT_MOUSE_SPEED, be_bytes_for_int);
+  char be_bytes_for_int[sizeof(fpt)] = {0};
+  fpt_to_int_be_bytes(LAST_INPUT_MOUSE_SPEED, be_bytes_for_int);
 
   int err =
       copy_to_user(user_buffer, be_bytes_for_int, sizeof(be_bytes_for_int));

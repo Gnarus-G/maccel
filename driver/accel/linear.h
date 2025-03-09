@@ -6,23 +6,23 @@
 #include "../math.h"
 
 struct linear_curve_args {
-  fixedpt accel;
-  fixedpt offset;
-  fixedpt output_cap;
+  fpt accel;
+  fpt offset;
+  fpt output_cap;
 };
 
-static inline fixedpt linear_base_fn(fixedpt x, fixedpt accel,
-                                     fixedpt input_offset) {
-  fixedpt _x = x - input_offset;
-  fixedpt _x_square = fixedpt_mul(
+static inline fpt linear_base_fn(fpt x, fpt accel,
+                                     fpt input_offset) {
+  fpt _x = x - input_offset;
+  fpt _x_square = fpt_mul(
       _x, _x); // because linear in rawaccel is classic with exponent = 2
-  return fixedpt_mul(accel, fixedpt_div(_x_square, x));
+  return fpt_mul(accel, fpt_div(_x_square, x));
 }
 
 /**
  * Sensitivity Function for Linear Acceleration
  */
-static inline fixedpt __linear_sens_fun(fixedpt input_speed,
+static inline fpt __linear_sens_fun(fpt input_speed,
                                         struct linear_curve_args args) {
   dbg("linear: accel             %s", fptoa(args.accel));
   dbg("linear: offset            %s", fptoa(args.offset));
@@ -32,12 +32,12 @@ static inline fixedpt __linear_sens_fun(fixedpt input_speed,
     return FIXEDPT_ONE;
   }
 
-  fixedpt sens = linear_base_fn(input_speed, args.accel, args.offset);
+  fpt sens = linear_base_fn(input_speed, args.accel, args.offset);
   dbg("linear: base_fn sens       %s", fptoa(args.accel));
 
-  fixedpt sign = FIXEDPT_ONE;
+  fpt sign = FIXEDPT_ONE;
   if (args.output_cap > 0) {
-    fixedpt cap = fixedpt_sub(args.output_cap, FIXEDPT_ONE);
+    fpt cap = fpt_sub(args.output_cap, FIXEDPT_ONE);
     if (cap < 0) {
       cap = -cap;
       sign = -sign;
@@ -45,6 +45,6 @@ static inline fixedpt __linear_sens_fun(fixedpt input_speed,
     sens = minsd(sens, cap);
   }
 
-  return fixedpt_add(FIXEDPT_ONE, fixedpt_mul(sign, sens));
+  return fpt_add(FIXEDPT_ONE, fpt_mul(sign, sens));
 }
 #endif // !__ACCEL_LINEAR_H_

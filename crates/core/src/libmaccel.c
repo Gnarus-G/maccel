@@ -1,18 +1,14 @@
 #include "../../../driver/accel_rs.h"
 #include "../../../driver/fixedptc.h"
 
-char *fixedpt_to_str(fixedpt num);
-fixedpt str_to_fixedpt(char *string);
-double fixedpt_to_float(fixedpt value);
-fixedpt fixedpt_from_float(double value);
+char *fpt_to_str(fpt num);
+fpt str_to_fpt(char *string);
+double fpt_to_float(fpt value);
+fpt fpt_from_float(double value);
 
-extern char *fixedpt_to_str(fixedpt num) { return fptoa(num); }
-extern fixedpt str_to_fixedpt(char *string) { return atofp(string); }
+extern char *fpt_to_str(fpt num) { return fptoa(num); }
+extern fpt str_to_fpt(char *string) { return atofp(string); }
 
-extern double fixedpt_to_float(fixedpt value) {
-  return fixedpt_todouble(value);
-}
+extern double fpt_to_float(fpt value) { return fpt_todouble(value); }
 
-extern fixedpt fixedpt_from_float(double value) {
-  return fixedpt_rconst(value);
-}
+extern fpt fpt_from_float(double value) { return fpt_rconst(value); }

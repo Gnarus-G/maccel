@@ -7,7 +7,7 @@ use std::{
 use anyhow::Context;
 
 use crate::{
-    libmaccel::fixedptc::Fixedpt,
+    libmaccel::fixedptc::Fpt,
     params::{AllParamArgs, Param},
     persist::ParamStore,
     AccelMode,
@@ -16,11 +16,11 @@ use crate::{
 #[derive(Debug, Clone, Copy)]
 pub struct Parameter {
     pub tag: Param,
-    pub value: Fixedpt,
+    pub value: Fpt,
 }
 
 impl Parameter {
-    pub fn new(param: Param, value: Fixedpt) -> Self {
+    pub fn new(param: Param, value: Fpt) -> Self {
         Self { tag: param, value }
     }
 }

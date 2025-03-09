@@ -9,11 +9,11 @@
  * Track this to enable the UI to show the last noted
  * input counts/ms (speed).
  */
-static fixedpt LAST_INPUT_MOUSE_SPEED = 0;
+static fpt LAST_INPUT_MOUSE_SPEED = 0;
 
-static inline fixedpt input_speed(fixedpt dx, fixedpt dy, fixedpt time_ms) {
+static inline fpt input_speed(fpt dx, fpt dy, fpt time_ms) {
 
-  fixedpt distance = magnitude((struct vector){dx, dy});
+  fpt distance = magnitude((struct vector){dx, dy});
 
   if (distance == -1) {
     dbg("distance calculation failed: t = %s", fptoa(time_ms));
@@ -22,7 +22,7 @@ static inline fixedpt input_speed(fixedpt dx, fixedpt dy, fixedpt time_ms) {
 
   dbg("distance (in)              %s", fptoa(distance));
 
-  fixedpt speed = fixedpt_div(distance, time_ms);
+  fpt speed = fpt_div(distance, time_ms);
   LAST_INPUT_MOUSE_SPEED = speed;
 
   dbg("time interval              %s", fptoa(time_ms));

@@ -36,9 +36,9 @@ static struct accel_args collect_args(void) {
 }
 
 #if FIXEDPT_BITS == 64
-const fixedpt UNIT_PER_MS = fixedpt_rconst(1000000); // 1 million nanoseconds
+const fpt UNIT_PER_MS = fpt_rconst(1000000); // 1 million nanoseconds
 #else
-const fixedpt UNIT_PER_MS = fixedpt_rconst(1000); // 1 thousand microsends
+const fpt UNIT_PER_MS = fpt_rconst(1000); // 1 thousand microsends
 #endif
 
 static inline void accelerate(int *x, int *y) {
@@ -58,8 +58,8 @@ static inline void accelerate(int *x, int *y) {
 #endif
   last_time = now;
 
-  fixedpt _unit_time = fixedpt_fromint(unit_time);
-  fixedpt millisecond = fixedpt_div(_unit_time, UNIT_PER_MS);
+  fpt _unit_time = fpt_fromint(unit_time);
+  fpt millisecond = fpt_div(_unit_time, UNIT_PER_MS);
 
 #if FIXEDPT_BITS == 64
   dbg("ktime interval -> converting to ns: %lluns -> %sms", unit_time,

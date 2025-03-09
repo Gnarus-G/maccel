@@ -5,8 +5,8 @@
 #include <time.h>
 
 void test_eq(char *value, double expected) {
-  fixedpt n = atofp(value);
-  double actual = fixedpt_todouble(n);
+  fpt n = atofp(value);
+  double actual = fpt_todouble(n);
   dbg("actual: (%li) %.15f, vs expected: %.15f\n", n, actual, expected);
   assert(actual == expected);
 }
@@ -18,7 +18,7 @@ void super_tiny_micro_minuscule_bench() {
     struct timespec begin, end;
     clock_gettime(CLOCK_MONOTONIC_RAW, &begin);
 
-    fixedpt n = atofp("1826512586328");
+    fpt n = atofp("1826512586328");
     dbg("atofp(\"1826512586328\") = %li\n", n);
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &end);

@@ -1,7 +1,7 @@
 use anyhow::Context;
 use clap::{CommandFactory, Parser};
 use maccel_core::{
-    fixedptc::Fixedpt,
+    fixedptc::Fpt,
     persist::{ParamStore, SysFsStore},
     subcommads::*,
     AccelMode, Param, ALL_COMMON_PARAMS, ALL_LINEAR_PARAMS, ALL_NATURAL_PARAMS,
@@ -125,12 +125,12 @@ fn main() -> anyhow::Result<()> {
                         .map_while(Result::ok)
                         .flat_map(|s| s.parse::<f64>())
                     {
-                        println!("{}", Fixedpt::from(n).0);
+                        println!("{}", Fpt::from(n).0);
                     }
                 }
 
                 for n in nums {
-                    println!("{}", Fixedpt::from(n).0);
+                    println!("{}", Fpt::from(n).0);
                 }
             }
         },
@@ -148,7 +148,7 @@ fn print_all_params<'p>(
 
     let params = params
         .map(|p| {
-            SysFsStore.get(p).and_then(|_p: Fixedpt| {
+            SysFsStore.get(p).and_then(|_p: Fpt| {
                 let value: &str = (&_p).try_into()?;
                 Ok((p.display_name(), value.to_string()))
             })

@@ -8,7 +8,7 @@ use std::{fs, io::Read, thread};
 
 static mut INPUT_SPEED: f64 = 0.0;
 
-use crate::libmaccel::fixedptc::Fixedpt;
+use crate::libmaccel::fixedptc::Fpt;
 
 pub fn read_input_speed() -> f64 {
     // Safety don't care about race conditions
@@ -36,7 +36,7 @@ pub fn setup_input_speed_reader() {
                 _ => 0,
             };
 
-            let num: f64 = Fixedpt(num).into();
+            let num: f64 = Fpt(num).into();
 
             // Safety don't care about race conditions
             unsafe { INPUT_SPEED = num };

@@ -84,20 +84,20 @@
 #endif
 
 #if FIXEDPT_BITS == 32
-typedef int32_t fixedpt;
-typedef int64_t fixedptd;
-typedef uint32_t fixedptu;
-typedef uint64_t fixedptud;
+typedef int32_t fpt;
+typedef int64_t fptd;
+typedef uint32_t fptu;
+typedef uint64_t fptud;
 
 #define FIXEDPT_WBITS 16
 
 #elif FIXEDPT_BITS == 64
 #include "Fixed64.utils.h"
 
-typedef int64_t fixedpt;
-typedef __int128_t fixedptd;
-typedef uint64_t fixedptu;
-typedef __uint128_t fixedptud;
+typedef int64_t fpt;
+typedef __int128_t fptd;
+typedef uint64_t fptu;
+typedef __uint128_t fptud;
 
 #define FIXEDPT_WBITS 32
 #else
@@ -111,82 +111,79 @@ typedef __uint128_t fixedptud;
 #define FIXEDPT_VCSID "$Id$"
 
 #define FIXEDPT_FBITS (FIXEDPT_BITS - FIXEDPT_WBITS)
-#define FIXEDPT_FMASK (((fixedpt)1 << FIXEDPT_FBITS) - 1)
+#define FIXEDPT_FMASK (((fpt)1 << FIXEDPT_FBITS) - 1)
 
-#define fixedpt_rconst(R)                                                      \
-  ((fixedpt)((R) * FIXEDPT_ONE + ((R) >= 0 ? 0.5 : -0.5)))
-#define fixedpt_fromint(I) ((fixedptd)(I) << FIXEDPT_FBITS)
-#define fixedpt_toint(F) ((F) >> FIXEDPT_FBITS)
-#define fixedpt_add(A, B) ((A) + (B))
-#define fixedpt_sub(A, B) ((A) - (B))
-#define fixedpt_xmul(A, B)                                                     \
-  ((fixedpt)(((fixedptd)(A) * (fixedptd)(B)) >> FIXEDPT_FBITS))
-#define fixedpt_xdiv(A, B)                                                     \
-  ((fixedpt)(((fixedptd)(A) << FIXEDPT_FBITS) / (fixedptd)(B)))
-#define fixedpt_fracpart(A) ((fixedpt)(A) & FIXEDPT_FMASK)
+#define fpt_rconst(R) ((fpt)((R) * FIXEDPT_ONE + ((R) >= 0 ? 0.5 : -0.5)))
+#define fpt_fromint(I) ((fptd)(I) << FIXEDPT_FBITS)
+#define fpt_toint(F) ((F) >> FIXEDPT_FBITS)
+#define fpt_add(A, B) ((A) + (B))
+#define fpt_sub(A, B) ((A) - (B))
+#define fpt_xmul(A, B) ((fpt)(((fptd)(A) * (fptd)(B)) >> FIXEDPT_FBITS))
+#define fpt_xdiv(A, B) ((fpt)(((fptd)(A) << FIXEDPT_FBITS) / (fptd)(B)))
+#define fpt_fracpart(A) ((fpt)(A) & FIXEDPT_FMASK)
 
-#define FIXEDPT_ONE ((fixedpt)((fixedpt)1 << FIXEDPT_FBITS))
+#define FIXEDPT_ONE ((fpt)((fpt)1 << FIXEDPT_FBITS))
 #define FIXEDPT_ONE_HALF (FIXEDPT_ONE >> 1)
 #define FIXEDPT_TWO (FIXEDPT_ONE + FIXEDPT_ONE)
-#define FIXEDPT_PI fixedpt_rconst(3.14159265358979323846)
-#define FIXEDPT_TWO_PI fixedpt_rconst(2 * 3.14159265358979323846)
-#define FIXEDPT_HALF_PI fixedpt_rconst(3.14159265358979323846 / 2)
-#define FIXEDPT_E fixedpt_rconst(2.7182818284590452354)
+#define FIXEDPT_PI fpt_rconst(3.14159265358979323846)
+#define FIXEDPT_TWO_PI fpt_rconst(2 * 3.14159265358979323846)
+#define FIXEDPT_HALF_PI fpt_rconst(3.14159265358979323846 / 2)
+#define FIXEDPT_E fpt_rconst(2.7182818284590452354)
 
-#define fixedpt_abs(A) ((A) < 0 ? -(A) : (A))
+#define fpt_abs(A) ((A) < 0 ? -(A) : (A))
 
-/* fixedpt is meant to be usable in environments without floating point support
+/* fpt is meant to be usable in environments without floating point support
  * (e.g. microcontrollers, kernels), so we can't use floating point types
  * directly. Putting them only in macros will effectively make them optional. */
-#define fixedpt_tofloat(T)                                                     \
+#define fpt_tofloat(T)                                                         \
   ((float)((T) * ((float)(1) / (float)(1L << FIXEDPT_FBITS))))
 
-#define fixedpt_todouble(T)                                                    \
+#define fpt_todouble(T)                                                        \
   ((double)((T) * ((double)(1) / (double)(1L << FIXEDPT_FBITS))))
 
-/* Multiplies two fixedpt numbers, returns the result. */
-static inline fixedpt fixedpt_mul(fixedpt A, fixedpt B) {
-  return (((fixedptd)A * (fixedptd)B) >> FIXEDPT_FBITS);
+/* Multiplies two fpt numbers, returns the result. */
+static inline fpt fpt_mul(fpt A, fpt B) {
+  return (((fptd)A * (fptd)B) >> FIXEDPT_FBITS);
 }
 
 #if FIXEDPT_BITS == 64
-static inline fixedpt div128_s64_s64(fixedpt dividend, fixedpt divisor) {
-  fixedpt high = dividend >> FIXEDPT_FBITS;
-  fixedpt low = dividend << FIXEDPT_FBITS;
+static inline fpt div128_s64_s64(fpt dividend, fpt divisor) {
+  fpt high = dividend >> FIXEDPT_FBITS;
+  fpt low = dividend << FIXEDPT_FBITS;
 
-  fixedpt result = div128_s64_s64_s64(high, low, divisor);
+  fpt result = div128_s64_s64_s64(high, low, divisor);
   return result;
 }
 #endif
 
-/* Divides two fixedpt numbers, returns the result. */
-static inline fixedpt fixedpt_div(fixedpt A, fixedpt B) {
+/* Divides two fpt numbers, returns the result. */
+static inline fpt fpt_div(fpt A, fpt B) {
 #if FIXEDPT_BITS == 64
   return div128_s64_s64(A, B);
 #endif
-  return (((fixedptd)A << FIXEDPT_FBITS) / (fixedptd)B);
+  return (((fptd)A << FIXEDPT_FBITS) / (fptd)B);
 }
 
 /*
- * Note: adding and subtracting fixedpt numbers can be done by using
+ * Note: adding and subtracting fpt numbers can be done by using
  * the regular integer operators + and -.
  */
 
 /**
- * Convert the given fixedpt number to a decimal string.
+ * Convert the given fpt number to a decimal string.
  * The max_dec argument specifies how many decimal digits to the right
  * of the decimal point to generate. If set to -1, the "default" number
- * of decimal digits will be used (2 for 32-bit fixedpt width, 10 for
- * 64-bit fixedpt width); If set to -2, "all" of the digits will
+ * of decimal digits will be used (2 for 32-bit fpt width, 10 for
+ * 64-bit fpt width); If set to -2, "all" of the digits will
  * be returned, meaning there will be invalid, bogus digits outside the
  * specified precisions.
  */
-static inline void fixedpt_str(fixedpt A, char *str, int max_dec) {
+static inline void fpt_str(fpt A, char *str, int max_dec) {
   int ndec = 0, slen = 0;
   char tmp[12] = {0};
-  fixedptud fr, ip;
-  const fixedptud one = (fixedptud)1 << FIXEDPT_BITS;
-  const fixedptud mask = one - 1;
+  fptud fr, ip;
+  const fptud one = (fptud)1 << FIXEDPT_BITS;
+  const fptud mask = one - 1;
 
   if (max_dec == -1)
 #if FIXEDPT_BITS == 32
@@ -208,7 +205,7 @@ static inline void fixedpt_str(fixedpt A, char *str, int max_dec) {
     A *= -1;
   }
 
-  ip = fixedpt_toint(A);
+  ip = fpt_toint(A);
   do {
     tmp[ndec++] = '0' + ip % 10;
     ip /= 10;
@@ -218,7 +215,7 @@ static inline void fixedpt_str(fixedpt A, char *str, int max_dec) {
     str[slen++] = tmp[--ndec];
   str[slen++] = '.';
 
-  fr = (fixedpt_fracpart(A) << FIXEDPT_WBITS) & mask;
+  fr = (fpt_fracpart(A) << FIXEDPT_WBITS) & mask;
   do {
     fr = (fr & mask) * 10;
 
@@ -232,20 +229,20 @@ static inline void fixedpt_str(fixedpt A, char *str, int max_dec) {
     str[slen] = '\0';
 }
 
-/* Converts the given fixedpt number into a string, using a static
+/* Converts the given fpt number into a string, using a static
  * (non-threadsafe) string buffer */
-static inline char *fptoa(const fixedpt A) {
+static inline char *fptoa(const fpt A) {
   static char str[25];
 #if FIXEDPT_BITS == 64
   FP64_ToString(A, str);
 #else
-  fixedpt_str(A, str, 10);
+  fpt_str(A, str, 10);
 #endif
   return (str);
 }
 
-static fixedpt atofp(char *num_string) {
-  fixedptu n = 0;
+static fpt atofp(char *num_string) {
+  fptu n = 0;
   int sign = 0;
 
   for (int idx = 0; num_string[idx] != '\0'; idx++) {
@@ -272,11 +269,11 @@ static fixedpt atofp(char *num_string) {
 }
 
 /* Returns the square root of the given number, or -1 in case of error */
-static inline fixedpt fixedpt_sqrt(fixedpt A) {
+static inline fpt fpt_sqrt(fpt A) {
   int invert = 0;
   int iter = FIXEDPT_FBITS;
   int i;
-  fixedpt l;
+  fpt l;
 
   if (A < 0)
     return (-1);
@@ -284,10 +281,10 @@ static inline fixedpt fixedpt_sqrt(fixedpt A) {
     return (A);
   if (A < FIXEDPT_ONE && A > 6) {
     invert = 1;
-    A = fixedpt_div(FIXEDPT_ONE, A);
+    A = fpt_div(FIXEDPT_ONE, A);
   }
   if (A > FIXEDPT_ONE) {
-    fixedpt s = A;
+    fpt s = A;
 
     iter = 0;
     while (s > 0) {
@@ -299,18 +296,18 @@ static inline fixedpt fixedpt_sqrt(fixedpt A) {
   /* Newton's iterations */
   l = (A >> 1) + 1;
   for (i = 0; i < iter; i++)
-    l = (l + fixedpt_div(A, l)) >> 1;
+    l = (l + fpt_div(A, l)) >> 1;
   if (invert)
-    return (fixedpt_div(FIXEDPT_ONE, l));
+    return (fpt_div(FIXEDPT_ONE, l));
   return (l);
 }
 
-/* Returns the sine of the given fixedpt number.
+/* Returns the sine of the given fpt number.
  * Note: the loss of precision is extraordinary! */
-static inline fixedpt fixedpt_sin(fixedpt fp) {
+static inline fpt fpt_sin(fpt fp) {
   int sign = 1;
-  fixedpt sqr, result;
-  const fixedpt SK[2] = {fixedpt_rconst(7.61e-03), fixedpt_rconst(1.6605e-01)};
+  fpt sqr, result;
+  const fpt SK[2] = {fpt_rconst(7.61e-03), fpt_rconst(1.6605e-01)};
 
   fp %= 2 * FIXEDPT_PI;
   if (fp < 0)
@@ -324,80 +321,75 @@ static inline fixedpt fixedpt_sin(fixedpt fp) {
     fp = (FIXEDPT_PI << 1) - fp;
     sign = -1;
   }
-  sqr = fixedpt_mul(fp, fp);
+  sqr = fpt_mul(fp, fp);
   result = SK[0];
-  result = fixedpt_mul(result, sqr);
+  result = fpt_mul(result, sqr);
   result -= SK[1];
-  result = fixedpt_mul(result, sqr);
+  result = fpt_mul(result, sqr);
   result += FIXEDPT_ONE;
-  result = fixedpt_mul(result, fp);
+  result = fpt_mul(result, fp);
   return sign * result;
 }
 
-/* Returns the cosine of the given fixedpt number */
-static inline fixedpt fixedpt_cos(fixedpt A) {
-  return (fixedpt_sin(FIXEDPT_HALF_PI - A));
-}
+/* Returns the cosine of the given fpt number */
+static inline fpt fpt_cos(fpt A) { return (fpt_sin(FIXEDPT_HALF_PI - A)); }
 
-/* Returns the tangens of the given fixedpt number */
-static inline fixedpt fixedpt_tan(fixedpt A) {
-  return fixedpt_div(fixedpt_sin(A), fixedpt_cos(A));
-}
+/* Returns the tangens of the given fpt number */
+static inline fpt fpt_tan(fpt A) { return fpt_div(fpt_sin(A), fpt_cos(A)); }
 
-/* Returns the value exp(x), i.e. e^x of the given fixedpt number. */
-static inline fixedpt fixedpt_exp(fixedpt fp) {
-  fixedpt xabs, k, z, R, xp;
-  const fixedpt LN2 = fixedpt_rconst(0.69314718055994530942);
-  const fixedpt LN2_INV = fixedpt_rconst(1.4426950408889634074);
-  const fixedpt EXP_P[5] = {
-      fixedpt_rconst(1.66666666666666019037e-01),
-      fixedpt_rconst(-2.77777777770155933842e-03),
-      fixedpt_rconst(6.61375632143793436117e-05),
-      fixedpt_rconst(-1.65339022054652515390e-06),
-      fixedpt_rconst(4.13813679705723846039e-08),
+/* Returns the value exp(x), i.e. e^x of the given fpt number. */
+static inline fpt fpt_exp(fpt fp) {
+  fpt xabs, k, z, R, xp;
+  const fpt LN2 = fpt_rconst(0.69314718055994530942);
+  const fpt LN2_INV = fpt_rconst(1.4426950408889634074);
+  const fpt EXP_P[5] = {
+      fpt_rconst(1.66666666666666019037e-01),
+      fpt_rconst(-2.77777777770155933842e-03),
+      fpt_rconst(6.61375632143793436117e-05),
+      fpt_rconst(-1.65339022054652515390e-06),
+      fpt_rconst(4.13813679705723846039e-08),
   };
 
   if (fp == 0)
     return (FIXEDPT_ONE);
-  xabs = fixedpt_abs(fp);
-  k = fixedpt_mul(xabs, LN2_INV);
+  xabs = fpt_abs(fp);
+  k = fpt_mul(xabs, LN2_INV);
   k += FIXEDPT_ONE_HALF;
   k &= ~FIXEDPT_FMASK;
   if (fp < 0)
     k = -k;
-  fp -= fixedpt_mul(k, LN2);
-  z = fixedpt_mul(fp, fp);
+  fp -= fpt_mul(k, LN2);
+  z = fpt_mul(fp, fp);
   /* Taylor */
   R = FIXEDPT_TWO +
-      fixedpt_mul(
-          z, EXP_P[0] +
-                 fixedpt_mul(
-                     z, EXP_P[1] +
-                            fixedpt_mul(
-                                z, EXP_P[2] +
-                                       fixedpt_mul(
-                                           z, EXP_P[3] +
-                                                  fixedpt_mul(z, EXP_P[4])))));
-  xp = FIXEDPT_ONE + fixedpt_div(fixedpt_mul(fp, FIXEDPT_TWO), R - fp);
+      fpt_mul(
+          z,
+          EXP_P[0] +
+              fpt_mul(
+                  z, EXP_P[1] +
+                         fpt_mul(z, EXP_P[2] +
+                                        fpt_mul(z, EXP_P[3] +
+                                                       fpt_mul(z, EXP_P[4])))));
+  xp = FIXEDPT_ONE + fpt_div(fpt_mul(fp, FIXEDPT_TWO), R - fp);
   if (k < 0)
     k = FIXEDPT_ONE >> (-k >> FIXEDPT_FBITS);
   else
     k = FIXEDPT_ONE << (k >> FIXEDPT_FBITS);
-  return (fixedpt_mul(k, xp));
+  return (fpt_mul(k, xp));
 }
 
-/* Returns the natural logarithm of the given fixedpt number. */
-static inline fixedpt fixedpt_ln(fixedpt x) {
-  fixedpt log2, xi;
-  fixedpt f, s, z, w, R;
-  const fixedpt LN2 = fixedpt_rconst(0.69314718055994530942);
-  const fixedpt LG[7] = {fixedpt_rconst(6.666666666666735130e-01),
-                         fixedpt_rconst(3.999999999940941908e-01),
-                         fixedpt_rconst(2.857142874366239149e-01),
-                         fixedpt_rconst(2.222219843214978396e-01),
-                         fixedpt_rconst(1.818357216161805012e-01),
-                         fixedpt_rconst(1.531383769920937332e-01),
-                         fixedpt_rconst(1.479819860511658591e-01)};
+/* Returns the natural logarithm of the given fpt number. */
+static inline fpt fpt_ln(fpt x) {
+  fpt log2, xi;
+  fpt f, s, z, w, R;
+  const fpt LN2 = fpt_rconst(0.69314718055994530942);
+  const fpt LG[7] = {fpt_rconst(6.666666666666735130e-01),
+                     fpt_rconst(3.999999999940941908e-01),
+                     fpt_rconst(2.857142874366239149e-01),
+                     fpt_rconst(2.222219843214978396e-01),
+                     fpt_rconst(1.818357216161805012e-01),
+                     fpt_rconst(1.531383769920937332e-01),
+                     fpt_rconst(1.479819860511658591e-01)};
 
   if (x < 0)
     return (0);
@@ -411,30 +403,27 @@ static inline fixedpt fixedpt_ln(fixedpt x) {
     log2++;
   }
   f = xi - FIXEDPT_ONE;
-  s = fixedpt_div(f, FIXEDPT_TWO + f);
-  z = fixedpt_mul(s, s);
-  w = fixedpt_mul(z, z);
-  R = fixedpt_mul(w, LG[1] + fixedpt_mul(w, LG[3] + fixedpt_mul(w, LG[5]))) +
-      fixedpt_mul(
-          z, LG[0] +
-                 fixedpt_mul(
-                     w, LG[2] + fixedpt_mul(w, LG[4] + fixedpt_mul(w, LG[6]))));
-  return (fixedpt_mul(LN2, (log2 << FIXEDPT_FBITS)) + f -
-          fixedpt_mul(s, f - R));
+  s = fpt_div(f, FIXEDPT_TWO + f);
+  z = fpt_mul(s, s);
+  w = fpt_mul(z, z);
+  R = fpt_mul(w, LG[1] + fpt_mul(w, LG[3] + fpt_mul(w, LG[5]))) +
+      fpt_mul(z, LG[0] +
+                     fpt_mul(w, LG[2] + fpt_mul(w, LG[4] + fpt_mul(w, LG[6]))));
+  return (fpt_mul(LN2, (log2 << FIXEDPT_FBITS)) + f - fpt_mul(s, f - R));
 }
 
-/* Returns the logarithm of the given base of the given fixedpt number */
-static inline fixedpt fixedpt_log(fixedpt x, fixedpt base) {
-  return (fixedpt_div(fixedpt_ln(x), fixedpt_ln(base)));
+/* Returns the logarithm of the given base of the given fpt number */
+static inline fpt fpt_log(fpt x, fpt base) {
+  return (fpt_div(fpt_ln(x), fpt_ln(base)));
 }
 
-/* Return the power value (n^exp) of the given fixedpt numbers */
-static inline fixedpt fixedpt_pow(fixedpt n, fixedpt exp) {
+/* Return the power value (n^exp) of the given fpt numbers */
+static inline fpt fpt_pow(fpt n, fpt exp) {
   if (exp == 0)
     return (FIXEDPT_ONE);
   if (n < 0)
     return 0;
-  return (fixedpt_exp(fixedpt_mul(fixedpt_ln(n), exp)));
+  return (fpt_exp(fpt_mul(fpt_ln(n), exp)));
 }
 
 #endif

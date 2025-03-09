@@ -31,19 +31,18 @@ static int test_acceleration(const char *filename, struct accel_args args) {
   return 0;
 }
 
-static int test_linear_acceleration(const char *filename,
-                                    fixedpt param_sens_mult,
-                                    fixedpt param_yx_ratio, fixedpt param_accel,
-                                    fixedpt param_offset,
-                                    fixedpt param_output_cap) {
+static int test_linear_acceleration(const char *filename, fpt param_sens_mult,
+                                    fpt param_yx_ratio, fpt param_accel,
+                                    fpt param_offset, fpt param_output_cap) {
   struct linear_curve_args _args =
       (struct linear_curve_args){.accel = param_accel,
                                  .offset = param_offset,
                                  .output_cap = param_output_cap};
 
   struct accel_args args = {
-      .param_sens_mult = param_sens_mult,
-      .param_yx_ratio = param_yx_ratio,
+      .sens_mult = param_sens_mult,
+      .yx_ratio = param_yx_ratio,
+      .input_dpi = fpt_fromint(1000),
       .tag = linear,
       .args = (union __accel_args){.linear = _args},
   };
@@ -51,18 +50,18 @@ static int test_linear_acceleration(const char *filename,
   return test_acceleration(filename, args);
 }
 
-static int
-test_natural_acceleration(const char *filename, fixedpt param_sens_mult,
-                          fixedpt param_yx_ratio, fixedpt param_decay_rate,
-                          fixedpt param_offset, fixedpt param_limit) {
+static int test_natural_acceleration(const char *filename, fpt param_sens_mult,
+                                     fpt param_yx_ratio, fpt param_decay_rate,
+                                     fpt param_offset, fpt param_limit) {
   struct natural_curve_args _args =
       (struct natural_curve_args){.decay_rate = param_decay_rate,
                                   .offset = param_offset,
                                   .limit = param_limit};
 
   struct accel_args args = {
-      .param_sens_mult = param_sens_mult,
-      .param_yx_ratio = param_yx_ratio,
+      .sens_mult = param_sens_mult,
+      .yx_ratio = param_yx_ratio,
+      .input_dpi = fpt_fromint(1000),
       .tag = natural,
       .args = (union __accel_args){.natural = _args},
   };
@@ -74,17 +73,16 @@ test_natural_acceleration(const char *filename, fixedpt param_sens_mult,
   assert(test_linear_acceleration(                                             \
              "SENS_MULT-" #sens_mult "-ACCEL-" #accel "-OFFSET" #offset        \
              "-OUTPUT_CAP-" #cap ".snapshot",                                  \
-             fixedpt_rconst(sens_mult), fixedpt_rconst(yx_ratio),              \
-             fixedpt_rconst(accel), fixedpt_rconst(offset),                    \
-             fixedpt_rconst(cap)) == 0);
+             fpt_rconst(sens_mult), fpt_rconst(yx_ratio), fpt_rconst(accel),   \
+             fpt_rconst(offset), fpt_rconst(cap)) == 0);
 
 #define test_natural(sens_mult, yx_ratio, decay_rate, offset, limit)           \
-  assert(test_linear_acceleration(                                             \
-             "Natural__SENS_MULT-" #sens_mult "-ACCEL-" #decay_rate            \
-             "-OFFSET" #offset "-LIMIT-" #limit ".snapshot",                   \
-             fixedpt_rconst(sens_mult), fixedpt_rconst(yx_ratio),              \
-             fixedpt_rconst(decay_rate), fixedpt_rconst(offset),               \
-             fixedpt_rconst(limit)) == 0);
+  assert(test_linear_acceleration("Natural__SENS_MULT-" #sens_mult             \
+                                  "-ACCEL-" #decay_rate "-OFFSET" #offset      \
+                                  "-LIMIT-" #limit ".snapshot",                \
+                                  fpt_rconst(sens_mult), fpt_rconst(yx_ratio), \
+                                  fpt_rconst(decay_rate), fpt_rconst(offset),  \
+                                  fpt_rconst(limit)) == 0);
 
 int main(void) {
   test_linear(1, 1, 0, 0, 0);

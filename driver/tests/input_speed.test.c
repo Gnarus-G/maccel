@@ -3,17 +3,17 @@
 #include <stdio.h>
 
 int assert_string_value(char *filename, double x, double y, double t) {
-  fixedpt dx = fixedpt_rconst(x);
-  fixedpt dy = fixedpt_rconst(y);
-  fixedpt dt = fixedpt_rconst(t);
+  fpt dx = fpt_rconst(x);
+  fpt dy = fpt_rconst(y);
+  fpt dt = fpt_rconst(t);
 
   dbg("in                        (%f, %f)", x, y);
-  dbg("in: x (fixedpt conversion) %s", fptoa(x));
-  dbg("in: y (fixedpt conversion) %s", fptoa(y));
+  dbg("in: x (fpt conversion) %s", fptoa(x));
+  dbg("in: y (fpt conversion) %s", fptoa(y));
 
-  fixedpt s = input_speed(dx, dy, dt);
+  fpt s = input_speed(dx, dy, dt);
 
-  double res = fixedpt_todouble(s);
+  double res = fpt_todouble(s);
   dbg("(%f, %f) dt = %f -> %f\n", x, y, t, res);
 
   char content[100];

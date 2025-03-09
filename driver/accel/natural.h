@@ -4,15 +4,15 @@
 #include "../fixedptc.h"
 
 struct natural_curve_args {
-  fixedpt decay_rate;
-  fixedpt offset;
-  fixedpt limit;
+  fpt decay_rate;
+  fpt offset;
+  fpt limit;
 };
 
 /**
  * Gain Function for Natural Acceleration
  */
-static inline fixedpt __natural_sens_fun(fixedpt input_speed,
+static inline fpt __natural_sens_fun(fpt input_speed,
                                          struct natural_curve_args args) {
   dbg("natural: decay_rate        %s", fptoa(args.decay_rate));
   dbg("natural: offset            %s", fptoa(args.offset));
@@ -29,20 +29,20 @@ static inline fixedpt __natural_sens_fun(fixedpt input_speed,
     return FIXEDPT_ONE;
   }
 
-  fixedpt limit = args.limit - FIXEDPT_ONE;
-  fixedpt accel = fixedpt_div(args.decay_rate, fixedpt_abs(limit));
-  fixedpt constant = fixedpt_div(-limit, accel);
+  fpt limit = args.limit - FIXEDPT_ONE;
+  fpt accel = fpt_div(args.decay_rate, fpt_abs(limit));
+  fpt constant = fpt_div(-limit, accel);
 
   dbg("natural: constant          %s", fptoa(constant));
 
-  fixedpt offset_x = args.offset - input_speed;
-  fixedpt decay = fixedpt_exp(fixedpt_mul(accel, offset_x));
+  fpt offset_x = args.offset - input_speed;
+  fpt decay = fpt_exp(fpt_mul(accel, offset_x));
 
   dbg("natural: decay             %s", fptoa(decay));
 
-  fixedpt output_denom = fixedpt_div(decay, accel) - offset_x;
-  fixedpt output = fixedpt_mul(limit, output_denom) + constant;
+  fpt output_denom = fpt_div(decay, accel) - offset_x;
+  fpt output = fpt_mul(limit, output_denom) + constant;
 
-  return fixedpt_div(output, input_speed) + FIXEDPT_ONE;
+  return fpt_div(output, input_speed) + FIXEDPT_ONE;
 }
 #endif

@@ -5,7 +5,7 @@
 #include <unistd.h>
 
 int assert_string_value(char *filename, double value) {
-  fixedpt v = fixedpt_rconst(value);
+  fpt v = fpt_rconst(value);
   char *_v = fptoa(v);
 
   dbg("to_string %f = %s", value, _v);

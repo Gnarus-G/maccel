@@ -1,5 +1,5 @@
 use crate::{
-    libmaccel::{self, fixedptc::Fixedpt},
+    libmaccel::{self, fixedptc::Fpt},
     params::AllParamArgs,
     AccelParams, AccelParamsByMode, LinearCurveParams, NaturalCurveParams,
 };
@@ -36,8 +36,8 @@ pub type SensXY = (f64, f64);
 pub fn sensitivity(s_in: f64, mode: AccelMode, params: &AllParamArgs) -> SensXY {
     let sens =
         unsafe { libmaccel::sensitivity_rs(s_in.into(), params.convert_to_accel_args(mode)) };
-    let ratio_x: f64 = Fixedpt(sens.x).into();
-    let ratio_y: f64 = Fixedpt(sens.y).into();
+    let ratio_x: f64 = Fpt(sens.x).into();
+    let ratio_y: f64 = Fpt(sens.y).into();
 
     (ratio_x, ratio_y)
 }

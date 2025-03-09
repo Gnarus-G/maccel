@@ -35,7 +35,7 @@ impl CyclingIdx {
 
 #[cfg(test)]
 pub(crate) mod test_utils {
-    use maccel_core::{fixedptc::Fixedpt, ContextRef, Parameter};
+    use maccel_core::{fixedptc::Fpt, ContextRef, Parameter};
     use mocks::MockStore;
 
     pub fn new_context() -> (ContextRef<MockStore>, Vec<Parameter>) {
@@ -44,7 +44,7 @@ pub(crate) mod test_utils {
             (maccel_core::Param::Accel, 1.0),
         ];
 
-        let params = params.map(|(p, v)| (p, Fixedpt::from(v)));
+        let params = params.map(|(p, v)| (p, Fpt::from(v)));
         let context = ContextRef::new(maccel_core::TuiContext::new(
             MockStore {
                 list: params.to_vec(),
@@ -57,11 +57,11 @@ pub(crate) mod test_utils {
 
     mod mocks {
         use anyhow::Context;
-        use maccel_core::{fixedptc::Fixedpt, persist::ParamStore, AccelMode, Param};
+        use maccel_core::{fixedptc::Fpt, persist::ParamStore, AccelMode, Param};
 
         #[derive(Debug)]
         pub struct MockStore {
-            pub list: Vec<(Param, Fixedpt)>,
+            pub list: Vec<(Param, Fpt)>,
         }
 
         impl ParamStore for MockStore {
@@ -72,7 +72,7 @@ pub(crate) mod test_utils {
                 Ok(())
             }
 
-            fn get(&self, param: &Param) -> anyhow::Result<Fixedpt> {
+            fn get(&self, param: &Param) -> anyhow::Result<Fpt> {
                 self.list
                     .iter()
                     .find(|(p, _)| p == param)
