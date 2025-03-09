@@ -96,6 +96,10 @@ impl<PS: ParamStore> TuiContext<PS> {
             output_cap: get!(OutputCap),
             decay_rate: get!(DecayRate),
             limit: get!(Limit),
+            gamma: get!(Gamma),
+            smooth: get!(Smooth),
+            motivity: get!(Motivity),
+            sync_speed: get!(SyncSpeed),
         }
     }
 }
