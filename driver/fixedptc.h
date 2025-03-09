@@ -334,7 +334,7 @@ static inline fpt fpt_sin(fpt fp) {
 /* Returns the cosine of the given fpt number */
 static inline fpt fpt_cos(fpt A) { return (fpt_sin(FIXEDPT_HALF_PI - A)); }
 
-/* Returns the tangens of the given fpt number */
+/* Returns the tangent of the given fpt number */
 static inline fpt fpt_tan(fpt A) { return fpt_div(fpt_sin(A), fpt_cos(A)); }
 
 /* Returns the value exp(x), i.e. e^x of the given fpt number. */
@@ -376,6 +376,14 @@ static inline fpt fpt_exp(fpt fp) {
   else
     k = FIXEDPT_ONE << (k >> FIXEDPT_FBITS);
   return (fpt_mul(k, xp));
+}
+
+/* Returns the hyperbolic tangent of the given fpt number */
+static inline fpt fpt_tanh(fpt X) {
+  fpt e_to_the_2_x = fpt_exp(fpt_mul(FIXEDPT_TWO, X));
+  fpt sinh = e_to_the_2_x - FIXEDPT_ONE;
+  fpt cosh = e_to_the_2_x + FIXEDPT_ONE;
+  return fpt_div(sinh, cosh);
 }
 
 /* Returns the natural logarithm of the given fpt number. */
