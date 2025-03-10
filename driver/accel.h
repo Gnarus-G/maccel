@@ -68,15 +68,15 @@ static inline void f_accelerate(int *x, int *y, fpt time_interval_ms,
   dbg("in: x (fpt conversion) %s", fptoa(dx));
   dbg("in: y (fpt conversion) %s", fptoa(dy));
 
+  fpt dpi_factor = fpt_div(NORMALIZED_DPI, args.input_dpi);
+  dbg("dpi adjustment factor:     %s", fptoa(dpi_factor));
+  dx = fpt_mul(dx, dpi_factor);
+  dy = fpt_mul(dy, dpi_factor);
+
   fpt speed_in = input_speed(dx, dy, time_interval_ms);
   struct vector sens = sensitivity(speed_in, args);
   dbg("scale x                    %s", fptoa(sens.x));
   dbg("scale y                    %s", fptoa(sens.y));
-
-  fpt dpi_factor = fpt_div(NORMALIZED_DPI, args.input_dpi);
-  dbg("dpi adjustment factor:     %s", fptoa(dpi_factor));
-  sens.x = fpt_mul(sens.x, dpi_factor);
-  sens.y = fpt_mul(sens.y, dpi_factor);
 
   fpt dx_out = fpt_mul(dx, sens.x);
   fpt dy_out = fpt_mul(dy, sens.y);
