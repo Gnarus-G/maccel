@@ -134,7 +134,7 @@ impl<PS: ParamStore + Debug> TuiComponent for Screen<PS> {
         let normal_mode_commands_help = [
             ("Tab / Down", "select next parameter"),
             ("Shift + Tab / Up", "select previous parameter"),
-            ("i", "start editing a parameter"),
+            ("i / Enter", "start editing a parameter"),
             ("Left", "prev mode"),
             ("Right", "next mode"),
         ]
@@ -203,7 +203,7 @@ impl<PS: ParamStore + Debug> TuiComponent for Screen<PS> {
 
 #[cfg(test)]
 mod test {
-    use maccel_core::{persist::ParamStore, AccelMode};
+    use maccel_core::{AccelMode, persist::ParamStore};
 
     use crossterm::event::KeyCode;
 
