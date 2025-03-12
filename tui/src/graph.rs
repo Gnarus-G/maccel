@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use maccel_core::{get_param_value_from_ctx, persist::ParamStore, sensitivity, ContextRef, SensXY};
+use maccel_core::{ContextRef, SensXY, get_param_value_from_ctx, persist::ParamStore, sensitivity};
 
 use crate::{action, component::TuiComponent};
 
@@ -133,7 +133,7 @@ impl<PS: ParamStore> TuiComponent for SensitivityGraph<PS> {
             .bounds(bounds)
             .labels(labels);
 
-        let (bounds, labels) = bounds_and_labels(self.y_bounds, 5);
+        let (bounds, labels) = bounds_and_labels(self.y_bounds, 10);
         let y_axis = Axis::default()
             .title("Ratio".magenta())
             .style(Style::default().white())
