@@ -5,8 +5,8 @@ use maccel_core::persist::ParamStore;
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::layout::Rect;
 use ratatui::{prelude::*, widgets::*};
-use tui_input::backend::crossterm::EventHandler;
 use tui_input::Input;
+use tui_input::backend::crossterm::EventHandler;
 
 use crate::action::{Action, Actions, InputAction};
 use crate::component::TuiComponent;
@@ -90,7 +90,7 @@ impl<PS: ParamStore + Debug> TuiComponent for ParameterInput<PS> {
 
         let action = match self.input_mode {
             InputMode::Normal => match key.code {
-                KeyCode::Char('i') => InputAction::Focus,
+                KeyCode::Char('i') | KeyCode::Enter => InputAction::Focus,
                 KeyCode::BackTab | KeyCode::Up => {
                     actions.push(Action::SelectPreviousInput);
                     return;
