@@ -166,6 +166,10 @@ impl<PS: ParamStore + Debug> TuiComponent for ParameterInput<PS> {
             .block(
                 Block::default()
                     .borders(Borders::ALL)
+                    .border_style(match self.is_selected {
+                        true => Style::new().light_blue(),
+                        _ => Style::default(),
+                    })
                     .title(self.this_param().tag.display_name()),
             );
 
@@ -198,10 +202,6 @@ impl<PS: ParamStore + Debug> TuiComponent for ParameterInput<PS> {
             frame.render_widget(helper_text, helpher_text_layout);
 
             input = input.red();
-        }
-
-        if self.is_selected {
-            input = input.bold();
         }
 
         frame.render_widget(input, input_layout);
