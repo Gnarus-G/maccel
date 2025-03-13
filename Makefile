@@ -24,8 +24,7 @@ install: build
 	@sudo chown -v root:root $(MODULEDIR)/*.ko;
 	sudo groupadd -f maccel;
 	sudo depmod; 
-	sudo chown -v :maccel /sys/module/maccel/parameters/* /var/opt/maccel/resets/* /dev/maccel;
-	sudo chmod g+w /var/opt/maccel/resets/*;
+	sudo chown -v :maccel /sys/module/maccel/parameters/* /dev/maccel;
 	sudo chmod g+r /dev/maccel;
 	ls -l /sys/module/maccel/parameters/*
 
@@ -51,7 +50,7 @@ install_cli: build_cli
 uninstall_cli:
 	@sudo rm -f /usr/local/bin/maccel
 
-udev_install: install_cli
+udev_install:
 	sudo install -m 644 -v -D `pwd`/udev_rules/99-maccel.rules /usr/lib/udev/rules.d/99-maccel.rules
 	sudo install -m 755 -v -D `pwd`/udev_rules/maccel_param_ownership_and_resets /usr/lib/udev/maccel_param_ownership_and_resets 
 
@@ -59,7 +58,7 @@ udev_uninstall:
 	@sudo rm -f /usr/lib/udev/rules.d/99-maccel*.rules /usr/lib/udev/maccel_*
 	sudo udevadm control --reload-rules
 
-udev_trigger:
+udev_trigger: udev_install
 	udevadm control --reload-rules
 	udevadm trigger --subsystem-match=usb --subsystem-match=input --subsystem-match=hid --attr-match=bInterfaceClass=03 --attr-match=bInterfaceSubClass=01 --attr-match=bInterfaceProtocol=02
 
