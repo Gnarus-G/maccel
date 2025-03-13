@@ -23,7 +23,7 @@ pub fn run_tui() -> anyhow::Result<()> {
     let mut tui = app::Tui::new(terminal, events);
     tui.init()?;
 
-    inputspeed::setup_input_speed_reader();
+    let input_speed_thread_handle = inputspeed::setup_input_speed_reader();
 
     let mut actions = vec![];
     while app.is_running {
@@ -39,5 +39,12 @@ pub fn run_tui() -> anyhow::Result<()> {
     }
 
     tui.exit()?;
+
+    if input_speed_thread_handle.is_finished() {
+        input_speed_thread_handle
+            .join()
+            .expect("couldn't join on (finished) inputspeed reader thread")?;
+    }
+
     Ok(())
 }

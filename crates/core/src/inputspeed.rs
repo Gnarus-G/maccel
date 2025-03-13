@@ -4,9 +4,15 @@
 //! This is mainly to allow us to visually represent the user's current
 //! speed and applied sensitivity.
 
-use std::{fs, io::Read, thread};
+use std::{
+    fs,
+    io::Read,
+    thread::{self, JoinHandle},
+};
 
 static mut INPUT_SPEED: f64 = 0.0;
+
+use anyhow::Context;
 
 use crate::libmaccel::fixedptc::Fpt;
 
@@ -15,9 +21,9 @@ pub fn read_input_speed() -> f64 {
     unsafe { INPUT_SPEED }
 }
 
-pub fn setup_input_speed_reader() {
+pub fn setup_input_speed_reader() -> JoinHandle<anyhow::Result<()>> {
     thread::spawn(|| {
-        let mut file = fs::File::open("/dev/maccel").expect("failed to open /dev/maccel");
+        let mut file = fs::File::open("/dev/maccel").context("failed to open /dev/maccel")?;
         let mut buffer = [0u8; 8];
 
         loop {
@@ -43,5 +49,5 @@ pub fn setup_input_speed_reader() {
 
             thread::sleep(std::time::Duration::from_nanos(500));
         }
-    });
+    })
 }
