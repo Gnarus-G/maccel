@@ -1,22 +1,21 @@
 post_install() {
-    udevadm control --reload-rules
-    udevadm trigger --subsystem-match=usb --subsystem-match=input --subsystem-match=hid --attr-match=bInterfaceClass=03 --attr-match=bInterfaceSubClass=01 --attr-match=bInterfaceProtocol=02
+  echo ''
+  echo ' Remember to reboot! Or Trigger udev rules using this command:'
+  echo '   udevadm control --reload-rules'
+  echo '   udevadm trigger --subsystem-match=usb --subsystem-match=input --subsystem-match=hid --attr-match=bInterfaceClass=03 --attr-match=bInterfaceSubClass=01 --attr-match=bInterfaceProtocol=02'
+  echo ''
 
-    echo ''
-    echo ' Add yourself to the "maccel" group and install the module!'
-    echo '   usermod -aG maccel $USER && modprobe maccel'
-    echo ''
+  echo ''
+  echo ' Add yourself to the "maccel" group and install the module!'
+  echo '   usermod -aG maccel $USER && modprobe maccel'
+  echo ''
 }
 
 post_upgrade() {
-    udevadm control --reload-rules
-    
-    echo ''
-    echo ' Remember to reload the module!'
-    echo '   rmmod maccel && modprobe maccel'
-    echo ''
+  echo ''
+  echo ' Remember to reload the module!'
+  echo '   rmmod maccel && modprobe maccel'
+  echo ''
 }
 
-post_remove() {
-    udevadm control --reload-rules
-}
+post_remove() {; }
