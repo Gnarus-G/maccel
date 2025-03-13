@@ -12,7 +12,7 @@ depends=("dkms")
 makedepends=("git" "cargo")
 
 # DEBUG_CFLAGS="$DEBUG_CFLAGS -DDEBUG"
-options=(!debug)
+options=(!debug !lto)
 
 source=("git+https://github.com/Gnarus-G/maccel.git")
 sha256sums=("SKIP")
@@ -30,7 +30,7 @@ build() {
   export CARGO_TARGET_DIR=target
 
   # Build the CLI
-  cargo build --bin maccel --profile=release-with-debug --frozen --all-features --manifest-path="${srcdir}/maccel/Cargo.toml"
+  cargo build --bin maccel --profile=release-with-debug --frozen --manifest-path="${srcdir}/maccel/Cargo.toml"
 }
 
 package() {
