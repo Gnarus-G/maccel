@@ -30,7 +30,7 @@ build() {
   export CARGO_TARGET_DIR=target
 
   # Build the CLI
-  cargo build --bin maccel --profile=release-with-debug --frozen --manifest-path="${srcdir}/maccel/Cargo.toml"
+  cargo build --bin maccel --release --frozen --manifest-path="${srcdir}/maccel/Cargo.toml"
 }
 
 package() {
@@ -52,7 +52,7 @@ package() {
   cp -r "${srcdir}/maccel/driver/." "${pkgdir}/usr/src/${_pkgname}-${pkgver}/"
 
   # Install CLI
-  install -Dm 755 "${srcdir}/target/release-with-debug/maccel" "${pkgdir}/usr/bin/maccel"
+  install -Dm 755 "${srcdir}/target/release/maccel" "${pkgdir}/usr/bin/maccel"
 
   # Install udev rules
   install -Dm 644 "${srcdir}/maccel/udev_rules/99-maccel.rules" "${pkgdir}/usr/lib/udev/rules.d/99-maccel.rules"
