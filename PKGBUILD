@@ -1,6 +1,6 @@
 pkgname=maccel-dkms
 _pkgname="maccel"
-pkgver=0.5.3
+pkgver=0.5.4
 pkgrel=1
 pkgdesc="Mouse acceleration driver and kernel module for Linux."
 arch=("x86_64")
