@@ -5,8 +5,8 @@ use maccel_core::persist::ParamStore;
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::layout::Rect;
 use ratatui::{prelude::*, widgets::*};
-use tui_input::Input;
 use tui_input::backend::crossterm::EventHandler;
+use tui_input::Input;
 
 use crate::action::{Action, Actions, InputAction};
 use crate::component::TuiComponent;
@@ -77,6 +77,7 @@ impl<PS: ParamStore> ParameterInput<PS> {
     }
 
     fn reset(&mut self) {
+        self.error = None;
         self.input = format!("{}", self.this_param().value).into();
         self.input_mode = InputMode::Normal;
     }
@@ -157,19 +158,16 @@ impl<PS: ParamStore + Debug> TuiComponent for ParameterInput<PS> {
 
         let mut input = Paragraph::new(self.input.value())
             .style(match self.input_mode {
-                InputMode::Normal => ratatui::style::Style::default(),
-                InputMode::Editing => {
-                    ratatui::style::Style::default().fg(ratatui::style::Color::Yellow)
-                }
+                InputMode::Normal => match self.is_selected {
+                    true => Style::default().light_blue(),
+                    false => Style::default(),
+                },
+                InputMode::Editing => Style::default().bold().light_blue(),
             })
             .scroll((0, input_scroll_position as u16))
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .border_style(match self.is_selected {
-                        true => Style::new().light_blue(),
-                        _ => Style::default(),
-                    })
                     .title(self.this_param().tag.display_name()),
             );
 
