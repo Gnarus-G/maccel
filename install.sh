@@ -102,6 +102,11 @@ version_update_warning() {
   fi
 }
 
+install_udev_rules() {
+  make udev_uninstall
+  make udev_install
+}
+
 install_driver_dkms() {
   dkms_version=$(cat PKGBUILD | grep "pkgver=" | grep -oP '\d.\d.\d')
 
@@ -160,17 +165,6 @@ install_cli() {
   sudo groupadd -f maccel
 }
 
-install_udev_rules() {
-	sudo rm -f /usr/lib/udev/rules.d/99-maccel*.rules /usr/lib/udev/maccel_*
-  sudo install -m 644 -v -D $(pwd)/udev_rules/99-maccel.rules /usr/lib/udev/rules.d/99-maccel.rules
-  sudo install -m 755 -v -D $(pwd)/udev_rules/maccel_param_ownership_and_resets /usr/lib/udev/maccel_param_ownership_and_resets 
-}
-
-trigger_udev_rules() {
-  sudo udevadm control --reload-rules
-  sudo udevadm trigger --subsystem-match=usb --subsystem-match=input --subsystem-match=hid --attr-match=bInterfaceClass=03 --attr-match=bInterfaceSubClass=01 --attr-match=bInterfaceProtocol=02
-}
-
 # ---- Install Process ----
 
 ATTENTION=$(version_update_warning)
@@ -180,6 +174,12 @@ print_bold "\nFetching the maccel github repo"
 underline_end
 
 setup_dirs
+
+underline_start
+print_bold "\nInstalling udev rules..."
+underline_end
+
+install_udev_rules
 
 underline_start
 print_bold "\nInstalling the driver (kernel module)"
@@ -192,13 +192,6 @@ print_bold "\nInstalling the CLI"
 underline_end
 
 install_cli
-
-underline_start
-print_bold "\nInstalling udev rules..."
-underline_end
-
-install_udev_rules
-trigger_udev_rules
 
 print_bold $(print_green "[Recommended]")
 print_bold ' Add yourself to the "maccel" group\n'
