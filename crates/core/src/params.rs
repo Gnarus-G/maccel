@@ -152,7 +152,8 @@ declare_params!(
     Common {
         SensMult,
         YxRatio,
-        InputDpi
+        InputDpi,
+        AngleRotation
     },
     Linear {
         Accel,
@@ -208,6 +209,7 @@ impl Param {
             Param::Smooth => "SMOOTH",
             Param::Motivity => "MOTIVITY",
             Param::SyncSpeed => "SYNC_SPEED",
+            Param::AngleRotation => "ANGLE_ROTATION",
         }
     }
 
@@ -226,6 +228,7 @@ impl Param {
             Param::Smooth => "Smooth",
             Param::Motivity => "Motivity",
             Param::SyncSpeed => "Sync Speed",
+            Param::AngleRotation => "Angle Rotation",
         }
     }
 }
@@ -266,6 +269,7 @@ pub(crate) fn validate_param_value(param_tag: Param, value: f64) -> anyhow::Resu
                 anyhow::bail!("Input DPI must be positive");
             }
         }
+        Param::AngleRotation => {}
         Param::Accel => {}
         Param::OutputCap => {}
         Param::OffsetLinear | Param::OffsetNatural => {

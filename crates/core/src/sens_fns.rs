@@ -31,6 +31,7 @@ impl AllParamArgs {
             sens_mult: self.sens_mult,
             yx_ratio: self.yx_ratio,
             input_dpi: self.input_dpi,
+            angle_rotation: self.angle_rotation,
             by_mode: params_by_mode,
         }
     }
