@@ -155,7 +155,8 @@ declare_params!(
     Common {
         SensMult,
         YxRatio,
-        InputDpi
+        InputDpi,
+        AngleRotation
     },
     Linear {
         Accel,
@@ -261,11 +262,13 @@ pub mod persist {
                 sens_mult,
                 yx_ratio,
                 input_dpi,
+                angle_rotation,
             } = args;
 
             self.set(Param::SensMult, sens_mult)?;
             self.set(Param::YxRatio, yx_ratio)?;
             self.set(Param::InputDpi, input_dpi)?;
+            self.set(Param::AngleRotation, angle_rotation)?;
 
             Ok(())
         }
@@ -395,6 +398,7 @@ impl Param {
             Param::Smooth => "SMOOTH",
             Param::Motivity => "MOTIVITY",
             Param::SyncSpeed => "SYNC_SPEED",
+            Param::AngleRotation => "ANGLE_ROTATION",
         }
     }
 
@@ -413,6 +417,7 @@ impl Param {
             Param::Smooth => "Smooth",
             Param::Motivity => "Motivity",
             Param::SyncSpeed => "Sync Speed",
+            Param::AngleRotation => "Angle Rotation",
         }
     }
 }
@@ -456,6 +461,7 @@ mod validate {
                     anyhow::bail!("Input DPI must be positive");
                 }
             }
+            Param::AngleRotation => {}
             Param::Accel => {}
             Param::OutputCap => {}
             Param::OffsetLinear | Param::OffsetNatural => {
