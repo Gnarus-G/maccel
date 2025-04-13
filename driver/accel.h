@@ -20,6 +20,7 @@ struct accel_args {
   fpt sens_mult;
   fpt yx_ratio;
   fpt input_dpi;
+  fpt angle_rotation_deg;
 
   enum accel_mode tag;
   union __accel_args args;
@@ -54,15 +55,44 @@ static inline struct vector sensitivity(fpt input_speed,
   return (struct vector){sens, fpt_mul(sens, args.yx_ratio)};
 }
 
+const fpt DEG_TO_RAD_FACTOR = fpt_xdiv(FIXEDPT_PI, fpt_rconst(180));
+
 static inline void f_accelerate(int *x, int *y, fpt time_interval_ms,
                                 struct accel_args args) {
-  /* AccelResult result = {.x = 0, .y = 0}; */
-
   static fpt carry_x = 0;
   static fpt carry_y = 0;
 
   fpt dx = fpt_fromint(*x);
   fpt dy = fpt_fromint(*y);
+
+  {
+    if (args.angle_rotation_deg == 0) {
+      goto accel_routine;
+    }
+    // Add rotation of input vector
+    fpt degrees = args.angle_rotation_deg;
+    fpt radians =
+        fpt_mul(degrees, DEG_TO_RAD_FACTOR); // Convert degrees to radians
+
+    fpt cos_angle = fpt_cos(radians);
+    fpt sin_angle = fpt_sin(radians);
+
+    dbg("rotation angle(deg):     %s deg", fptoa(degrees));
+    dbg("rotation angle(rad):     %s rad", fptoa(radians));
+    dbg("cosine of rotation:      %s", fptoa(cos_angle));
+    dbg("sine of rotation:        %s", fptoa(sin_angle));
+
+    // Rotate input vector
+    fpt dx_rot = fpt_mul(dx, cos_angle) - fpt_mul(dy, sin_angle);
+    fpt dy_rot = fpt_mul(dx, sin_angle) + fpt_mul(dy, cos_angle);
+
+    dbg("rotated x:               %s", fptoa(dx_rot));
+    dbg("rotated y:               %s", fptoa(dy_rot));
+
+    dx = dx_rot;
+    dy = dy_rot;
+  }
+accel_routine:
 
   dbg("in                        (%d, %d)", *x, *y);
   dbg("in: x (fpt conversion) %s", fptoa(dx));

@@ -17,6 +17,7 @@ static struct accel_args collect_args(void) {
   accel.sens_mult = atofp(PARAM_SENS_MULT);
   accel.yx_ratio = atofp(PARAM_YX_RATIO);
   accel.input_dpi = atofp(PARAM_INPUT_DPI);
+  accel.angle_rotation_deg = atofp(PARAM_ANGLE_ROTATION);
 
   switch (mode) {
   case synchronous: {

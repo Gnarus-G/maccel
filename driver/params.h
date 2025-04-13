@@ -33,6 +33,10 @@ PARAM(INPUT_DPI, 65536000, // 1000 << 16
       "in/sec");
 #endif
 
+PARAM(ANGLE_ROTATION, 0,
+      "Apply rotation (degrees) to the mouse movement input");
+// For Linear Mode
+
 PARAM(ACCEL, 0, "Control the sensitivity calculation.");
 PARAM(OFFSET, 0, "Control the input speed past which to allow acceleration.");
 PARAM(OUTPUT_CAP, 0, "Control the maximum sensitivity.");
