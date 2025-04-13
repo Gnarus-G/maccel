@@ -5,13 +5,13 @@ use std::{
     str::FromStr,
 };
 
-use anyhow::{Context, anyhow};
+use anyhow::{anyhow, Context};
 
 use crate::{
     fixedptc::Fpt,
     params::{
-        ALL_MODES, AccelMode, CommonParamArgs, LinearParamArgs, NaturalParamArgs, Param,
-        SynchronousParamArgs, format_param_value, validate_param_value,
+        format_param_value, validate_param_value, AccelMode, CommonParamArgs, LinearParamArgs,
+        NaturalParamArgs, Param, SynchronousParamArgs, ALL_MODES,
     },
 };
 
@@ -68,11 +68,13 @@ impl SysFsStore {
             sens_mult,
             yx_ratio,
             input_dpi,
+            angle_rotation,
         } = args;
 
         self.set(Param::SensMult, sens_mult)?;
         self.set(Param::YxRatio, yx_ratio)?;
         self.set(Param::InputDpi, input_dpi)?;
+        self.set(Param::AngleRotation, angle_rotation)?;
 
         Ok(())
     }
