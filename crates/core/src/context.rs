@@ -42,7 +42,7 @@ impl<PS: ParamStore> TuiContext<PS> {
                 .iter()
                 .map(|&p| {
                     let value = parameter_store
-                        .get(&p)
+                        .get(p)
                         .expect("Failed to get a param from store while initializing TuiContext");
                     Parameter::new(p, value)
                 })
@@ -71,7 +71,7 @@ impl<PS: ParamStore> TuiContext<PS> {
         for p in self.parameters.iter_mut() {
             p.value = self
                 .parameter_store
-                .get(&p.tag)
+                .get(p.tag)
                 .expect("failed to read and initialize a parameter's value");
         }
     }
