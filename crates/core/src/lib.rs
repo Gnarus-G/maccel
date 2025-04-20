@@ -2,6 +2,7 @@ mod context;
 pub mod inputspeed;
 mod libmaccel;
 mod params;
+pub mod persist;
 mod sens_fns;
 
 pub use context::*;
