@@ -7,7 +7,13 @@ use std::{
 
 use anyhow::{Context, anyhow};
 
-use crate::{fixedptc::Fpt, params::*};
+use crate::{
+    fixedptc::Fpt,
+    params::{
+        ALL_MODES, AccelMode, CommonParamArgs, LinearParamArgs, NaturalParamArgs, Param,
+        SynchronousParamArgs, format_param_value, validate_param_value,
+    },
+};
 
 pub trait ParamStore: Debug {
     fn set(&mut self, param: Param, value: f64) -> anyhow::Result<()>;
