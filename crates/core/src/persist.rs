@@ -19,8 +19,8 @@ pub trait ParamStore: Debug {
     fn set(&mut self, param: Param, value: f64) -> anyhow::Result<()>;
     fn get(&self, param: &Param) -> anyhow::Result<Fpt>;
 
-    fn set_current_accel_mode(mode: AccelMode);
-    fn get_current_accel_mode() -> AccelMode;
+    fn set_current_accel_mode(&mut self, mode: AccelMode) -> anyhow::Result<()>;
+    fn get_current_accel_mode(&self) -> anyhow::Result<AccelMode>;
 }
 
 const SYS_MODULE_PATH: &str = "/sys/module/maccel";
@@ -36,7 +36,6 @@ impl ParamStore for SysFsStore {
         let value = value.0;
         set_parameter(param.name(), value)
     }
-
     fn get(&self, param: &Param) -> anyhow::Result<Fpt> {
         let value = get_paramater(param.name())?;
         let value = Fpt::from_str(&value).context(format!(
@@ -46,20 +45,20 @@ impl ParamStore for SysFsStore {
         Ok(value)
     }
 
-    fn set_current_accel_mode(mode: AccelMode) {
+    fn set_current_accel_mode(&mut self, mode: AccelMode) -> anyhow::Result<()> {
         set_parameter(AccelMode::PARAM_NAME, mode.ordinal())
-            .expect("Failed to set kernel param to change modes");
+            .context("Failed to set kernel param to change modes")
     }
-    fn get_current_accel_mode() -> AccelMode {
+    fn get_current_accel_mode(&self) -> anyhow::Result<AccelMode> {
         get_paramater(AccelMode::PARAM_NAME)
-            .map(|mode_tag| {
+            .map(|mode_tag| -> anyhow::Result<AccelMode> {
                 let id: u8 = mode_tag
                     .parse()
-                    .expect("Failed to parse an id for mode parameter");
+                    .context("Failed to parse an id for mode parameter")?;
                 let idx = id as usize % ALL_MODES.len();
-                ALL_MODES[idx]
-            })
-            .expect("Failed to read a kernel parameter to get the acceleration mode desired")
+                Ok(ALL_MODES[idx])
+            })?
+            .context("Failed to read a kernel parameter to get the acceleration mode desired")
     }
 }
 
