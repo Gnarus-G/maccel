@@ -7,10 +7,10 @@ use std::{
 use anyhow::Context;
 
 use crate::{
+    AccelMode,
     libmaccel::fixedptc::Fpt,
     params::{AllParamArgs, Param},
     persist::ParamStore,
-    AccelMode,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -35,7 +35,9 @@ pub struct TuiContext<PS: ParamStore> {
 impl<PS: ParamStore> TuiContext<PS> {
     pub fn new(parameter_store: PS, parameters: &[Param]) -> Self {
         Self {
-            current_mode: PS::get_current_accel_mode(),
+            current_mode: parameter_store
+                .get_current_accel_mode()
+                .expect("Failed to get accel mode from store while initializing TuiContext"),
             parameters: parameters
                 .iter()
                 .map(|&p| {

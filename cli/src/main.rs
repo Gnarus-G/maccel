@@ -79,7 +79,7 @@ fn main() -> anyhow::Result<()> {
                     param_store.set_all_synchronous(param_args)?
                 }
             },
-            CliSubcommandSetParams::Mode { mode } => SysFsStore::set_current_accel_mode(mode),
+            CliSubcommandSetParams::Mode { mode } => SysFsStore.set_current_accel_mode(mode)?,
         },
         CLiCommands::Get { command } => match command {
             CliSubcommandGetParams::Param { name } => {
@@ -106,7 +106,7 @@ fn main() -> anyhow::Result<()> {
                 }
             },
             CliSubcommandGetParams::Mode => {
-                let mode = SysFsStore::get_current_accel_mode();
+                let mode = SysFsStore.get_current_accel_mode()?;
                 println!("{}\n", mode.as_title());
                 match mode {
                     AccelMode::Linear => {
