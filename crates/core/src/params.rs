@@ -1,4 +1,3 @@
-use crate::libmaccel::fixedptc;
 use crate::libmaccel::fixedptc::Fpt;
 use paste::paste;
 
@@ -48,7 +47,7 @@ macro_rules! declare_params {
             /// of the sensitivity function as it is expected to be in `C`
             #[repr(C)]
             pub struct AccelParams {
-                $( pub [< $common_param:snake:lower >] : fixedptc::Fpt, )+
+                $( pub [< $common_param:snake:lower >] : Fpt, )+
                 pub by_mode: AccelParamsByMode,
             }
 
@@ -74,7 +73,7 @@ macro_rules! declare_params {
                 /// Represents curve-specific parameters.
                 #[repr(C)]
                 pub struct [< $mode CurveParams >] {
-                    $( pub [< $param:snake:lower >]: fixedptc::Fpt ),+
+                    $( pub [< $param:snake:lower >]: Fpt ),+
                 }
 
                 #[doc = "Array of all parameters for the `"  $mode "` mode for convenience." ]
