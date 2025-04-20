@@ -83,7 +83,7 @@ fn main() -> anyhow::Result<()> {
         },
         CLiCommands::Get { command } => match command {
             CliSubcommandGetParams::Param { name } => {
-                let value = param_store.get(&name)?;
+                let value = param_store.get(name)?;
                 let string_value: &str = (&value).try_into()?;
                 println!("{}", string_value);
             }
@@ -156,7 +156,7 @@ fn print_all_params<'p>(
     let delimiter = if oneline { " " } else { "\n" };
 
     let params = params
-        .map(|p| {
+        .map(|&p| {
             SysFsStore.get(p).and_then(|_p: Fpt| {
                 let value: &str = (&_p).try_into()?;
                 Ok((p.display_name(), value.to_string()))
