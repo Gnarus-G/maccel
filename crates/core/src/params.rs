@@ -230,7 +230,7 @@ impl Param {
     }
 }
 
-pub fn format_param_value(value: f64) -> String {
+pub(crate) fn format_param_value(value: f64) -> String {
     let mut number = format!("{:.5}", value);
 
     for idx in (1..number.len()).rev() {
@@ -257,7 +257,7 @@ fn format_param_value_works() {
     assert_eq!(format_param_value(0.055000), "0.055");
 }
 
-pub fn validate_param_value(param_tag: Param, value: f64) -> anyhow::Result<()> {
+pub(crate) fn validate_param_value(param_tag: Param, value: f64) -> anyhow::Result<()> {
     match param_tag {
         Param::SensMult => {}
         Param::YxRatio => {}
