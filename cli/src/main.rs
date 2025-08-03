@@ -78,6 +78,13 @@ fn main() -> anyhow::Result<()> {
                 SetParamByModesSubcommands::Synchronous(param_args) => {
                     param_store.set_all_synchronous(param_args)?
                 }
+                SetParamByModesSubcommands::NoAccel(param_args) => {
+                    eprintln!(
+                        "NOTE: There are no parameters specific here except for the common ones."
+                    );
+                    eprintln!();
+                    param_store.set_all_no_accel(param_args)?
+                }
             },
             CliSubcommandSetParams::Mode { mode } => SysFsStore.set_current_accel_mode(mode)?,
         },
@@ -104,6 +111,13 @@ fn main() -> anyhow::Result<()> {
                 GetParamsByModesSubcommands::Synchronous => {
                     print_all_params(ALL_SYNCHRONOUS_PARAMS.iter(), oneline, quiet)?;
                 }
+                GetParamsByModesSubcommands::NoAccel => {
+                    eprintln!(
+                        "NOTE: There are no parameters specific here except for the common ones."
+                    );
+                    eprintln!();
+                    print_all_params(ALL_COMMON_PARAMS.iter(), oneline, quiet)?;
+                }
             },
             CliSubcommandGetParams::Mode => {
                 let mode = SysFsStore.get_current_accel_mode()?;
@@ -117,6 +131,13 @@ fn main() -> anyhow::Result<()> {
                     }
                     AccelMode::Synchronous => {
                         print_all_params(ALL_SYNCHRONOUS_PARAMS.iter(), false, false)?;
+                    }
+                    AccelMode::NoAccel => {
+                        eprintln!(
+                            "NOTE: There are no parameters specific here except for the common ones."
+                        );
+                        eprintln!();
+                        print_all_params(ALL_COMMON_PARAMS.iter(), false, false)?;
                     }
                 }
             }
