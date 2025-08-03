@@ -10,8 +10,8 @@ use anyhow::{Context, anyhow};
 use crate::{
     fixedptc::Fpt,
     params::{
-        ALL_MODES, AccelMode, CommonParamArgs, LinearParamArgs, NaturalParamArgs, NoAccelParamArgs,
-        Param, SynchronousParamArgs, format_param_value, validate_param_value,
+        ALL_MODES, AccelMode, CommonParamArgs, LinearParamArgs, NaturalParamArgs, Param,
+        SynchronousParamArgs, format_param_value, validate_param_value,
     },
 };
 
@@ -21,11 +21,6 @@ pub trait ParamStore: Debug {
 
     fn set_current_accel_mode(&mut self, mode: AccelMode) -> anyhow::Result<()>;
     fn get_current_accel_mode(&self) -> anyhow::Result<AccelMode>;
-
-    // Default no-op implementation as NoAccel has no specific params to set.
-    fn set_all_no_accel(&mut self, _args: NoAccelParamArgs) -> anyhow::Result<()> {
-        Ok(())
-    }
 }
 
 const SYS_MODULE_PATH: &str = "/sys/module/maccel";
@@ -134,14 +129,6 @@ impl SysFsStore {
         self.set(Param::Motivity, motivity)?;
         self.set(Param::SyncSpeed, sync_speed)?;
 
-        Ok(())
-    }
-
-    pub fn set_all_no_accel(&mut self, _args: NoAccelParamArgs) -> anyhow::Result<()> {
-        // NoAccel mode has no specific parameters to set via SysFs.
-        // The trait provides a default no-op implementation,
-        // but we can also provide an explicit one for SysFsStore if needed for clarity
-        // or future SysFs specific logic for NoAccel. For now, it's also a no-op.
         Ok(())
     }
 }

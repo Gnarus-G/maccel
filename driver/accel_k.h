@@ -3,7 +3,6 @@
 
 #include "accel.h"
 #include "accel/linear.h"
-#include "accel/mode.h"
 #include "fixedptc.h"
 #include "linux/ktime.h"
 #include "params.h"
@@ -34,14 +33,11 @@ static struct accel_args collect_args(void) {
     accel.args.natural.limit = atofp(PARAM_LIMIT);
     break;
   }
-  case linear: {
+  case linear:
+  default: {
     accel.args.linear.accel = atofp(PARAM_ACCEL);
     accel.args.linear.offset = atofp(PARAM_OFFSET);
     accel.args.linear.output_cap = atofp(PARAM_OUTPUT_CAP);
-    break;
-  }
-  case no_accel:
-  default: {
   }
   };
   return accel;

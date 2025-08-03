@@ -4,7 +4,6 @@
 #include "accel/linear.h"
 #include "accel/mode.h"
 #include "accel/natural.h"
-#include "accel/no_accel.h"
 #include "accel/synchronous.h"
 #include "dbg.h"
 #include "fixedptc.h"
@@ -15,7 +14,6 @@ union __accel_args {
   struct natural_curve_args natural;
   struct linear_curve_args linear;
   struct synchronous_curve_args synchronous;
-  struct no_accel_curve_args no_accel;
 };
 
 struct accel_args {
@@ -49,13 +47,9 @@ static inline struct vector sensitivity(fpt input_speed,
     sens = __natural_sens_fun(input_speed, args.args.natural);
     break;
   case linear:
+  default:
     dbg("accel mode %d: linear", args.tag);
     sens = __linear_sens_fun(input_speed, args.args.linear);
-    break;
-  case no_accel:
-  default:
-    dbg("accel mode %d: no_accel", args.tag);
-    sens = __no_accel_sens_fun(input_speed, args.args.no_accel);
   }
   sens = fpt_mul(sens, args.sens_mult);
   return (struct vector){sens, fpt_mul(sens, args.yx_ratio)};
