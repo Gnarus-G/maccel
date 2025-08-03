@@ -21,11 +21,35 @@ macro_rules! declare_common_params {
     };
 }
 
+// Helper macro to create FFI-safe curve parameter structs
+macro_rules! make_curve_params_struct {
+    // Case: has parameters
+    ($mode:tt, $($param:tt),+) => {
+        paste! {
+            #[repr(C)]
+            #[derive(Debug, Clone, Copy, PartialEq, Default)]
+            pub struct [< $mode CurveParams >] {
+                $( pub [< $param:snake:lower >]: Fpt ),+
+            }
+        }
+    };
+    // Case: no parameters, add a ZST field for FFI safety
+    ($mode:tt, ) => {
+        paste! {
+            #[repr(C)]
+            #[derive(Debug, Clone, Copy, PartialEq, Default)]
+            pub struct [< $mode CurveParams >] {
+                pub _ffi_guard: [u8; 0],
+            }
+        }
+    };
+}
+
 macro_rules! declare_params {
-    ( Common { $($common_param:tt),+$(,)? } , $( $mode:tt { $($param:tt),+$(,)? }, )+) => {
+    ( Common { $($common_param:tt),+$(,)? } , $( $mode:tt { $($param:tt),*$(,)? }, )+) => {
         declare_common_params! {
             $( $common_param, )+
-            $( $( $param, )+ )+
+            $( $( $param, )* )+
         }
 
         /// Array of all the common parameters for convenience.
@@ -70,21 +94,18 @@ macro_rules! declare_params {
 
         paste! {
             $(
-                /// Represents curve-specific parameters.
-                #[repr(C)]
-                pub struct [< $mode CurveParams >] {
-                    $( pub [< $param:snake:lower >]: Fpt ),+
-                }
+                // Use the helper macro to define the struct
+                make_curve_params_struct!($mode, $($param),*);
 
                 #[doc = "Array of all parameters for the `"  $mode "` mode for convenience." ]
-                pub const [< ALL_ $mode:upper _PARAMS >]: &[Param] = &[ $( Param::$param),+ ];
+                pub const [< ALL_ $mode:upper _PARAMS >]: &[Param] = &[ $( Param::$param),* ];
 
                 #[doc = "Represents the parameters for `" $mode "` curve and their float values"]
                 /// Use it to bulk set the curve's parameters.
                 #[cfg_attr(feature = "clap", derive(clap::Args))]
                 #[derive(Debug, Clone, Copy, PartialEq)]
                 pub struct [< $mode ParamArgs >] {
-                    $( pub [< $param:snake:lower >]: f64 ),+
+                    $( pub [< $param:snake:lower >]: f64 ),*
                 }
             )+
 
@@ -171,6 +192,7 @@ declare_params!(
         Motivity,
         SyncSpeed,
     },
+    NoAccel {},
 );
 
 impl AccelMode {
@@ -179,6 +201,7 @@ impl AccelMode {
             AccelMode::Linear => "Linear Acceleration",
             AccelMode::Natural => "Natural (w/ Gain)",
             AccelMode::Synchronous => "Synchronous",
+            AccelMode::NoAccel => "No Acceleration",
         }
     }
 }
