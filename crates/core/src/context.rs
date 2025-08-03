@@ -7,10 +7,10 @@ use std::{
 use anyhow::Context;
 
 use crate::{
-    AccelMode,
     libmaccel::fixedptc::Fpt,
     params::{AllParamArgs, Param},
     persist::ParamStore,
+    AccelMode,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -33,22 +33,22 @@ pub struct TuiContext<PS: ParamStore> {
 }
 
 impl<PS: ParamStore> TuiContext<PS> {
-    pub fn new(parameter_store: PS, parameters: &[Param]) -> Self {
-        Self {
+    pub fn init(parameter_store: PS, parameters: &[Param]) -> anyhow::Result<Self> {
+        let s = Self {
             current_mode: parameter_store
                 .get_current_accel_mode()
-                .expect("Failed to get accel mode from store while initializing TuiContext"),
+                .context("failed to get the current acceleration mode")?,
             parameters: parameters
                 .iter()
                 .map(|&p| {
-                    let value = parameter_store
-                        .get(p)
-                        .expect("Failed to get a param from store while initializing TuiContext");
-                    Parameter::new(p, value)
+                    let value = parameter_store.get(p)?;
+                    Ok(Parameter::new(p, value))
                 })
-                .collect(),
+                .collect::<anyhow::Result<Vec<_>>>()
+                .context("failed to get a necessary parameter")?,
             parameter_store,
-        }
+        };
+        Ok(s)
     }
 
     pub fn parameter(&self, param: Param) -> Option<&Parameter> {

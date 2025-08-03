@@ -35,7 +35,7 @@ impl CyclingIdx {
 
 #[cfg(test)]
 pub(crate) mod test_utils {
-    use maccel_core::{ContextRef, Parameter, fixedptc::Fpt};
+    use maccel_core::{fixedptc::Fpt, ContextRef, Parameter};
     use mocks::MockStore;
 
     pub fn new_context() -> (ContextRef<MockStore>, Vec<Parameter>) {
@@ -45,19 +45,22 @@ pub(crate) mod test_utils {
         ];
 
         let params = params.map(|(p, v)| (p, Fpt::from(v)));
-        let context = ContextRef::new(maccel_core::TuiContext::new(
-            MockStore {
-                list: params.to_vec(),
-            },
-            &params.map(|(p, _)| p),
-        ));
+        let context = ContextRef::new(
+            maccel_core::TuiContext::init(
+                MockStore {
+                    list: params.to_vec(),
+                },
+                &params.map(|(p, _)| p),
+            )
+            .unwrap(),
+        );
 
         (context, params.map(|(p, v)| Parameter::new(p, v)).to_vec())
     }
 
     mod mocks {
         use anyhow::Context;
-        use maccel_core::{AccelMode, Param, fixedptc::Fpt, persist::ParamStore};
+        use maccel_core::{fixedptc::Fpt, persist::ParamStore, AccelMode, Param};
 
         #[derive(Debug)]
         pub struct MockStore {

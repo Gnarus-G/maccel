@@ -34,31 +34,40 @@ impl ParamStore for SysFsStore {
 
         let value: Fpt = value.into();
         let value = value.0;
-        set_parameter(param.name(), value)
+        set_parameter(param.name(), value).with_context(|| {
+            anyhow!(
+                "Failed to communicate with the driver to set parameter '{}'.",
+                param.display_name()
+            )
+        })
     }
+
     fn get(&self, param: Param) -> anyhow::Result<Fpt> {
-        let value = get_paramater(param.name())?;
-        let value = Fpt::from_str(&value).context(format!(
-            "couldn't interpret the parameter's value {}",
-            value
-        ))?;
+        let value = get_paramater(param.name()).with_context(|| {
+            anyhow!(
+                "Failed to communicate with the driver to read parameter '{}'.",
+                param.display_name()
+            )
+        })?;
+        let value = Fpt::from_str(&value)
+            .with_context(|| anyhow!("couldn't interpret the parameter's value {}", value))?;
         Ok(value)
     }
 
     fn set_current_accel_mode(&mut self, mode: AccelMode) -> anyhow::Result<()> {
         set_parameter(AccelMode::PARAM_NAME, mode.ordinal())
-            .context("Failed to set kernel param to change modes")
+            .with_context(|| anyhow!("couldn't set or change the acceleration MODE."))
     }
     fn get_current_accel_mode(&self) -> anyhow::Result<AccelMode> {
         get_paramater(AccelMode::PARAM_NAME)
-            .map(|mode_tag| -> anyhow::Result<AccelMode> {
+            .and_then(|mode_tag| -> anyhow::Result<AccelMode> {
                 let id: u8 = mode_tag
                     .parse()
                     .context("Failed to parse an id for mode parameter")?;
                 let idx = id as usize % ALL_MODES.len();
                 Ok(ALL_MODES[idx])
-            })?
-            .context("Failed to read a kernel parameter to get the acceleration mode desired")
+            })
+            .with_context(|| anyhow!("couldn't read {:?} kernel parameter", AccelMode::PARAM_NAME))
     }
 }
 
@@ -129,7 +138,7 @@ fn parameter_path(name: &'static str) -> anyhow::Result<PathBuf> {
 
     if !params_path.exists() {
         return Err(anyhow!("no such path: {}", params_path.display()))
-            .context(anyhow!("no such parameter {:?}", name));
+            .with_context(|| anyhow!("no such parameter {:?}\n-- Make sure that the driver is installed: `modprobe maccel`", name));
     }
 
     Ok(params_path)
@@ -138,7 +147,7 @@ fn parameter_path(name: &'static str) -> anyhow::Result<PathBuf> {
 fn save_parameter_reset_script(name: &'static str, value: i64) -> anyhow::Result<()> {
     let script_dir = "/var/opt/maccel/resets";
     if !Path::new(script_dir).exists() {
-        std::fs::create_dir_all(script_dir).context(format!("failed create directory: {}", script_dir))
+        std::fs::create_dir_all(script_dir).with_context(|| anyhow!("failed create directory: {}", script_dir))
             .context("failed to create the directory where we'd save the parameter value to apply on reboot")?;
     }
     std::fs::write(
@@ -152,10 +161,12 @@ fn save_parameter_reset_script(name: &'static str, value: i64) -> anyhow::Result
 fn get_paramater(name: &'static str) -> anyhow::Result<String> {
     let path = parameter_path(name)?;
     let mut file = std::fs::File::open(&path)
-        .context(anyhow!(
-            "failed to open the parameter's file for reading: {}",
-            path.display()
-        ))
+        .with_context(|| {
+            anyhow!(
+                "failed to open the parameter's file for reading: {}",
+                path.display()
+            )
+        })
         .context("this shouldn't happen unless the maccel kernel module is not installed.")?;
 
     let mut buf = String::new();
@@ -169,8 +180,8 @@ fn get_paramater(name: &'static str) -> anyhow::Result<String> {
 fn set_parameter(name: &'static str, value: i64) -> anyhow::Result<()> {
     let path = parameter_path(name)?;
 
-    std::fs::write(&path, format!("{}", value)).context(anyhow!(
-        "failed to write to parameter file: {}",
+    std::fs::write(&path, format!("{}", value)).with_context(|| anyhow!(
+        "Failed to write to kernel parameter file '{}'.\n-- Make sure that the driver is installed \'modprobe maccel\'.\n-- Make sure that the user is in the maccel group \'usermod -aG maccel $USER\'.",
         path.display()
     ))?;
 
