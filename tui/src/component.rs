@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use crossterm::event::{KeyEvent, MouseEvent};
-use ratatui::{layout::Rect, Frame};
+use ratatui::{Frame, layout::Rect};
 
 use super::{
     action::{Action, Actions},
