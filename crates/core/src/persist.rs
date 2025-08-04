@@ -11,7 +11,7 @@ use crate::{
     fixedptc::Fpt,
     params::{
         format_param_value, validate_param_value, AccelMode, CommonParamArgs, LinearParamArgs,
-        NaturalParamArgs, NoAccelParamArgs, Param, SynchronousParamArgs, ALL_MODES,
+        NaturalParamArgs, Param, SynchronousParamArgs, ALL_MODES,
     },
 };
 
