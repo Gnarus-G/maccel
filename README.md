@@ -143,6 +143,11 @@ For example you might encounter such an error:
 And you'll have to find a version of `gcc` that matches. This will be more or less annoying
 depending on your distro and/or how familiar you are with it.
 
+### debian stable
+
+This distro is effectively not supported for the foreseeable future. It's hard to install and build the kernel module for it due to missing/outdated and hard-to-install dependencies.
+See issues: [#81](https://github.com/Gnarus-G/maccel/issues/81) [#43](https://github.com/Gnarus-G/maccel/issues/43)
+
 ### Miscellaneous
 
 If you notice any weird behavior and are looking to investigate it,  
