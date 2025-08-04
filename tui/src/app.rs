@@ -102,8 +102,8 @@ impl App {
                     Box::new(
                         SensitivityGraph::new(context.clone()).on_y_axix_bounds_update(|ctx| {
                             // Appropriate dynamic bounds for the NoAccel sens graph
-                            let upper_bound = f64::from(get_param_value_from_ctx!(ctx, SensMult))
-                                * 2.0; // No other factor, sens is 1.0
+                            let upper_bound =
+                                f64::from(get_param_value_from_ctx!(ctx, SensMult)) * 2.0; // No other factor, sens is 1.0
 
                             [0.0, upper_bound.max(1.0)] // Ensure at least a small visible range
                         }),
