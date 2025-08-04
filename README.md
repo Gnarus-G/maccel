@@ -3,6 +3,7 @@
 Mouse pointer acceleration driver. A CLI tool and TUI allows you to easily edit a curve's parameters.
 
 ## Linear Acceleration Function
+
 ![image](https://github.com/user-attachments/assets/a9e42195-41f9-419a-9de9-2f7ad83604aa)
 
 $$V = \frac{\sqrt{dx_0^2 + dy_0^2}}{i}$$
@@ -21,21 +22,23 @@ The more general function, which is relevant with a set input offset, is:
 $$(dx_f, dy_f) = (dx_0, dy_0) * (1 + a * (V - offset_in)^2 / V)$$
 
 ## Other Curves
-- [X] **Natural**
-![image](https://github.com/user-attachments/assets/d14d0fa3-f762-4ad6-911c-cf564227d1ac)
 
-- [X] **Synchronous**
-![image](https://github.com/user-attachments/assets/cd0aefaa-43d1-4f31-8326-334fac2a2210)
+- [x] **Natural**
+      ![image](https://github.com/user-attachments/assets/d14d0fa3-f762-4ad6-911c-cf564227d1ac)
+
+- [x] **Synchronous**
+      ![image](https://github.com/user-attachments/assets/cd0aefaa-43d1-4f31-8326-334fac2a2210)
 
 - [ ] **Look up table**
 
 ## Install
 
 ### Shell Script (Recommended)
+
 Make sure to have these dependencies installed on your machine:
 `curl`, `git`, `make`, `dkms`, and the linux headers in `/lib/modules/`
 
-You might also, and you probably don't, have to install `gcc` or `clang` 
+You might also, and you probably don't, have to install `gcc` or `clang`
 depending on with which your distro's kernel was built.
 
 ```sh
@@ -43,9 +46,11 @@ curl -fsSL https://www.maccel.org/install.sh | sudo sh
 ```
 
 If you choose to build the cli from source:
+
 ```sh
 curl -fsSL https://www.maccel.org/install.sh | sudo BUILD_CLI_FROM_SOURCE=1 sh
 ```
+
 You'll need [`cargo`](https://www.rust-lang.org/tools/install)
 
 ### Arch (PKGBUILD)
@@ -64,7 +69,7 @@ a dkms module.
 
 #### Post-install recommendation
 
-Optionally, add yourself to the maccel group using `usermod -aG maccel $USER` after installing, 
+Optionally, add yourself to the maccel group using `usermod -aG maccel $USER` after installing,
 if you want to run `maccel` without running as root.
 
 ## Uninstall
@@ -140,12 +145,13 @@ depending on your distro and/or how familiar you are with it.
 
 ### Miscellaneous
 
-If you notice any weird behavior and are looking to investigate it,            
-then try a debug build of the driver. Run this modified install command.       
-                                                                               
-```sh                                                                          
-curl -fsSL https://www.maccel.org/install.sh | sudo DEBUG=1 sh  
-```                                                                            
+If you notice any weird behavior and are looking to investigate it,  
+then try a debug build of the driver. Run this modified install command.
+
+```sh
+curl -fsSL https://www.maccel.org/install.sh | sudo DEBUG=1 sh
+```
+
 Watch the extra log messages flowing though:
 
 ```sh
@@ -188,5 +194,6 @@ Subject line:
 [See more](https://github.com/Gnarus-G/maccel/blob/main/CONTRIBUTING.md)
 
 ### Add new acceleration curves/modes
-See PR https://github.com/Gnarus-G/maccel/pull/60 which implements the `Synchronous` mode for a walkthrough of how 
+
+See PR https://github.com/Gnarus-G/maccel/pull/60 which implements the `Synchronous` mode for a walkthrough of how
 to do it.
