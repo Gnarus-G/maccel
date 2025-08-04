@@ -33,10 +33,10 @@ uninstall: clean
 	@sudo rmmod maccel
 
 reinstall: uninstall
-	@sudo make install
+	@sudo make DRIVER_CFLAGS=$(DRIVER_CFLAGS) install
 
 reinstall_debug: uninstall
-	@sudo make install_debug
+	@sudo make DRIVER_CFLAGS=$(DRIVER_CFLAGS) install_debug
 
 dev_cli:
 	cargo watch -x 'run'
