@@ -129,7 +129,7 @@ install_driver_dkms() {
   # Set name and version
   sudo sed -e "s/@_PKGNAME@/maccel/" \
           -e "s/@PKGVER@/${dkms_version}/" \
-          -e "s/@EXTRA_CFLAGS@/'${DEBUG_CFLAGS}'/" \
+          -e "s/@DRIVER_CFLAGS@/'${DEBUG_CFLAGS}'/" \
           -i "/usr/src/maccel-${dkms_version}/dkms.conf"
   
   sudo cp -r "$(pwd)/driver/." "/usr/src/maccel-${dkms_version}/"
