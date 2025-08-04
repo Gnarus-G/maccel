@@ -4,7 +4,7 @@ use maccel_core::{
     fixedptc::Fpt,
     persist::{ParamStore, SysFsStore},
     subcommads::*,
-    AccelMode, Param, ALL_COMMON_PARAMS, ALL_LINEAR_PARAMS, ALL_NATURAL_PARAMS,
+    AccelMode, NoAccelParamArgs, Param, ALL_COMMON_PARAMS, ALL_LINEAR_PARAMS, ALL_NATURAL_PARAMS,
     ALL_SYNCHRONOUS_PARAMS,
 };
 use maccel_tui::run_tui;
@@ -78,6 +78,13 @@ fn main() -> anyhow::Result<()> {
                 SetParamByModesSubcommands::Synchronous(param_args) => {
                     param_store.set_all_synchronous(param_args)?
                 }
+                SetParamByModesSubcommands::NoAccel(NoAccelParamArgs {}) => {
+                    eprintln!(
+                        "NOTE: There are no parameters specific here except for the common ones."
+                    );
+                    eprintln!();
+                    print_all_params(ALL_COMMON_PARAMS.iter(), false, false)?;
+                }
             },
             CliSubcommandSetParams::Mode { mode } => SysFsStore.set_current_accel_mode(mode)?,
         },
@@ -104,6 +111,13 @@ fn main() -> anyhow::Result<()> {
                 GetParamsByModesSubcommands::Synchronous => {
                     print_all_params(ALL_SYNCHRONOUS_PARAMS.iter(), oneline, quiet)?;
                 }
+                GetParamsByModesSubcommands::NoAccel => {
+                    eprintln!(
+                        "NOTE: There are no parameters specific here except for the common ones."
+                    );
+                    eprintln!();
+                    print_all_params(ALL_COMMON_PARAMS.iter(), oneline, quiet)?;
+                }
             },
             CliSubcommandGetParams::Mode => {
                 let mode = SysFsStore.get_current_accel_mode()?;
@@ -117,6 +131,13 @@ fn main() -> anyhow::Result<()> {
                     }
                     AccelMode::Synchronous => {
                         print_all_params(ALL_SYNCHRONOUS_PARAMS.iter(), false, false)?;
+                    }
+                    AccelMode::NoAccel => {
+                        eprintln!(
+                            "NOTE: There are no parameters specific here except for the common ones."
+                        );
+                        eprintln!();
+                        print_all_params(ALL_COMMON_PARAMS.iter(), false, false)?;
                     }
                 }
             }

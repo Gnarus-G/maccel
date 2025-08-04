@@ -25,6 +25,9 @@ impl AllParamArgs {
                 motivity: self.motivity,
                 sync_speed: self.sync_speed,
             }),
+            AccelMode::NoAccel => {
+                AccelParamsByMode::NoAccel(crate::NoAccelCurveParams { _ffi_guard: [] })
+            }
         };
 
         AccelParams {

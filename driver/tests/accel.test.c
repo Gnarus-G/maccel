@@ -91,6 +91,21 @@ static int test_synchronous_acceleration(const char *filename,
   return test_acceleration(filename, args);
 }
 
+static int test_no_accel_acceleration(const char *filename, fpt param_sens_mult,
+                                      fpt param_yx_ratio) {
+  struct no_accel_curve_args _args = (struct no_accel_curve_args){};
+
+  struct accel_args args = {
+      .sens_mult = param_sens_mult,
+      .yx_ratio = param_yx_ratio,
+      .input_dpi = fpt_fromint(1000),
+      .tag = no_accel,
+      .args = (union __accel_args){.no_accel = _args},
+  };
+
+  return test_acceleration(filename, args);
+}
+
 #define test_linear(sens_mult, yx_ratio, accel, offset, cap)                   \
   assert(test_linear_acceleration(                                             \
              "SENS_MULT-" #sens_mult "-ACCEL-" #accel "-OFFSET" #offset        \
@@ -116,6 +131,12 @@ static int test_synchronous_acceleration(const char *filename,
              fpt_rconst(smooth), fpt_rconst(motivity),                         \
              fpt_rconst(sync_speed)) == 0);
 
+#define test_no_accel(sens_mult, yx_ratio)                                     \
+  assert(test_no_accel_acceleration("NoAccel__SENS_MULT-" #sens_mult           \
+                                    "-YX_RATIO-" #yx_ratio ".snapshot",        \
+                                    fpt_rconst(sens_mult),                     \
+                                    fpt_rconst(yx_ratio)) == 0);
+
 int main(void) {
   test_linear(1, 1, 0, 0, 0);
   test_linear(1, 1, 0.3, 2, 2);
@@ -130,6 +151,9 @@ int main(void) {
   test_natural(1, 1, 0.03, 8, 1.5);
 
   test_synchronous(1, 1.15, 0.8, 0.5, 1.5, 32);
+
+  test_no_accel(1, 1);
+  test_no_accel(0.5, 1.5);
 
   print_success;
 }
