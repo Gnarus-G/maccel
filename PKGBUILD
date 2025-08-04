@@ -41,12 +41,12 @@ package() {
   install -Dm 644 "${srcdir}/maccel/dkms.conf" "${pkgdir}/usr/src/${_pkgname}-${pkgver}/dkms.conf"
 
   # Escape path separators from debug flags values
-  EXTRA_CFLAGS=$(echo ${DEBUG_CFLAGS} | sed -e "s/\//\\\\\\//g")
+  DRIVER_CFLAGS=$(echo ${DEBUG_CFLAGS} | sed -e "s/\//\\\\\\//g")
 
   # Set name and version
   sed -e "s/@_PKGNAME@/${_pkgname}/" \
     -e "s/@PKGVER@/${pkgver}/" \
-    -e "s/@EXTRA_CFLAGS@/'${EXTRA_CFLAGS}'/" \
+    -e "s/@DRIVER_CFLAGS@/'${DRIVER_CFLAGS}'/" \
     -i "${pkgdir}/usr/src/${_pkgname}-${pkgver}/dkms.conf"
 
   cp -r "${srcdir}/maccel/driver/." "${pkgdir}/usr/src/${_pkgname}-${pkgver}/"

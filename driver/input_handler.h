@@ -122,6 +122,9 @@ static int maccel_connect(struct input_handler *handler, struct input_dev *dev,
   if (error)
     goto err_unregister_handle;
 
+  printk(KERN_INFO pr_fmt("maccel flags: DEBUG=%s; FIXEDPT_BITS=%d"),
+         DEBUG_TEST ? "true" : "false", FIXEDPT_BITS);
+
   printk(KERN_INFO pr_fmt("maccel connecting to device: %s (%s at %s)"),
          dev_name(&dev->dev), dev->name ?: "unknown", dev->phys ?: "unknown");
 

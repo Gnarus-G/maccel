@@ -1,12 +1,12 @@
 DRIVERDIR?=`pwd`/driver
 MODULEDIR?=/lib/modules/`uname -r`/kernel/drivers/usb
 
-EXTRA_CFLAGS ?= -DFIXEDPT_BITS=$(shell getconf LONG_BIT)
+DRIVER_CFLAGS ?= -DFIXEDPT_BITS=$(shell getconf LONG_BIT)
 
 build:
-	$(MAKE) EXTRA_CFLAGS="$(EXTRA_CFLAGS)" -C $(DRIVERDIR)
+	$(MAKE) DRIVER_CFLAGS="$(DRIVER_CFLAGS)" -C $(DRIVERDIR)
 
-build_debug: override EXTRA_CFLAGS += -g -DDEBUG
+build_debug: override DRIVER_CFLAGS += -g -DDEBUG
 build_debug: build
 
 test: 
