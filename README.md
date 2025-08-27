@@ -53,6 +53,36 @@ curl -fsSL https://www.maccel.org/install.sh | sudo BUILD_CLI_FROM_SOURCE=1 sh
 
 You'll need [`cargo`](https://www.rust-lang.org/tools/install)
 
+### NixOS (Flake)
+
+For NixOS users, maccel provides a flake module that integrates seamlessly with your system configuration. Parameters are configured declaratively and applied directly as kernel module parameters for maximum efficiency.
+
+```nix
+# In your flake.nix inputs
+maccel.url = "github:Gnarus-G/maccel";
+
+# In your configuration
+{inputs, ...}: {
+  imports = [
+    inputs.maccel.nixosModules.default
+  ];
+
+  hardware.maccel = {
+    enable = true;
+    enableCli = true; # Optional: for parameter discovery
+    parameters = {
+      mode = "linear";
+      sensMultiplier = 1.0;
+      acceleration = 0.3;
+      offset = 2.0;
+      outputCap = 2.0;
+    };
+  };
+}
+```
+
+See [README_NIXOS.md](README_NIXOS.md) for detailed setup instructions and all available parameters.
+
 ### Arch (PKGBUILD)
 
 ```sh
