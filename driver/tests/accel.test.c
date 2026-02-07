@@ -106,6 +106,22 @@ static int test_no_accel_acceleration(const char *filename, fpt param_sens_mult,
   return test_acceleration(filename, args);
 }
 
+static int test_rotation_no_accel(const char *filename, fpt param_sens_mult,
+                                  fpt param_angle_deg) {
+  struct no_accel_curve_args _args = (struct no_accel_curve_args){};
+
+  struct accel_args args = {
+      .sens_mult = param_sens_mult,
+      .yx_ratio = FIXEDPT_ONE,
+      .input_dpi = fpt_fromint(1000),
+      .angle_rotation_deg = param_angle_deg,
+      .tag = no_accel,
+      .args = (union __accel_args){.no_accel = _args},
+  };
+
+  return test_acceleration(filename, args);
+}
+
 #define test_linear(sens_mult, yx_ratio, accel, offset, cap)                   \
   assert(test_linear_acceleration(                                             \
              "SENS_MULT-" #sens_mult "-ACCEL-" #accel "-OFFSET" #offset        \
@@ -137,6 +153,12 @@ static int test_no_accel_acceleration(const char *filename, fpt param_sens_mult,
              ".snapshot",                                                      \
              fpt_rconst(sens_mult), fpt_rconst(yx_ratio)) == 0);
 
+#define test_rotation(sens_mult, angle_deg)                                    \
+  assert(test_rotation_no_accel(                                               \
+             "Rotation__SENS_MULT-" #sens_mult "-ANGLE-" #angle_deg            \
+             ".snapshot",                                                      \
+             fpt_rconst(sens_mult), fpt_rconst(angle_deg)) == 0);
+
 int main(void) {
   test_linear(1, 1, 0, 0, 0);
   test_linear(1, 1, 0.3, 2, 2);
@@ -154,6 +176,12 @@ int main(void) {
 
   test_no_accel(1, 1);
   test_no_accel(0.5, 1.5);
+
+  /* Rotation tests: verify cross-axis output when one axis is 0.
+   * At 45 degrees, (10, 0) should produce roughly (7, 7) - not (10, 0).
+   * At 90 degrees, (10, 0) should produce roughly (0, 10). */
+  test_rotation(1, 45);
+  test_rotation(1, 90);
 
   print_success;
 }
