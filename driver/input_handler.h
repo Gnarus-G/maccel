@@ -4,6 +4,11 @@
 #include <linux/hid.h>
 #include <linux/version.h>
 
+static inline bool rotation_is_enabled(void) {
+  /* Fast check: the default is "0", so skip atofp unless the string differs */
+  return PARAM_ANGLE_ROTATION[0] != '0' || PARAM_ANGLE_ROTATION[1] != '\0';
+}
+
 /*
  * Collect the events EV_REL REL_X and EV_REL REL_Y, once we have both then
  * we accelerate the (x, y) vector and set the EV_REL event's value
@@ -23,6 +28,16 @@ static void event(struct input_handle *handle, struct input_value *value_ptr) {
     int y = get_y(MOVEMENT);
     if (x || y) {
       dbg("EV_SYN => code %d", value_ptr->code);
+
+      /*
+       * When rotation is active and one axis is missing from this frame,
+       * point the missing axis to synthetic storage so f_accelerate can
+       * write the rotated cross-axis component into it. The synthetic
+       * value is later injected into the event stream by maccel_events().
+       */
+      if (rotation_is_enabled()) {
+        ensure_axes_for_rotation();
+      }
 
       accelerate(&x, &y);
       dbg("accelerated -> (%d, %d)", x, y);
@@ -59,16 +74,60 @@ static void maccel_events(struct input_handle *handle,
   }
 
   struct input_value *end = vals;
+  struct input_value *syn_pos = NULL;
+
   for (v = vals; v != vals + count; v++) {
     if (v->type == EV_REL && v->value == NONE_EVENT_VALUE)
       continue;
     if (end != v) {
       *end = *v;
     }
+    /* Track position of the last SYN_REPORT so we can insert before it */
+    if (end->type == EV_SYN && end->code == SYN_REPORT)
+      syn_pos = end;
     end++;
   }
 
   int _count = end - vals;
+  unsigned int max = handle->dev->max_vals;
+
+  /*
+   * Inject synthetic EV_REL events for axes that rotation produced
+   * but weren't present in the original frame. Insert before SYN_REPORT
+   * so downstream handlers see a valid event sequence.
+   *
+   * NOTE: On kernels < 6.11.0 the handler returns void and cannot
+   * communicate a new event count to the input subsystem, so
+   * downstream handlers may not see the injected events. The data is
+   * still written into the buffer and num_vals is updated, but
+   * delivery is only reliable on >= 6.11.0 where we return the count.
+   */
+  if (injected_x && synthetic_x_val != NONE_EVENT_VALUE && _count < max) {
+    if (syn_pos) {
+      /* Shift SYN_REPORT and everything after it forward by one */
+      memmove(syn_pos + 1, syn_pos, (end - syn_pos) * sizeof(*syn_pos));
+      syn_pos->type = EV_REL;
+      syn_pos->code = REL_X;
+      syn_pos->value = synthetic_x_val;
+      syn_pos++;
+      end++;
+      _count++;
+    }
+    dbg("rotation: injected synthetic REL_X = %d", synthetic_x_val);
+  }
+
+  if (injected_y && synthetic_y_val != NONE_EVENT_VALUE && _count < max) {
+    if (syn_pos) {
+      memmove(syn_pos + 1, syn_pos, (end - syn_pos) * sizeof(*syn_pos));
+      syn_pos->type = EV_REL;
+      syn_pos->code = REL_Y;
+      syn_pos->value = synthetic_y_val;
+      end++;
+      _count++;
+    }
+    dbg("rotation: injected synthetic REL_Y = %d", synthetic_y_val);
+  }
+
   handle->dev->num_vals = _count;
 #if __cleanup_events
   return _count;

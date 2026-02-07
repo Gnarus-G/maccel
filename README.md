@@ -97,6 +97,21 @@ Options:
   -V, --version  Print version
 ```
 
+## Rotation
+
+maccel supports rotating the mouse input vector by a configurable angle (in degrees). This is useful for correcting sensor misalignment or tilted mouse grip.
+
+```sh
+maccel set angle-rotation 15   # rotate input 15 degrees
+maccel set angle-rotation 0    # disable rotation (default)
+```
+
+### Known limitation
+
+When the mouse moves along a single axis (purely horizontal or vertical), some mice and kernel versions only report one `EV_REL` event (`REL_X` or `REL_Y`) instead of both. The rotation transform produces a cross-axis component that needs to be injected as a synthetic event.
+
+**This injection requires Linux kernel >= 6.11.0.** On older kernels, the input handler API does not support returning a modified event count, so the synthetic event cannot be reliably delivered to downstream handlers. On those kernels, rotation may not apply correctly during perfectly axis-aligned movement.
+
 ## Notes
 
 One should disable the acceleration done by default in some distros, e.g. by `xset` or `libinput`.

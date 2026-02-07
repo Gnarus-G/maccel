@@ -11,6 +11,18 @@ typedef struct {
 
 static mouse_move MOVEMENT = {.x = NULL, .y = NULL};
 
+/*
+ * Track whether we injected synthetic storage for a missing axis.
+ * When rotation is active and the mouse only reports one axis (e.g. pure
+ * horizontal movement -> only REL_X), we need a place for f_accelerate
+ * to write the rotated cross-axis component. These synthetic values
+ * are later injected into the event stream by maccel_events().
+ */
+static bool injected_x = false;
+static bool injected_y = false;
+static int synthetic_x_val = 0;
+static int synthetic_y_val = 0;
+
 static inline void update_mouse_move(struct input_value *value) {
   switch (value->code) {
   case REL_X:
@@ -53,7 +65,29 @@ static inline void set_y_move(int value) {
   *MOVEMENT.y = value;
 }
 
+/*
+ * When rotation is active and one axis is missing from the frame,
+ * point the missing axis to synthetic storage so f_accelerate can
+ * write the rotated component into it.
+ */
+static inline void ensure_axes_for_rotation(void) {
+  if (MOVEMENT.x == NULL) {
+    synthetic_x_val = 0;
+    MOVEMENT.x = &synthetic_x_val;
+    injected_x = true;
+    dbg("rotation: injecting synthetic REL_X storage (x=%d)", 0);
+  }
+  if (MOVEMENT.y == NULL) {
+    synthetic_y_val = 0;
+    MOVEMENT.y = &synthetic_y_val;
+    injected_y = true;
+    dbg("rotation: injecting synthetic REL_Y storage (y=%d)", 0);
+  }
+}
+
 static inline void clear_mouse_move(void) {
   MOVEMENT.x = NULL;
   MOVEMENT.y = NULL;
+  injected_x = false;
+  injected_y = false;
 }
