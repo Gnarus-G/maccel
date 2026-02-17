@@ -11,6 +11,7 @@ use crate::action::{Action, Actions};
 use crate::component::TuiComponent;
 use crate::param_input::ParameterInput;
 use crate::utils::CyclingIdx;
+use crate::widgets::scrollbar::CustomScrollbar;
 use maccel_core::AccelMode;
 
 use super::param_input::InputMode;
@@ -265,17 +266,21 @@ impl<PS: ParamStore + Debug> TuiComponent for Screen<PS> {
                 param.draw(frame, params_layout[i]);
             }
 
+            // Calculate scrollbar area based on rendered params
+            let first_rect = params_layout.first().copied().unwrap_or(params_area);
+            let last_rect = params_layout.last().copied().unwrap_or(params_area);
+            let visible_items = end - start;
+
+            // Area includes arrows above and below the content
             let scrollbar_area = Rect {
                 x: params_area.x + params_area.width.saturating_sub(1),
-                y: params_area.y,
+                y: first_rect.y.saturating_sub(1),
                 width: 1,
-                height: params_area.height,
+                height: (last_rect.y + last_rect.height - first_rect.y + 1) + 2,
             };
-            let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight);
-            // Don't set viewport_content_length - let it default to track height
-            let mut scrollbar_state = ScrollbarState::new(param_count).position(start);
 
-            frame.render_stateful_widget(scrollbar, scrollbar_area, &mut scrollbar_state);
+            let scrollbar = CustomScrollbar::new(param_count, visible_items, start);
+            frame.render_widget(scrollbar, scrollbar_area);
         }
         // Done with parameter inputs, now on to the graph
 

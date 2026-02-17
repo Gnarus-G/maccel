@@ -1,7 +1,7 @@
 use maccel_core::inputspeed;
 
 use event::EventHandler;
-use ratatui::{Terminal, prelude::CrosstermBackend};
+use ratatui::{prelude::CrosstermBackend, Terminal};
 
 mod event;
 
@@ -12,6 +12,7 @@ mod graph;
 mod param_input;
 mod screen;
 mod utils;
+mod widgets;
 
 pub fn run_tui() -> anyhow::Result<()> {
     let mut app = app::App::new();
