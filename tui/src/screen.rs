@@ -13,6 +13,8 @@ use maccel_core::AccelMode;
 
 use super::param_input::InputMode;
 
+const PARAM_HEIGHT: u16 = 5;
+
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub enum HelpTextMode {
     EditMode,
@@ -25,6 +27,7 @@ pub struct Screen<PS: ParamStore> {
     param_idx: CyclingIdx,
     parameters: Vec<ParameterInput<PS>>,
     preview_slot: Box<dyn TuiComponent>,
+    scroll_offset: usize,
 }
 
 impl<PS: ParamStore> Screen<PS> {
@@ -38,6 +41,7 @@ impl<PS: ParamStore> Screen<PS> {
             accel_mode: mode,
             parameters,
             preview_slot: preview,
+            scroll_offset: 0,
         };
 
         s.parameters[0].is_selected = true;
@@ -74,11 +78,13 @@ impl<PS: ParamStore + Debug> TuiComponent for Screen<PS> {
         self.preview_slot.handle_key_event(event, actions);
     }
 
-    fn handle_mouse_event(
-        &mut self,
-        _event: &crossterm::event::MouseEvent,
-        _actions: &mut Actions,
-    ) {
+    fn handle_mouse_event(&mut self, event: &crossterm::event::MouseEvent, actions: &mut Actions) {
+        use crossterm::event::MouseEventKind;
+        match event.kind {
+            MouseEventKind::ScrollDown => actions.push(Action::ScrollDown),
+            MouseEventKind::ScrollUp => actions.push(Action::ScrollUp),
+            _ => {}
+        }
     }
 
     fn update(&mut self, action: &Action) {
@@ -88,6 +94,17 @@ impl<PS: ParamStore + Debug> TuiComponent for Screen<PS> {
             }
             Action::SelectPreviousInput => {
                 self.param_idx.back();
+            }
+            Action::ScrollDown => {
+                let max_scroll = self.parameters.len().saturating_sub(1);
+                if self.scroll_offset < max_scroll {
+                    self.scroll_offset += 1;
+                }
+            }
+            Action::ScrollUp => {
+                if self.scroll_offset > 0 {
+                    self.scroll_offset -= 1;
+                }
             }
             _ => {}
         }
@@ -176,19 +193,62 @@ impl<PS: ParamStore + Debug> TuiComponent for Screen<PS> {
             main_layout[0],
         );
 
-        let mut constraints: Vec<_> = self
-            .parameters
-            .iter()
-            .map(|_| Constraint::Length(5))
-            .collect();
+        let params_area = main_layout[0].inner(Margin {
+            vertical: 1,
+            horizontal: 1,
+        });
 
-        constraints.push(Constraint::default());
-        let params_layout = Layout::new(Direction::Vertical, constraints)
-            .margin(2)
-            .split(main_layout[0]);
+        let available_height = params_area.height as usize;
+        let param_count = self.parameters.len();
+        let params_fit = param_count * (PARAM_HEIGHT as usize) <= available_height;
 
-        for (idx, param) in self.parameters.iter().enumerate() {
-            param.draw(frame, params_layout[idx]);
+        if params_fit || param_count == 0 {
+            let constraints: Vec<_> = self
+                .parameters
+                .iter()
+                .map(|_| Constraint::Length(PARAM_HEIGHT))
+                .collect();
+
+            let params_layout = Layout::new(Direction::Vertical, constraints)
+                .margin(1)
+                .split(params_area);
+
+            for (idx, param) in self.parameters.iter().enumerate() {
+                param.draw(frame, params_layout[idx]);
+            }
+        } else {
+            let visible_count = available_height / (PARAM_HEIGHT as usize);
+            let start = self
+                .scroll_offset
+                .min(param_count.saturating_sub(visible_count));
+            let end = (start + visible_count).min(param_count);
+
+            let constraints: Vec<_> = self.parameters[start..end]
+                .iter()
+                .map(|_| Constraint::Length(PARAM_HEIGHT))
+                .collect();
+
+            let params_layout = Layout::new(Direction::Vertical, constraints)
+                .margin(1)
+                .split(params_area);
+
+            for (i, param) in self.parameters[start..end].iter().enumerate() {
+                param.draw(frame, params_layout[i]);
+            }
+
+            let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight);
+            let mut scrollbar_state = ScrollbarState::new(param_count)
+                .position(start)
+                .viewport_content_length(visible_count);
+
+            frame.render_stateful_widget(
+                scrollbar,
+                params_area.inner(Margin {
+                    vertical: 0,
+                    horizontal: 0,
+                }),
+                &mut scrollbar_state,
+            );
         }
         // Done with parameter inputs, now on to the graph
 
