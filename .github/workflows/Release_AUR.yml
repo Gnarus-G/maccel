@@ -1,0 +1,39 @@
+name: Release AUR
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  aur:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check PKGBUILD version matches tag
+        run: |
+          PKGVER=$(grep -E '^pkgver=' PKGBUILD | cut -d= -f2)
+          if [ "$PKGVER" != "${{ steps.version.outputs.version }}" ]; then
+            echo "Error: PKGBUILD pkgver ($PKGVER) does not match tag version (${{ steps.version.outputs.version }})"
+            exit 1
+          fi
+
+      - name: Publish to AUR
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
+        with:
+          pkgname: maccel-dkms
+          pkgbuild: ./PKGBUILD
+          assets: |
+            ./maccel.install
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_KEY }}
+          commit_message: "Update to v${{ steps.version.outputs.version }}"
+          ssh_keyscan_types: rsa,ecdsa,ed25519
