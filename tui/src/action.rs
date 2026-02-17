@@ -14,6 +14,10 @@ pub enum Action {
     SelectNextInput,
     SelectPreviousInput,
     SetMode(AccelMode),
+    ScrollDown,
+    ScrollUp,
+    ScrollPageDown,
+    ScrollPageUp,
 }
 
 pub type Actions = Vec<Action>;

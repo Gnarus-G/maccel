@@ -104,6 +104,14 @@ impl<PS: ParamStore + Debug> TuiComponent for ParameterInput<PS> {
                     actions.push(Action::SelectNextInput);
                     return;
                 }
+                KeyCode::PageDown => {
+                    actions.push(Action::ScrollPageDown);
+                    return;
+                }
+                KeyCode::PageUp => {
+                    actions.push(Action::ScrollPageUp);
+                    return;
+                }
                 _ => return,
             },
             InputMode::Editing => match key.code {

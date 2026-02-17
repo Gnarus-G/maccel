@@ -1,3 +1,5 @@
+use std::cell::Cell;
+
 use std::fmt::Debug;
 
 use crossterm::event;
@@ -9,9 +11,12 @@ use crate::action::{Action, Actions};
 use crate::component::TuiComponent;
 use crate::param_input::ParameterInput;
 use crate::utils::CyclingIdx;
+use crate::widgets::scrollbar::CustomScrollbar;
 use maccel_core::AccelMode;
 
 use super::param_input::InputMode;
+
+const PARAM_HEIGHT: u16 = 5;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub enum HelpTextMode {
@@ -25,6 +30,8 @@ pub struct Screen<PS: ParamStore> {
     param_idx: CyclingIdx,
     parameters: Vec<ParameterInput<PS>>,
     preview_slot: Box<dyn TuiComponent>,
+    scroll_offset: usize,
+    visible_count: Cell<usize>,
 }
 
 impl<PS: ParamStore> Screen<PS> {
@@ -38,6 +45,8 @@ impl<PS: ParamStore> Screen<PS> {
             accel_mode: mode,
             parameters,
             preview_slot: preview,
+            scroll_offset: 0,
+            visible_count: Cell::new(0),
         };
 
         s.parameters[0].is_selected = true;
@@ -47,6 +56,17 @@ impl<PS: ParamStore> Screen<PS> {
 
     fn selected_parameter_index(&self) -> usize {
         self.param_idx.current()
+    }
+
+    fn scroll_to_selected(&mut self) {
+        let visible = self.visible_count.get().max(1);
+        let selected = self.selected_parameter_index();
+
+        if selected < self.scroll_offset {
+            self.scroll_offset = selected;
+        } else if visible > 0 && selected >= self.scroll_offset + visible {
+            self.scroll_offset = selected - visible + 1;
+        }
     }
 
     pub fn is_in_editing_mode(&self) -> bool {
@@ -74,20 +94,44 @@ impl<PS: ParamStore + Debug> TuiComponent for Screen<PS> {
         self.preview_slot.handle_key_event(event, actions);
     }
 
-    fn handle_mouse_event(
-        &mut self,
-        _event: &crossterm::event::MouseEvent,
-        _actions: &mut Actions,
-    ) {
+    fn handle_mouse_event(&mut self, event: &crossterm::event::MouseEvent, actions: &mut Actions) {
+        use crossterm::event::MouseEventKind;
+        match event.kind {
+            MouseEventKind::ScrollDown => actions.push(Action::ScrollDown),
+            MouseEventKind::ScrollUp => actions.push(Action::ScrollUp),
+            _ => {}
+        }
     }
 
     fn update(&mut self, action: &Action) {
         match action {
             Action::SelectNextInput => {
                 self.param_idx.forward();
+                self.scroll_to_selected();
             }
             Action::SelectPreviousInput => {
                 self.param_idx.back();
+                self.scroll_to_selected();
+            }
+            Action::ScrollDown => {
+                let max_scroll = self.parameters.len().saturating_sub(1);
+                if self.scroll_offset < max_scroll {
+                    self.scroll_offset += 1;
+                }
+            }
+            Action::ScrollUp => {
+                if self.scroll_offset > 0 {
+                    self.scroll_offset -= 1;
+                }
+            }
+            Action::ScrollPageDown => {
+                let visible = self.visible_count.get().max(1);
+                let max_scroll = self.parameters.len().saturating_sub(visible);
+                self.scroll_offset = (self.scroll_offset + visible).min(max_scroll);
+            }
+            Action::ScrollPageUp => {
+                let visible = self.visible_count.get().max(1);
+                self.scroll_offset = self.scroll_offset.saturating_sub(visible);
             }
             _ => {}
         }
@@ -176,19 +220,67 @@ impl<PS: ParamStore + Debug> TuiComponent for Screen<PS> {
             main_layout[0],
         );
 
-        let mut constraints: Vec<_> = self
-            .parameters
-            .iter()
-            .map(|_| Constraint::Length(5))
-            .collect();
+        let params_area = main_layout[0].inner(Margin {
+            vertical: 1,
+            horizontal: 1,
+        });
 
-        constraints.push(Constraint::default());
-        let params_layout = Layout::new(Direction::Vertical, constraints)
-            .margin(2)
-            .split(main_layout[0]);
+        let available_height = params_area.height as usize;
+        let param_count = self.parameters.len();
+        let params_fit = param_count * (PARAM_HEIGHT as usize) <= available_height;
 
-        for (idx, param) in self.parameters.iter().enumerate() {
-            param.draw(frame, params_layout[idx]);
+        if params_fit || param_count == 0 {
+            let constraints: Vec<_> = self
+                .parameters
+                .iter()
+                .map(|_| Constraint::Length(PARAM_HEIGHT))
+                .collect();
+
+            let params_layout = Layout::new(Direction::Vertical, constraints)
+                .margin(1)
+                .split(params_area);
+
+            for (idx, param) in self.parameters.iter().enumerate() {
+                param.draw(frame, params_layout[idx]);
+            }
+        } else {
+            let margin_height = 2;
+            let content_height = available_height.saturating_sub(margin_height);
+            let visible = content_height / (PARAM_HEIGHT as usize);
+            self.visible_count.set(visible);
+            let start = self
+                .scroll_offset
+                .min(param_count.saturating_sub(visible.max(1)));
+            let end = (start + visible.max(1)).min(param_count);
+
+            let constraints: Vec<_> = self.parameters[start..end]
+                .iter()
+                .map(|_| Constraint::Length(PARAM_HEIGHT))
+                .collect();
+
+            let params_layout = Layout::new(Direction::Vertical, constraints)
+                .margin(1)
+                .split(params_area);
+
+            for (i, param) in self.parameters[start..end].iter().enumerate() {
+                param.draw(frame, params_layout[i]);
+            }
+
+            // Calculate scrollbar area based on rendered params
+            let first_rect = params_layout.first().copied().unwrap_or(params_area);
+            let last_rect = params_layout.last().copied().unwrap_or(params_area);
+            let visible_items = end - start;
+
+            // Area includes arrows above and below the content
+            let scrollbar_area = Rect {
+                x: params_area.x + params_area.width.saturating_sub(1),
+                y: first_rect.y.saturating_sub(1),
+                width: 1,
+                height: (last_rect.y + last_rect.height - first_rect.y + 1) + 2,
+            };
+
+            let scrollbar = CustomScrollbar::new(param_count, visible_items, start);
+            frame.render_widget(scrollbar, scrollbar_area);
         }
         // Done with parameter inputs, now on to the graph
 

@@ -45,7 +45,7 @@ build_cli:
 	cargo build --bin maccel --release
 
 install_cli: build_cli
-	sudo install -m 755 `pwd`/cli/target/release/maccel /usr/local/bin/maccel
+	sudo install -m 755 target/release/maccel /usr/local/bin/maccel
 
 uninstall_cli:
 	@sudo rm -f /usr/local/bin/maccel

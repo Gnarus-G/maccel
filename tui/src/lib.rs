@@ -12,6 +12,7 @@ mod graph;
 mod param_input;
 mod screen;
 mod utils;
+mod widgets;
 
 pub fn run_tui() -> anyhow::Result<()> {
     let mut app = app::App::new();
