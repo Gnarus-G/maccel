@@ -1,6 +1,6 @@
 # Agent Guidelines for maccel Repository
 
-This document outlines the essential commands and style conventions for agentic coding in this repository.
+This document outlines essential commands and style conventions for agentic coding in this repository.
 
 ## 1. Project Structure
 
@@ -19,7 +19,6 @@ This document outlines the essential commands and style conventions for agentic 
 - `make build` - Build the kernel module
 - `make build_debug` - Build with debug symbols (`-g -DDEBUG`)
 - `make install` - Build and load the kernel module
-- `make install_debug` - Build debug version and install
 - `make reinstall` - Uninstall and reinstall module
 - `make uninstall` - Remove module from kernel
 
@@ -35,50 +34,33 @@ This document outlines the essential commands and style conventions for agentic 
 - `make udev_trigger` - Reload udev and trigger device discovery
 
 ### Tests
-
-#### Run All Tests
+**All Tests:**
 - `make test` - Run all C driver tests
 - `cargo test --all` - Run all Rust tests
 
-#### Run Single Test
-
-**C Driver Tests:**
-- `TEST_NAME=<pattern> make test` - Filter tests by filename pattern
-- Examples:
-  - `TEST_NAME=accel.test.c make test` - Run only acceleration tests
-  - `TEST_NAME=input_speed make test` - Run input speed tests
-
-**Rust Tests:**
-- `cargo test <test_name>` - Run tests matching name
-- `cargo test --package maccel-core <test_name>` - Run tests in specific crate
-- Examples:
-  - `cargo test format_param_value_works` - Run specific test function
-  - `cargo test --package maccel-core` - Run only core library tests
-
-### Site (Astro/TypeScript)
-- `cd site && npx astro check` - Type check and lint
-- `cd site && npx astro build` - Build for production
-- `cd site && npx astro dev` - Development server
+**Single Test:**
+- `TEST_NAME=<pattern> make test` - Filter C tests by filename
+- `cargo test <test_name>` - Run Rust test by name
+- `cargo test --package maccel-core <test_name>` - Run test in specific crate
 
 ### Linting & Formatting
 - `cargo fmt --all` - Format all Rust code
-- `cargo clippy --fix --allow-dirty` - Rust linting with auto-fix
-- `cargo clippy --all` - Check all Rust code without auto-fix
+- `cargo clippy --all --fix --allow-dirty` - Rust linting with auto-fix
 
 ## 3. Code Style Guidelines
 
 ### General Principles
 - Adhere to existing project conventions
-- Mimic surrounding code style, structure, and patterns
+- Mimic surrounding code style and patterns
 - Add comments sparingly, focusing on _why_ rather than _what_
 - No trailing whitespace
 
-### Rust (CLI, Core Library, TUI)
+### Rust (CLI, Core, TUI)
 
 **Naming:**
-- `snake_case` for functions, variables, and module names
-- `PascalCase` for types, enums, and traits
-- `SCREAMING_SNAKE_CASE` for constants
+- `snake_case` - functions, variables, modules
+- `PascalCase` - types, enums, traits
+- `SCREAMING_SNAKE_CASE` - constants
 
 **Imports (order matters):**
 1. `std` imports first
@@ -87,40 +69,28 @@ This document outlines the essential commands and style conventions for agentic 
 4. Within each group, sort alphabetically
 
 ```rust
-use std::{
-    fmt::{Debug, Display},
-    path::PathBuf,
-};
-
-use anyhow::{anyhow, Context};
-use clap::Parser;
-
-use crate::{
-    fixedptc::Fpt,
-    params::{AccelMode, Param},
-};
+use std::{fmt::Debug, path::PathBuf};
+use anyhow::Context;
+use crate::params::Param;
 ```
 
 **Error Handling:**
-- Use `anyhow::Result<()>` for application-level code (cli/, tui/)
-- Use `thiserror` for library code when custom error types are needed
+- Use `anyhow::Result<()>` for application-level code
+- Use `thiserror` for library code when needed
 - Propagate errors with `?` operator
-- Add context with `.context()` for better error messages
+- Add context with `.context()` for better messages
 - Avoid `unwrap()` and `expect()` in production code
-- Use `anyhow::bail!()` for early returns with errors
-
-**Async:**
-- Use `tokio` for async operations when needed
+- Use `anyhow::bail!()` for early error returns
 
 **Testing:**
-- Unit tests in same file as code: `#[cfg(test)] mod tests { ... }`
+- Unit tests in same file: `#[cfg(test)] mod tests { ... }`
 - Use `#[test]` attribute for test functions
 
 ### C (Kernel Module)
 
 **Naming:**
-- `snake_case` for functions and variables
-- `PascalCase` for types and structs
+- `snake_case` - functions and variables
+- `PascalCase` - types and structs
 
 **Style:**
 - Follow Linux kernel coding style
@@ -129,51 +99,47 @@ use crate::{
 - Prefix internal/static functions with `_`
 
 **Error Handling:**
-- Return integer error codes
-- 0 for success, negative for error
+- Return integer error codes (0 = success, negative = error)
 - Use `goto` for cleanup on error (common kernel pattern)
 
 **Testing:**
 - Test files: `driver/tests/*.test.c`
-- Use snapshot testing via `assert_snapshot()` function
-- Run with `make test` or `TEST_NAME=<pattern> make test`
+- Use `assert_snapshot()` for snapshot testing
 
 ### TypeScript/Astro (Site)
 
 - Use TypeScript strict mode
 - Use Tailwind CSS utility-first approach
-- Follow Astro component patterns
 - `kebab-case` for component filenames
-- `camelCase` for variables and functions in scripts
+- `camelCase` for variables and functions
 
 ## 4. Naming Conventions Summary
 
 | Language | Functions/Variables | Types/Enums | Files | Constants |
 |----------|---------------------|-------------|-------|-----------|
-| Rust     | snake_case          | PascalCase  | snake_case.rs | SCREAMING_SNAKE_CASE |
-| C        | snake_case          | PascalCase  | snake_case.c | SCREAMING_SNAKE_CASE |
-| TypeScript | camelCase         | PascalCase  | kebab-case.ts | SCREAMING_SNAKE_CASE |
+| Rust | snake_case | PascalCase | snake_case.rs | SCREAMING_SNAKE_CASE |
+| C | snake_case | PascalCase | snake_case.c | SCREAMING_SNAKE_CASE |
+| TypeScript | camelCase | PascalCase | kebab-case.ts | SCREAMING_SNAKE_CASE |
 
 ## 5. Version Bumping
 
-Only bump versions when the respective component changes:
+- **CLI changes:** Bump `cli/Cargo.toml` version AND create git tag
+- **Driver changes:** Update `PKGBUILD` pkgver
 
-- **Driver-only bug fixes:** No version bump needed (install.sh clones from source)
-- **CLI changes:** Bump `cli/Cargo.toml` version AND create git tag (triggers release)
-- **Driver version bump:** Update `PKGBUILD` pkgver (used by DKMS)
-
-When bumping CLI version:
-1. Update `cli/Cargo.toml` version field
-2. Create and push tag: `git tag v<x.y.z> && git push origin v<x.y.z>`
+**CLI version bump:**
+1. Update `cli/Cargo.toml` version
+2. `cargo update -p maccel-cli` - Update lock file
+3. `git add -A && git commit -m "Bump CLI version to x.y.z"`
+4. `git tag v<x.y.z> && git push origin v<x.y.z>`
 
 ## 6. Commit Messages
 
-- Short, descriptive subject line (<50 chars), imperative mood
+- Short subject line (<50 chars), imperative mood
 - Capitalize first letter
-- Blank line between subject and optional body (~72 char line wrap)
+- Blank line between subject and body
 - No period at subject line end
 
-Examples:
+Example:
 ```
 Add new acceleration curve algorithm
 
@@ -188,10 +154,8 @@ at high DPI values.
 | CLI entry point | `cli/src/main.rs` |
 | Core library exports | `crates/core/src/lib.rs` |
 | Parameter definitions | `crates/core/src/params.rs` |
-| SysFS persistence | `crates/core/src/persist.rs` |
 | Driver entry point | `driver/maccel.c` |
 | Test utilities | `driver/tests/test_utils.h` |
-| Workspace dependencies | `Cargo.toml` |
 
 ## 8. Dependencies
 
