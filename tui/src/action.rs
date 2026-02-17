@@ -16,6 +16,8 @@ pub enum Action {
     SetMode(AccelMode),
     ScrollDown,
     ScrollUp,
+    ScrollPageDown,
+    ScrollPageUp,
 }
 
 pub type Actions = Vec<Action>;

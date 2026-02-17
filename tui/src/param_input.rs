@@ -5,8 +5,8 @@ use maccel_core::persist::ParamStore;
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::layout::Rect;
 use ratatui::{prelude::*, widgets::*};
-use tui_input::Input;
 use tui_input::backend::crossterm::EventHandler;
+use tui_input::Input;
 
 use crate::action::{Action, Actions, InputAction};
 use crate::component::TuiComponent;
@@ -102,6 +102,14 @@ impl<PS: ParamStore + Debug> TuiComponent for ParameterInput<PS> {
                 }
                 KeyCode::Tab | KeyCode::Down => {
                     actions.push(Action::SelectNextInput);
+                    return;
+                }
+                KeyCode::PageDown => {
+                    actions.push(Action::ScrollPageDown);
+                    return;
+                }
+                KeyCode::PageUp => {
+                    actions.push(Action::ScrollPageUp);
                     return;
                 }
                 _ => return,

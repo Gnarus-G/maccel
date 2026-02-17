@@ -1,3 +1,5 @@
+use std::cell::Cell;
+
 use std::fmt::Debug;
 
 use crossterm::event;
@@ -28,6 +30,7 @@ pub struct Screen<PS: ParamStore> {
     parameters: Vec<ParameterInput<PS>>,
     preview_slot: Box<dyn TuiComponent>,
     scroll_offset: usize,
+    visible_count: Cell<usize>,
 }
 
 impl<PS: ParamStore> Screen<PS> {
@@ -42,6 +45,7 @@ impl<PS: ParamStore> Screen<PS> {
             parameters,
             preview_slot: preview,
             scroll_offset: 0,
+            visible_count: Cell::new(0),
         };
 
         s.parameters[0].is_selected = true;
@@ -51,6 +55,17 @@ impl<PS: ParamStore> Screen<PS> {
 
     fn selected_parameter_index(&self) -> usize {
         self.param_idx.current()
+    }
+
+    fn scroll_to_selected(&mut self) {
+        let visible = self.visible_count.get().max(1);
+        let selected = self.selected_parameter_index();
+
+        if selected < self.scroll_offset {
+            self.scroll_offset = selected;
+        } else if visible > 0 && selected >= self.scroll_offset + visible {
+            self.scroll_offset = selected - visible + 1;
+        }
     }
 
     pub fn is_in_editing_mode(&self) -> bool {
@@ -91,9 +106,11 @@ impl<PS: ParamStore + Debug> TuiComponent for Screen<PS> {
         match action {
             Action::SelectNextInput => {
                 self.param_idx.forward();
+                self.scroll_to_selected();
             }
             Action::SelectPreviousInput => {
                 self.param_idx.back();
+                self.scroll_to_selected();
             }
             Action::ScrollDown => {
                 let max_scroll = self.parameters.len().saturating_sub(1);
@@ -105,6 +122,15 @@ impl<PS: ParamStore + Debug> TuiComponent for Screen<PS> {
                 if self.scroll_offset > 0 {
                     self.scroll_offset -= 1;
                 }
+            }
+            Action::ScrollPageDown => {
+                let visible = self.visible_count.get().max(1);
+                let max_scroll = self.parameters.len().saturating_sub(visible);
+                self.scroll_offset = (self.scroll_offset + visible).min(max_scroll);
+            }
+            Action::ScrollPageUp => {
+                let visible = self.visible_count.get().max(1);
+                self.scroll_offset = self.scroll_offset.saturating_sub(visible);
             }
             _ => {}
         }
@@ -217,11 +243,14 @@ impl<PS: ParamStore + Debug> TuiComponent for Screen<PS> {
                 param.draw(frame, params_layout[idx]);
             }
         } else {
-            let visible_count = available_height / (PARAM_HEIGHT as usize);
+            let margin_height = 2;
+            let content_height = available_height.saturating_sub(margin_height);
+            let visible = content_height / (PARAM_HEIGHT as usize);
+            self.visible_count.set(visible);
             let start = self
                 .scroll_offset
-                .min(param_count.saturating_sub(visible_count));
-            let end = (start + visible_count).min(param_count);
+                .min(param_count.saturating_sub(visible.max(1)));
+            let end = (start + visible.max(1)).min(param_count);
 
             let constraints: Vec<_> = self.parameters[start..end]
                 .iter()
@@ -236,19 +265,17 @@ impl<PS: ParamStore + Debug> TuiComponent for Screen<PS> {
                 param.draw(frame, params_layout[i]);
             }
 
+            let scrollbar_area = Rect {
+                x: params_area.x + params_area.width.saturating_sub(1),
+                y: params_area.y,
+                width: 1,
+                height: params_area.height,
+            };
             let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight);
-            let mut scrollbar_state = ScrollbarState::new(param_count)
-                .position(start)
-                .viewport_content_length(visible_count);
+            // Don't set viewport_content_length - let it default to track height
+            let mut scrollbar_state = ScrollbarState::new(param_count).position(start);
 
-            frame.render_stateful_widget(
-                scrollbar,
-                params_area.inner(Margin {
-                    vertical: 0,
-                    horizontal: 0,
-                }),
-                &mut scrollbar_state,
-            );
+            frame.render_stateful_widget(scrollbar, scrollbar_area, &mut scrollbar_state);
         }
         // Done with parameter inputs, now on to the graph
 
@@ -258,7 +285,7 @@ impl<PS: ParamStore + Debug> TuiComponent for Screen<PS> {
 
 #[cfg(test)]
 mod test {
-    use maccel_core::{AccelMode, persist::ParamStore};
+    use maccel_core::{persist::ParamStore, AccelMode};
 
     use crossterm::event::KeyCode;
 
