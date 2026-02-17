@@ -261,13 +261,15 @@ impl Param {
             Param::YxRatio => {
                 "Y to X axis sensitivity ratio. Values > 1 increase vertical sensitivity."
             }
-            Param::InputDpi => "Mouse DPI setting. Used for proper speed calculations.",
+            Param::InputDpi => {
+                "Mouse DPI. Used to normalize to 1000 DPI equivalent for consistent acceleration."
+            }
             Param::AngleRotation => "Rotation angle in degrees for sensitivity direction.",
             Param::Accel => "Acceleration strength. Higher values = faster cursor at high speeds.",
-            Param::OffsetLinear => "Speed threshold before acceleration begins (in/ms).",
+            Param::OffsetLinear => "Speed threshold (counts/ms) before acceleration begins.",
             Param::OutputCap => "Maximum sensitivity multiplier cap. Prevents excessive speed.",
             Param::DecayRate => "How quickly acceleration decays. Higher = faster decay.",
-            Param::OffsetNatural => "Speed threshold for natural curve activation (in/ms).",
+            Param::OffsetNatural => "Speed threshold (counts/ms) for natural curve activation.",
             Param::Limit => "Maximum gain limit for natural acceleration.",
             Param::Gamma => "Exponent controlling curve shape. Higher = more aggressive ramp-up.",
             Param::Smooth => "Smoothing factor (0-1). Higher = more gradual transitions.",

@@ -20,8 +20,8 @@ PARAM(YX_RATIO, 4294967296, // 1 << 32
       "A factor (Y/X) by which the final sensitivity calculated is multiplied "
       "to produce the sensitivity applied to the Y axis.");
 PARAM(INPUT_DPI, 4294967296000, // 1000 << 32
-      "The DPI of the mouse, used to normalize the effective dpi to 1 "
-      "in/sec");
+       "The DPI of the mouse, used to normalize input to 1000 DPI equivalent "
+       "for consistent acceleration across different mice.");
 #else
 PARAM(SENS_MULT, 65536, // 1 << 16
       "A factor applied the sensitivity calculation after ACCEL is applied.");
@@ -29,8 +29,8 @@ PARAM(YX_RATIO, 65536, // 1 << 16
       "A factor (Y/X) by which the final sensitivity calculated is multiplied "
       "to produce the sensitivity applied to the Y axis.");
 PARAM(INPUT_DPI, 65536000, // 1000 << 16
-      "The DPI of the mouse, used to normalize the effective dpi to 1 "
-      "in/sec");
+       "The DPI of the mouse, used to normalize input to 1000 DPI equivalent "
+       "for consistent acceleration across different mice.");
 #endif
 
 PARAM(ANGLE_ROTATION, 0,
@@ -38,7 +38,7 @@ PARAM(ANGLE_ROTATION, 0,
 // For Linear Mode
 
 PARAM(ACCEL, 0, "Control the sensitivity calculation.");
-PARAM(OFFSET, 0, "Control the input speed past which to allow acceleration.");
+PARAM(OFFSET, 0, "Input speed threshold (counts/ms) before acceleration begins.");
 PARAM(OUTPUT_CAP, 0, "Control the maximum sensitivity.");
 
 // For Natural Mode
