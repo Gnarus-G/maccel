@@ -5,8 +5,8 @@ use maccel_core::persist::ParamStore;
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::layout::Rect;
 use ratatui::{prelude::*, widgets::*};
-use tui_input::Input;
 use tui_input::backend::crossterm::EventHandler;
+use tui_input::Input;
 
 use crate::action::{Action, Actions, InputAction};
 use crate::component::TuiComponent;
@@ -202,14 +202,14 @@ impl<PS: ParamStore + Debug> TuiComponent for ParameterInput<PS> {
             }
         }
 
-        let helpher_text_layout = input_group_layout[1];
+        let helper_text_layout = input_group_layout[1];
 
         if let Some(error) = &self.error {
             let helper_text = Paragraph::new(error.as_str())
                 .red()
                 .wrap(ratatui::widgets::Wrap { trim: true });
 
-            frame.render_widget(helper_text, helpher_text_layout);
+            frame.render_widget(helper_text, helper_text_layout);
 
             input = input.red();
         }

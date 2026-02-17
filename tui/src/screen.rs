@@ -177,6 +177,20 @@ impl<PS: ParamStore + Debug> TuiComponent for Screen<PS> {
         let selected_param = &self.parameters[self.selected_parameter_index()];
         let description = selected_param.param().description();
 
+        // Split the bottom panel horizontally - description on left, keybind help on right
+        let bottom_layout = Layout::new(
+            Direction::Horizontal,
+            [Constraint::Percentage(60), Constraint::Percentage(40)],
+        )
+        .split(root_layout[2]);
+
+        // Render description on the left
+        let description_text = Paragraph::new(description.italic())
+            .wrap(ratatui::widgets::Wrap { trim: true })
+            .block(Block::new().borders(Borders::ALL).title("Description"));
+        frame.render_widget(description_text, bottom_layout[0]);
+
+        // Render keybind help on the right
         let help = match self.help_text_mode() {
             HelpTextMode::EditMode => {
                 let commands: Vec<Span> = [
@@ -198,16 +212,13 @@ impl<PS: ParamStore + Debug> TuiComponent for Screen<PS> {
                 .into_iter()
                 .flat_map(|(cmd, desc)| vec![cmd.bold(), " ".into(), desc.into(), "  ".into()])
                 .collect();
-                let mut lines = vec![Line::from(commands)];
-                lines.push(Line::from(""));
-                lines.push(Line::from(description.italic()));
-                Text::from(lines)
+                Text::from(Line::from(commands))
             }
         };
 
         frame.render_widget(
             Paragraph::new(help).block(Block::new().borders(Borders::ALL)),
-            root_layout[2],
+            bottom_layout[1],
         );
 
         // Done with main layout, now to layout the parameters inputs
@@ -290,7 +301,7 @@ impl<PS: ParamStore + Debug> TuiComponent for Screen<PS> {
 
 #[cfg(test)]
 mod test {
-    use maccel_core::{AccelMode, persist::ParamStore};
+    use maccel_core::{persist::ParamStore, AccelMode};
 
     use crossterm::event::KeyCode;
 
