@@ -1,7 +1,7 @@
 use crate::{
-    AccelParams, AccelParamsByMode, LinearCurveParams, NaturalCurveParams, SynchronousCurveParams,
     libmaccel::{self, fixedptc::Fpt},
     params::AllParamArgs,
+    AccelParams, AccelParamsByMode, LinearCurveParams, NaturalCurveParams, SynchronousCurveParams,
 };
 
 use crate::AccelMode;

@@ -7,10 +7,10 @@ use std::{
 use anyhow::Context;
 
 use crate::{
-    AccelMode,
     libmaccel::fixedptc::Fpt,
     params::{AllParamArgs, Param},
     persist::ParamStore,
+    AccelMode,
 };
 
 #[derive(Debug, Clone, Copy)]

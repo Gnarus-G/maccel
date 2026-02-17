@@ -72,7 +72,7 @@ pub struct Vector {
 }
 
 mod c_libmaccel {
-    use super::{Vector, fixedptc};
+    use super::{fixedptc, Vector};
     use crate::params::AccelParams;
     use std::ffi::c_char;
 

@@ -5,13 +5,13 @@ use std::{
     str::FromStr,
 };
 
-use anyhow::{Context, anyhow};
+use anyhow::{anyhow, Context};
 
 use crate::{
     fixedptc::Fpt,
     params::{
-        ALL_MODES, AccelMode, CommonParamArgs, LinearParamArgs, NaturalParamArgs, Param,
-        SynchronousParamArgs, format_param_value, validate_param_value,
+        format_param_value, validate_param_value, AccelMode, CommonParamArgs, LinearParamArgs,
+        NaturalParamArgs, Param, SynchronousParamArgs, ALL_MODES,
     },
 };
 
