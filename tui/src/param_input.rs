@@ -48,6 +48,10 @@ impl<PS: ParamStore> ParameterInput<PS> {
             .expect("Failed to get param from context")
     }
 
+    pub fn param(&self) -> Param {
+        self.param_tag
+    }
+
     pub fn value(&self) -> &str {
         self.input.value()
     }
@@ -69,7 +73,7 @@ impl<PS: ParamStore> ParameterInput<PS> {
             }
             Err(err) => {
                 self.reset();
-                self.error = Some(format!("{:#}", err));
+                self.error = Some(format!("{err:#}"));
             }
         }
 
