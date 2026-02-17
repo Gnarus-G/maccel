@@ -1,7 +1,7 @@
 use maccel_core::inputspeed;
 
 use event::EventHandler;
-use ratatui::{prelude::CrosstermBackend, Terminal};
+use ratatui::{Terminal, prelude::CrosstermBackend};
 
 mod event;
 
