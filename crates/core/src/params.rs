@@ -254,10 +254,31 @@ impl Param {
             Param::AngleRotation => "Angle Rotation",
         }
     }
+
+    pub fn description(&self) -> &'static str {
+        match self {
+            Param::SensMult => "Base sensitivity multiplier. Adjusts overall mouse speed.",
+            Param::YxRatio => {
+                "Y to X axis sensitivity ratio. Values > 1 increase vertical sensitivity."
+            }
+            Param::InputDpi => "Mouse DPI setting. Used for proper speed calculations.",
+            Param::AngleRotation => "Rotation angle in degrees for sensitivity direction.",
+            Param::Accel => "Acceleration strength. Higher values = faster cursor at high speeds.",
+            Param::OffsetLinear => "Speed threshold before acceleration begins (in/ms).",
+            Param::OutputCap => "Maximum sensitivity multiplier cap. Prevents excessive speed.",
+            Param::DecayRate => "How quickly acceleration decays. Higher = faster decay.",
+            Param::OffsetNatural => "Speed threshold for natural curve activation (in/ms).",
+            Param::Limit => "Maximum gain limit for natural acceleration.",
+            Param::Gamma => "Exponent controlling curve shape. Higher = more aggressive ramp-up.",
+            Param::Smooth => "Smoothing factor (0-1). Higher = more gradual transitions.",
+            Param::Motivity => "Degree of acceleration effect. Must be > 1.",
+            Param::SyncSpeed => "Synchronization speed. Controls how fast sync responds.",
+        }
+    }
 }
 
 pub(crate) fn format_param_value(value: f64) -> String {
-    let mut number = format!("{:.5}", value);
+    let mut number = format!("{value:.5}");
 
     for idx in (1..number.len()).rev() {
         let this_char = &number[idx..idx + 1];

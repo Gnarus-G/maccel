@@ -130,40 +130,35 @@ impl<PS: ParamStore + Debug> TuiComponent for Screen<PS> {
         )
         .split(root_layout[1]);
 
-        // Bottom help section
-        let normal_mode_commands_help = [
-            ("Tab / Down", "select next parameter"),
-            ("Shift + Tab / Up", "select previous parameter"),
-            ("i / Enter", "start editing a parameter"),
-            ("Left", "prev mode"),
-            ("Right", "next mode"),
-        ]
-        .into_iter()
-        .flat_map(|(command, description)| {
-            vec![
-                command.bold(),
-                ": ".into(),
-                description.into(),
-                ";  ".into(),
-            ]
-        })
-        .collect::<Vec<_>>();
-
-        let editin_mode_commands_help = [("Enter", "commit the value"), ("Esc", "cancel")]
-            .into_iter()
-            .flat_map(|(command, description)| {
-                vec![
-                    command.bold(),
-                    ": ".into(),
-                    description.into(),
-                    ";  ".into(),
-                ]
-            })
-            .collect::<Vec<_>>();
+        let selected_param = &self.parameters[self.selected_parameter_index()];
+        let description = selected_param.param().description();
 
         let help = match self.help_text_mode() {
-            HelpTextMode::EditMode => Text::from(Line::from(editin_mode_commands_help)),
-            HelpTextMode::NormalMode => Text::from(Line::from(normal_mode_commands_help)),
+            HelpTextMode::EditMode => {
+                let commands: Vec<Span> = [
+                    ("Enter", "commit"),
+                    ("Esc", "cancel"),
+                    ("Left/Right", "change mode"),
+                ]
+                .into_iter()
+                .flat_map(|(cmd, desc)| vec![cmd.bold(), ": ".into(), desc.into(), "  ".into()])
+                .collect();
+                Text::from(Line::from(commands))
+            }
+            HelpTextMode::NormalMode => {
+                let commands: Vec<Span> = [
+                    ("Tab/Up/Down", "navigate"),
+                    ("i/Enter", "edit"),
+                    ("Left/Right", "mode"),
+                ]
+                .into_iter()
+                .flat_map(|(cmd, desc)| vec![cmd.bold(), " ".into(), desc.into(), "  ".into()])
+                .collect();
+                let mut lines = vec![Line::from(commands)];
+                lines.push(Line::from(""));
+                lines.push(Line::from(description.italic()));
+                Text::from(lines)
+            }
         };
 
         frame.render_widget(
