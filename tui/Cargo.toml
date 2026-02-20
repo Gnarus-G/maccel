@@ -9,4 +9,4 @@ crossterm = "0.28.1"
 tui-input = "*"
 anyhow = { workspace = true }
 tracing = { workspace = true }
-maccel-core = { workspace = true }
+maccel-core = { workspace = true, features = ["serde"] }

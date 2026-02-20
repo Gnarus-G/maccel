@@ -3,6 +3,7 @@ pub mod inputspeed;
 mod libmaccel;
 mod params;
 pub mod persist;
+pub mod profiles;
 mod sens_fns;
 
 pub use context::*;

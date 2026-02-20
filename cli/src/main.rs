@@ -3,6 +3,7 @@ use clap::{CommandFactory, Parser};
 use maccel_core::{
     fixedptc::Fpt,
     persist::{ParamStore, SysFsStore},
+    profiles::{Profile, ProfileStore},
     subcommads::*,
     AccelMode, NoAccelParamArgs, Param, ALL_COMMON_PARAMS, ALL_LINEAR_PARAMS, ALL_NATURAL_PARAMS,
     ALL_SYNCHRONOUS_PARAMS,
@@ -38,6 +39,11 @@ enum CLiCommands {
         // The shell for which to generate completions
         shell: clap_complete::Shell,
     },
+    /// Manage profiles
+    Profile {
+        #[clap(subcommand)]
+        command: ProfileCommands,
+    },
 
     #[cfg(debug_assertions)]
     Debug {
@@ -50,6 +56,20 @@ enum CLiCommands {
 #[derive(Debug, clap::Subcommand)]
 enum DebugCommands {
     Print { nums: Vec<f64> },
+}
+
+#[derive(Debug, clap::Subcommand)]
+enum ProfileCommands {
+    /// Save current settings as a new profile
+    Create { name: String },
+    /// List all saved profiles
+    List,
+    /// Load a profile (apply its settings)
+    Load { name: String },
+    /// Delete a profile
+    Delete { name: String },
+    /// Show profile details
+    Show { name: String },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -145,6 +165,51 @@ fn main() -> anyhow::Result<()> {
         CLiCommands::Completion { shell } => {
             clap_complete::generate(shell, &mut Cli::command(), "maccel", &mut std::io::stdout())
         }
+        CLiCommands::Profile { command } => match command {
+            ProfileCommands::Create { name } => {
+                let profile = Profile::from_current_settings(&name)?;
+                let store = ProfileStore::new()?;
+                store.save(&profile)?;
+                println!("Profile '{}' saved successfully.", name);
+            }
+            ProfileCommands::List => {
+                let store = ProfileStore::new()?;
+                let profiles = store.list()?;
+                if profiles.is_empty() {
+                    println!("No profiles found.");
+                } else {
+                    println!("Profiles:");
+                    for profile in profiles {
+                        println!("  - {} ({})", profile.name, profile.mode.as_title());
+                    }
+                }
+            }
+            ProfileCommands::Load { name } => {
+                let store = ProfileStore::new()?;
+                let profile = store.load(&name)?;
+                profile.apply()?;
+                println!("Profile '{}' applied successfully.", name);
+            }
+            ProfileCommands::Delete { name } => {
+                let store = ProfileStore::new()?;
+                store.delete(&name)?;
+                println!("Profile '{}' deleted successfully.", name);
+            }
+            ProfileCommands::Show { name } => {
+                let store = ProfileStore::new()?;
+                let profile = store.load(&name)?;
+                println!("Profile: {}", profile.name);
+                println!("Mode: {}", profile.mode.as_title());
+                println!(
+                    "Created: {}",
+                    profile.created_at.format("%Y-%m-%d %H:%M:%S")
+                );
+                println!("Parameters:");
+                for (key, value) in &profile.params {
+                    println!("  {}: {}", key, value);
+                }
+            }
+        },
         #[cfg(debug_assertions)]
         CLiCommands::Debug { command } => match command {
             DebugCommands::Print { nums } => {

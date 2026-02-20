@@ -57,6 +57,7 @@ macro_rules! declare_params {
 
 
         #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
+        #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
         #[derive(Debug, Default, PartialEq, Clone, Copy)]
         #[repr(u8)]
         pub enum AccelMode {

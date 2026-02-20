@@ -13,7 +13,7 @@ path = "src/main.rs"
 anyhow = { workspace = true }
 clap_complete = "4.4.9"
 clap = { workspace = true }
-maccel-core = { path = "../crates/core/", features = ["clap"] }
+maccel-core = { path = "../crates/core/", features = ["clap", "serde"] }
 maccel-tui = { path = "./../tui/" }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }

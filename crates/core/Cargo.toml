@@ -7,11 +7,16 @@ edition = "2024"
 anyhow.workspace = true
 clap = { workspace = true, optional = true }
 paste = { workspace = true }
+serde = { version = "1.0", features = ["derive"], optional = true }
+serde_json = "1.0"
+dirs = "6.0"
+chrono = { version = "0.4", features = ["serde"] }
 
 [features]
 dbg = []
 long_bit_32 = []
 clap = ["dep:clap"]
+serde = ["dep:serde"]
 
 [build-dependencies]
 cc = "1.2.3"

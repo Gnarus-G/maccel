@@ -9,6 +9,7 @@ use maccel_core::Param;
 use maccel_core::get_param_value_from_ctx;
 use maccel_core::persist::ParamStore;
 use maccel_core::persist::SysFsStore;
+use maccel_core::profiles::{Profile, ProfileStore};
 use maccel_core::{ALL_PARAMS, AccelMode, ContextRef, TuiContext};
 use ratatui::Terminal;
 use ratatui::backend::Backend;
@@ -30,6 +31,10 @@ pub struct App {
     screens: Vec<Screen<SysFsStore>>,
     screen_idx: CyclingIdx,
     pub(crate) is_running: bool,
+
+    profile_dialog_open: bool,
+    profiles: Vec<Profile>,
+    selected_profile_idx: usize,
 
     last_tick_at: Instant,
 }
@@ -116,6 +121,9 @@ impl App {
             ),
             context,
             is_running: true,
+            profile_dialog_open: false,
+            profiles: Vec::new(),
+            selected_profile_idx: 0,
             last_tick_at: Instant::now(),
         }
     }
@@ -168,9 +176,50 @@ impl App {
             ..
         }) = event
         {
+            if self.profile_dialog_open {
+                match code {
+                    KeyCode::Char('p') | KeyCode::Esc => {
+                        self.profile_dialog_open = false;
+                    }
+                    KeyCode::Up => {
+                        if !self.profiles.is_empty() {
+                            self.selected_profile_idx = self.selected_profile_idx.saturating_sub(1);
+                        }
+                    }
+                    KeyCode::Down => {
+                        if !self.profiles.is_empty() {
+                            self.selected_profile_idx =
+                                (self.selected_profile_idx + 1).min(self.profiles.len() - 1);
+                        }
+                    }
+                    KeyCode::Enter => {
+                        if !self.profiles.is_empty() {
+                            let profile = &self.profiles[self.selected_profile_idx];
+                            if let Err(e) = profile.apply() {
+                                tracing::error!("Failed to apply profile: {}", e);
+                            } else {
+                                self.context.get_mut().current_mode = profile.mode;
+                                self.context.get_mut().reset_current_parameters();
+                            }
+                            self.profile_dialog_open = false;
+                        }
+                    }
+                    _ => {}
+                }
+                return;
+            }
+
             match code {
                 KeyCode::Char('q') => {
                     self.is_running = false;
+                    return;
+                }
+                KeyCode::Char('p') => {
+                    self.profile_dialog_open = true;
+                    self.profiles = ProfileStore::new()
+                        .and_then(|s| s.list())
+                        .unwrap_or_default();
+                    self.selected_profile_idx = 0;
                     return;
                 }
                 KeyCode::Right => {
@@ -214,6 +263,48 @@ impl App {
 
     pub(crate) fn draw(&self, frame: &mut ratatui::Frame, area: ratatui::prelude::Rect) {
         self.current_screen().draw(frame, area);
+
+        if self.profile_dialog_open {
+            self.draw_profile_dialog(frame, area);
+        }
+    }
+
+    fn draw_profile_dialog(&self, frame: &mut ratatui::Frame, area: ratatui::prelude::Rect) {
+        use ratatui::widgets::{Block, Borders, List, ListItem};
+
+        let popup_width = 40.min(area.width.saturating_sub(4));
+        let popup_height =
+            (self.profiles.len().max(3) as u16 + 4).min(area.height.saturating_sub(4));
+
+        let x = (area.width - popup_width) / 2;
+        let y = (area.height - popup_height) / 2;
+
+        let popup_area = ratatui::prelude::Rect::new(x, y, x + popup_width, y + popup_height);
+
+        let items: Vec<ListItem> = if self.profiles.is_empty() {
+            vec![ListItem::new("No profiles found. Use CLI to create one.")]
+        } else {
+            self.profiles
+                .iter()
+                .enumerate()
+                .map(|(i, p)| {
+                    let suffix = if i == self.selected_profile_idx {
+                        " ←"
+                    } else {
+                        ""
+                    };
+                    ListItem::new(format!("{} ({}){}", p.name, p.mode.as_title(), suffix))
+                })
+                .collect()
+        };
+
+        let list = List::new(items)
+            .block(Block::new().borders(Borders::ALL).title("Select Profile"))
+            .highlight_style(
+                ratatui::style::Style::default().add_modifier(ratatui::style::Modifier::REVERSED),
+            );
+
+        frame.render_widget(list, popup_area);
     }
 }
 
