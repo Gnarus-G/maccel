@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use crate::params::{
-    AccelMode, Param, ALL_COMMON_PARAMS, ALL_LINEAR_PARAMS, ALL_NATURAL_PARAMS,
-    ALL_SYNCHRONOUS_PARAMS,
+    ALL_COMMON_PARAMS, ALL_LINEAR_PARAMS, ALL_NATURAL_PARAMS, ALL_SYNCHRONOUS_PARAMS, AccelMode,
+    Param,
 };
 use crate::persist::{ParamStore, SysFsStore};
 
