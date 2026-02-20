@@ -301,7 +301,7 @@ impl<PS: ParamStore + Debug> TuiComponent for Screen<PS> {
 
 #[cfg(test)]
 mod test {
-    use maccel_core::{persist::ParamStore, AccelMode};
+    use maccel_core::{AccelMode, persist::ParamStore};
 
     use crossterm::event::KeyCode;
 
