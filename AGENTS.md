@@ -132,6 +132,11 @@ use crate::params::Param;
 3. `git add -A && git commit -m "Bump CLI version to x.y.z"`
 4. `git tag v<x.y.z> && git push origin v<x.y.z>`
 
+**AUR Release:**
+- Triggered automatically when a version tag (`v*`) is pushed
+- Requires `AUR_SSH_KEY` secret in GitHub repository
+- PKGBUILD `pkgver` must match the tag version (checked by workflow)
+
 ## 6. Commit Messages
 
 - Short subject line (<50 chars), imperative mood
