@@ -26,6 +26,7 @@ with lib; let
     natural = 1;
     synchronous = 2;
     no_accel = 3;
+    classic = 4;
   };
 
   # Parameter mapping (from driver/params.h)
@@ -41,6 +42,7 @@ with lib; let
     ACCEL = cfg.parameters.acceleration;
     OFFSET = cfg.parameters.offset;
     OUTPUT_CAP = cfg.parameters.outputCap;
+    EXPONENT = cfg.parameters.exponent;
 
     # Natural mode parameters
     DECAY_RATE = cfg.parameters.decayRate;
@@ -163,7 +165,7 @@ in {
       };
 
       mode = mkOption {
-        type = types.nullOr (types.enum ["linear" "natural" "synchronous" "no_accel"]);
+        type = types.nullOr (types.enum ["linear" "natural" "synchronous" "no_accel" "classic"]);
         default = null;
         description = "Acceleration mode.";
       };
@@ -187,6 +189,14 @@ in {
         type = types.nullOr types.float;
         default = null;
         description = "Maximum sensitivity multiplier cap.";
+      };
+
+      exponent = mkOption {
+        type =
+          types.nullOr (types.addCheck types.float (x: x > 0.0)
+            // {description = "positive float";});
+        default = null;
+        description = "Exponent of the Classic acceleration curve. Values above 2 ramp up more aggressively.";
       };
 
       # Natural mode parameters

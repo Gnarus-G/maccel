@@ -106,6 +106,33 @@ static int test_no_accel_acceleration(const char *filename, fpt param_sens_mult,
   return test_acceleration(filename, args);
 }
 
+static int test_classic_sensitivity(void) {
+  struct linear_curve_args linear_args = (struct linear_curve_args){
+      .accel = fpt_rconst(0.3),
+      .offset = fpt_fromint(1),
+      .output_cap = 0,
+  };
+  struct classic_curve_args classic_args = (struct classic_curve_args){
+      .accel = fpt_rconst(0.3),
+      .offset = fpt_fromint(1),
+      .output_cap = 0,
+      .exponent = fpt_fromint(2),
+  };
+
+  fpt speed = fpt_fromint(4);
+  fpt linear_sens = __linear_sens_fun(speed, linear_args);
+  fpt classic_sens = __classic_sens_fun(speed, classic_args);
+
+  assert(linear_sens == classic_sens);
+
+  classic_args.exponent = fpt_fromint(3);
+  fpt steeper_classic_sens = __classic_sens_fun(speed, classic_args);
+
+  assert(steeper_classic_sens > classic_sens);
+
+  return 0;
+}
+
 static int test_rotation_no_accel(const char *filename, fpt param_sens_mult,
                                   fpt param_angle_deg) {
   struct no_accel_curve_args _args = (struct no_accel_curve_args){};
@@ -176,6 +203,8 @@ int main(void) {
 
   test_no_accel(1, 1);
   test_no_accel(0.5, 1.5);
+
+  assert(test_classic_sensitivity() == 0);
 
   /* Rotation tests: verify cross-axis output when one axis is 0.
    * At 45 degrees, (10, 0) should produce roughly (7, 7) - not (10, 0).

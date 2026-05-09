@@ -2,6 +2,7 @@
 #define _ACCELK_H_
 
 #include "accel.h"
+#include "accel/classic.h"
 #include "accel/linear.h"
 #include "accel/mode.h"
 #include "fixedptc.h"
@@ -38,6 +39,13 @@ static struct accel_args collect_args(void) {
     accel.args.linear.accel = atofp(PARAM_ACCEL);
     accel.args.linear.offset = atofp(PARAM_OFFSET);
     accel.args.linear.output_cap = atofp(PARAM_OUTPUT_CAP);
+    break;
+  }
+  case classic: {
+    accel.args.classic.accel = atofp(PARAM_ACCEL);
+    accel.args.classic.offset = atofp(PARAM_OFFSET);
+    accel.args.classic.output_cap = atofp(PARAM_OUTPUT_CAP);
+    accel.args.classic.exponent = atofp(PARAM_EXPONENT);
     break;
   }
   case no_accel:
