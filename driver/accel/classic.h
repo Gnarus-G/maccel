@@ -37,7 +37,7 @@ static inline fpt __classic_sens_fun(fpt input_speed,
   dbg("classic: output_cap        %s", fptoa(args.output_cap));
   dbg("classic: exponent          %s", fptoa(args.exponent));
 
-  if (input_speed <= args.offset || args.exponent <= 0) {
+  if (input_speed == 0 || input_speed <= args.offset || args.exponent <= 0) {
     return FIXEDPT_ONE;
   }
 

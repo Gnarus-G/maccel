@@ -125,6 +125,10 @@ static int test_classic_sensitivity(void) {
 
   assert(linear_sens == classic_sens);
 
+  classic_args.offset = -FIXEDPT_ONE;
+  assert(__classic_sens_fun(0, classic_args) == FIXEDPT_ONE);
+  classic_args.offset = fpt_fromint(1);
+
   classic_args.exponent = fpt_fromint(3);
   fpt steeper_classic_sens = __classic_sens_fun(speed, classic_args);
 

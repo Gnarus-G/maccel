@@ -27,7 +27,7 @@ struct accel_args {
   fpt input_dpi;
   fpt angle_rotation_deg;
 
-  enum accel_mode tag;
+  unsigned char tag;
   union __accel_args args;
 };
 
