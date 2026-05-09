@@ -41,6 +41,16 @@ PARAM(ACCEL, 0, "Control the sensitivity calculation.");
 PARAM(OFFSET, 0, "Input speed threshold (counts/ms) before acceleration begins.");
 PARAM(OUTPUT_CAP, 0, "Control the maximum sensitivity.");
 
+// For Classic Mode
+
+#if FIXEDPT_BITS == 64
+PARAM(EXPONENT, 8589934592, // 2 << 32
+      "Exponent of the Classic acceleration curve.");
+#else
+PARAM(EXPONENT, 131072, // 2 << 16
+      "Exponent of the Classic acceleration curve.");
+#endif
+
 // For Natural Mode
 
 #if FIXEDPT_BITS == 64

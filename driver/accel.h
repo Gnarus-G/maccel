@@ -1,6 +1,7 @@
 #ifndef _ACCEL_H_
 #define _ACCEL_H_
 
+#include "accel/classic.h"
 #include "accel/linear.h"
 #include "accel/mode.h"
 #include "accel/natural.h"
@@ -17,6 +18,7 @@ union __accel_args {
   struct linear_curve_args linear;
   struct synchronous_curve_args synchronous;
   struct no_accel_curve_args no_accel;
+  struct classic_curve_args classic;
 };
 
 struct accel_args {
@@ -25,7 +27,7 @@ struct accel_args {
   fpt input_dpi;
   fpt angle_rotation_deg;
 
-  enum accel_mode tag;
+  unsigned char tag;
   union __accel_args args;
 };
 
@@ -56,6 +58,10 @@ static inline struct vector sensitivity(fpt input_speed,
   case no_accel:
     dbg("accel mode %d: no_accel", args.tag);
     sens = FIXEDPT_ONE;
+    break;
+  case classic:
+    dbg("accel mode %d: classic", args.tag);
+    sens = __classic_sens_fun(input_speed, args.args.classic);
     break;
   default:
     sens = FIXEDPT_ONE;

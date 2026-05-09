@@ -21,8 +21,18 @@ The more general function, which is relevant with a set input offset, is:
 
 $$(dx_f, dy_f) = (dx_0, dy_0) * (1 + a * (V - offset_in)^2 / V)$$
 
+## Classic Acceleration Function
+
+Classic mode generalizes the linear formula with a configurable exponent:
+
+$$(dx_f, dy_f) = (dx_0, dy_0) * (1 + a * (V - offset_in)^e / V)$$
+
+The default exponent is `2`, matching the existing linear behavior. Values above
+`2` ramp up more aggressively at higher input speeds.
+
 ## Other Curves
 
+- [x] **Classic**
 - [x] **Natural**
       ![image](https://github.com/user-attachments/assets/d14d0fa3-f762-4ad6-911c-cf564227d1ac)
 

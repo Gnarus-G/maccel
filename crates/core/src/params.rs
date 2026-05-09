@@ -193,6 +193,12 @@ declare_params!(
         SyncSpeed,
     },
     NoAccel {},
+    Classic {
+        ClassicAccel,
+        OffsetClassic,
+        ClassicOutputCap,
+        ClassicExponent,
+    },
 );
 
 impl AccelMode {
@@ -202,6 +208,7 @@ impl AccelMode {
             AccelMode::Natural => "Natural (w/ Gain)",
             AccelMode::Synchronous => "Synchronous",
             AccelMode::NoAccel => "No Acceleration",
+            AccelMode::Classic => "Classic Acceleration",
         }
     }
 }
@@ -226,6 +233,10 @@ impl Param {
             Param::OffsetLinear => "OFFSET",
             Param::OffsetNatural => "OFFSET",
             Param::OutputCap => "OUTPUT_CAP",
+            Param::ClassicAccel => "ACCEL",
+            Param::OffsetClassic => "OFFSET",
+            Param::ClassicOutputCap => "OUTPUT_CAP",
+            Param::ClassicExponent => "EXPONENT",
             Param::DecayRate => "DECAY_RATE",
             Param::Limit => "LIMIT",
             Param::Gamma => "GAMMA",
@@ -244,6 +255,10 @@ impl Param {
             Param::OffsetLinear => "Offset",
             Param::OffsetNatural => "Offset",
             Param::OutputCap => "Output-Cap",
+            Param::ClassicAccel => "Accel",
+            Param::OffsetClassic => "Offset",
+            Param::ClassicOutputCap => "Output-Cap",
+            Param::ClassicExponent => "Exponent",
             Param::YxRatio => "Y/x Ratio",
             Param::DecayRate => "Decay-Rate",
             Param::Limit => "Limit",
@@ -268,6 +283,16 @@ impl Param {
             Param::Accel => "Acceleration strength. Higher values = faster cursor at high speeds.",
             Param::OffsetLinear => "Speed threshold (counts/ms) before acceleration begins.",
             Param::OutputCap => "Maximum sensitivity multiplier cap. Prevents excessive speed.",
+            Param::ClassicAccel => {
+                "Acceleration strength for the Classic curve. Higher values = faster cursor at high speeds."
+            }
+            Param::OffsetClassic => "Speed threshold (counts/ms) before Classic acceleration begins.",
+            Param::ClassicOutputCap => {
+                "Maximum sensitivity multiplier cap for the Classic curve."
+            }
+            Param::ClassicExponent => {
+                "Exponent controlling the Classic curve shape. Values above 2 ramp up more aggressively."
+            }
             Param::DecayRate => "How quickly acceleration decays. Higher = faster decay.",
             Param::OffsetNatural => "Speed threshold (counts/ms) for natural curve activation.",
             Param::Limit => "Maximum gain limit for natural acceleration.",
@@ -316,11 +341,16 @@ pub(crate) fn validate_param_value(param_tag: Param, value: f64) -> anyhow::Resu
             }
         }
         Param::AngleRotation => {}
-        Param::Accel => {}
-        Param::OutputCap => {}
-        Param::OffsetLinear | Param::OffsetNatural => {
+        Param::Accel | Param::ClassicAccel => {}
+        Param::OutputCap | Param::ClassicOutputCap => {}
+        Param::OffsetLinear | Param::OffsetNatural | Param::OffsetClassic => {
             if value < 0.0 {
                 anyhow::bail!("offset cannot be less than 0");
+            }
+        }
+        Param::ClassicExponent => {
+            if value <= 0.0 {
+                anyhow::bail!("Classic exponent must be positive");
             }
         }
         Param::DecayRate => {

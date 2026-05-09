@@ -4,8 +4,8 @@ use maccel_core::{
     fixedptc::Fpt,
     persist::{ParamStore, SysFsStore},
     subcommads::*,
-    AccelMode, NoAccelParamArgs, Param, ALL_COMMON_PARAMS, ALL_LINEAR_PARAMS, ALL_NATURAL_PARAMS,
-    ALL_SYNCHRONOUS_PARAMS,
+    AccelMode, NoAccelParamArgs, Param, ALL_CLASSIC_PARAMS, ALL_COMMON_PARAMS, ALL_LINEAR_PARAMS,
+    ALL_NATURAL_PARAMS, ALL_SYNCHRONOUS_PARAMS,
 };
 use maccel_tui::run_tui;
 
@@ -78,6 +78,9 @@ fn main() -> anyhow::Result<()> {
                 SetParamByModesSubcommands::Synchronous(param_args) => {
                     param_store.set_all_synchronous(param_args)?
                 }
+                SetParamByModesSubcommands::Classic(param_args) => {
+                    param_store.set_all_classic(param_args)?
+                }
                 SetParamByModesSubcommands::NoAccel(NoAccelParamArgs {}) => {
                     eprintln!(
                         "NOTE: There are no parameters specific here except for the common ones."
@@ -110,6 +113,9 @@ fn main() -> anyhow::Result<()> {
                 GetParamsByModesSubcommands::Synchronous => {
                     print_all_params(ALL_SYNCHRONOUS_PARAMS.iter(), oneline, quiet)?;
                 }
+                GetParamsByModesSubcommands::Classic => {
+                    print_all_params(ALL_CLASSIC_PARAMS.iter(), oneline, quiet)?;
+                }
                 GetParamsByModesSubcommands::NoAccel => {
                     eprintln!(
                         "NOTE: There are no parameters specific here except for the common ones."
@@ -130,6 +136,9 @@ fn main() -> anyhow::Result<()> {
                     }
                     AccelMode::Synchronous => {
                         print_all_params(ALL_SYNCHRONOUS_PARAMS.iter(), false, false)?;
+                    }
+                    AccelMode::Classic => {
+                        print_all_params(ALL_CLASSIC_PARAMS.iter(), false, false)?;
                     }
                     AccelMode::NoAccel => {
                         eprintln!(
