@@ -119,20 +119,33 @@ static int test_classic_sensitivity(void) {
       .exponent = fpt_fromint(2),
   };
 
-  fpt speed = fpt_fromint(4);
-  fpt linear_sens = __linear_sens_fun(speed, linear_args);
-  fpt classic_sens = __classic_sens_fun(speed, classic_args);
+  int speeds[] = {0, 1, 2, 4, 8};
+  int speed_count = (int)(sizeof(speeds) / sizeof(speeds[0]));
+  int accelerating_speeds[] = {2, 4, 8};
+  int accelerating_speed_count =
+      (int)(sizeof(accelerating_speeds) / sizeof(accelerating_speeds[0]));
 
-  assert(linear_sens == classic_sens);
+  for (int i = 0; i < speed_count; i++) {
+    fpt speed = fpt_fromint(speeds[i]);
+    fpt linear_sens = __linear_sens_fun(speed, linear_args);
+    fpt classic_sens = __classic_sens_fun(speed, classic_args);
+
+    assert(linear_sens == classic_sens);
+  }
 
   classic_args.offset = -FIXEDPT_ONE;
   assert(__classic_sens_fun(0, classic_args) == FIXEDPT_ONE);
   classic_args.offset = fpt_fromint(1);
 
-  classic_args.exponent = fpt_fromint(3);
-  fpt steeper_classic_sens = __classic_sens_fun(speed, classic_args);
+  for (int i = 0; i < accelerating_speed_count; i++) {
+    fpt speed = fpt_fromint(accelerating_speeds[i]);
+    classic_args.exponent = fpt_fromint(2);
+    fpt baseline_classic_sens = __classic_sens_fun(speed, classic_args);
+    classic_args.exponent = fpt_fromint(3);
+    fpt steeper_classic_sens = __classic_sens_fun(speed, classic_args);
 
-  assert(steeper_classic_sens > classic_sens);
+    assert(steeper_classic_sens > baseline_classic_sens);
+  }
 
   return 0;
 }
