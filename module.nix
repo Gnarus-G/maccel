@@ -42,6 +42,8 @@ with lib; let
     ACCEL = cfg.parameters.acceleration;
     OFFSET = cfg.parameters.offset;
     OUTPUT_CAP = cfg.parameters.outputCap;
+
+    # Classic mode parameters
     EXPONENT = cfg.parameters.exponent;
 
     # Natural mode parameters

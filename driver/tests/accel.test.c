@@ -202,6 +202,7 @@ int main(void) {
 
   test_synchronous(1, 1.15, 0.8, 0.5, 1.5, 32);
 
+  test_classic(1, 1, 0.3, 2, 2, 2);
   test_classic(1, 1, 0.001, 2, 3, 3);
   test_classic(0.7, 1.2, 0.0001, 5, 2.5, 4);
 

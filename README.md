@@ -29,7 +29,8 @@ configurable:
 $$(dx_f, dy_f) = (dx_0, dy_0) * (1 + a * (V - offset_in)^e / V)$$
 
 The `exponent` parameter defaults to `3`. Setting it to `2` matches the linear
-curve shape; values above `2` ramp up more aggressively at high input speeds.
+curve shape; values between `1` and `2` ramp more gently than linear, while
+values above `2` ramp up more aggressively at high input speeds.
 
 ## Other Curves
 
