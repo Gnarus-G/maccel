@@ -40,6 +40,13 @@ static struct accel_args collect_args(void) {
     accel.args.linear.output_cap = atofp(PARAM_OUTPUT_CAP);
     break;
   }
+  case classic: {
+    accel.args.classic.accel = atofp(PARAM_ACCEL);
+    accel.args.classic.offset = atofp(PARAM_OFFSET);
+    accel.args.classic.output_cap = atofp(PARAM_OUTPUT_CAP);
+    accel.args.classic.exponent = atofp(PARAM_EXPONENT);
+    break;
+  }
   case no_accel:
   default: {
   }

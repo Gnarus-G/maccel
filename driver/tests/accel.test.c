@@ -91,6 +91,27 @@ static int test_synchronous_acceleration(const char *filename,
   return test_acceleration(filename, args);
 }
 
+static int test_classic_acceleration(const char *filename, fpt param_sens_mult,
+                                     fpt param_yx_ratio, fpt param_accel,
+                                     fpt param_offset, fpt param_output_cap,
+                                     fpt param_exponent) {
+  struct classic_curve_args _args =
+      (struct classic_curve_args){.accel = param_accel,
+                                  .offset = param_offset,
+                                  .output_cap = param_output_cap,
+                                  .exponent = param_exponent};
+
+  struct accel_args args = {
+      .sens_mult = param_sens_mult,
+      .yx_ratio = param_yx_ratio,
+      .input_dpi = fpt_fromint(1000),
+      .tag = classic,
+      .args = (union __accel_args){.classic = _args},
+  };
+
+  return test_acceleration(filename, args);
+}
+
 static int test_no_accel_acceleration(const char *filename, fpt param_sens_mult,
                                       fpt param_yx_ratio) {
   struct no_accel_curve_args _args = (struct no_accel_curve_args){};
@@ -147,6 +168,13 @@ static int test_rotation_no_accel(const char *filename, fpt param_sens_mult,
              fpt_rconst(smooth), fpt_rconst(motivity),                         \
              fpt_rconst(sync_speed)) == 0);
 
+#define test_classic(sens_mult, yx_ratio, accel, offset, cap, exponent)        \
+  assert(test_classic_acceleration(                                            \
+             "Classic__SENS_MULT-" #sens_mult "-ACCEL-" #accel "-OFFSET"      \
+             #offset "-OUTPUT_CAP-" #cap "-EXPONENT-" #exponent ".snapshot",  \
+             fpt_rconst(sens_mult), fpt_rconst(yx_ratio), fpt_rconst(accel),   \
+             fpt_rconst(offset), fpt_rconst(cap), fpt_rconst(exponent)) == 0);
+
 #define test_no_accel(sens_mult, yx_ratio)                                     \
   assert(test_no_accel_acceleration(                                           \
              "NoAccel__SENS_MULT-" #sens_mult "-YX_RATIO-" #yx_ratio           \
@@ -173,6 +201,9 @@ int main(void) {
   test_natural(1, 1, 0.03, 8, 1.5);
 
   test_synchronous(1, 1.15, 0.8, 0.5, 1.5, 32);
+
+  test_classic(1, 1, 0.001, 2, 3, 3);
+  test_classic(0.7, 1.2, 0.0001, 5, 2.5, 4);
 
   test_no_accel(1, 1);
   test_no_accel(0.5, 1.5);

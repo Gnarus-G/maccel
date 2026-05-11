@@ -1,5 +1,6 @@
 use crate::{
-    AccelParams, AccelParamsByMode, LinearCurveParams, NaturalCurveParams, SynchronousCurveParams,
+    AccelParams, AccelParamsByMode, ClassicCurveParams, LinearCurveParams, NaturalCurveParams,
+    SynchronousCurveParams,
     libmaccel::{self, fixedptc::Fpt},
     params::AllParamArgs,
 };
@@ -28,6 +29,12 @@ impl AllParamArgs {
             AccelMode::NoAccel => {
                 AccelParamsByMode::NoAccel(crate::params::NoAccelCurveParams { _ffi_guard: [] })
             }
+            AccelMode::Classic => AccelParamsByMode::Classic(ClassicCurveParams {
+                classic_accel: self.classic_accel,
+                offset_classic: self.offset_classic,
+                classic_output_cap: self.classic_output_cap,
+                exponent: self.exponent,
+            }),
         };
 
         AccelParams {

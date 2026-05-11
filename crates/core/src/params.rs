@@ -193,6 +193,12 @@ declare_params!(
         SyncSpeed,
     },
     NoAccel {},
+    Classic {
+        ClassicAccel,
+        OffsetClassic,
+        ClassicOutputCap,
+        Exponent,
+    },
 );
 
 impl AccelMode {
@@ -202,6 +208,7 @@ impl AccelMode {
             AccelMode::Natural => "Natural (w/ Gain)",
             AccelMode::Synchronous => "Synchronous",
             AccelMode::NoAccel => "No Acceleration",
+            AccelMode::Classic => "Classic Acceleration",
         }
     }
 }
@@ -223,15 +230,19 @@ impl Param {
             Param::YxRatio => "YX_RATIO",
             Param::InputDpi => "INPUT_DPI",
             Param::Accel => "ACCEL",
+            Param::ClassicAccel => "ACCEL",
             Param::OffsetLinear => "OFFSET",
             Param::OffsetNatural => "OFFSET",
+            Param::OffsetClassic => "OFFSET",
             Param::OutputCap => "OUTPUT_CAP",
+            Param::ClassicOutputCap => "OUTPUT_CAP",
             Param::DecayRate => "DECAY_RATE",
             Param::Limit => "LIMIT",
             Param::Gamma => "GAMMA",
             Param::Smooth => "SMOOTH",
             Param::Motivity => "MOTIVITY",
             Param::SyncSpeed => "SYNC_SPEED",
+            Param::Exponent => "EXPONENT",
             Param::AngleRotation => "ANGLE_ROTATION",
         }
     }
@@ -240,10 +251,13 @@ impl Param {
         match self {
             Param::SensMult => "Sens-Multiplier",
             Param::Accel => "Accel",
+            Param::ClassicAccel => "Accel",
             Param::InputDpi => "Input DPI",
             Param::OffsetLinear => "Offset",
             Param::OffsetNatural => "Offset",
+            Param::OffsetClassic => "Offset",
             Param::OutputCap => "Output-Cap",
+            Param::ClassicOutputCap => "Output-Cap",
             Param::YxRatio => "Y/x Ratio",
             Param::DecayRate => "Decay-Rate",
             Param::Limit => "Limit",
@@ -251,6 +265,7 @@ impl Param {
             Param::Smooth => "Smooth",
             Param::Motivity => "Motivity",
             Param::SyncSpeed => "Sync Speed",
+            Param::Exponent => "Exponent",
             Param::AngleRotation => "Angle Rotation",
         }
     }
@@ -266,8 +281,17 @@ impl Param {
             }
             Param::AngleRotation => "Rotation angle in degrees for sensitivity direction.",
             Param::Accel => "Acceleration strength. Higher values = faster cursor at high speeds.",
+            Param::ClassicAccel => {
+                "Classic acceleration strength. Higher values = faster cursor at high speeds."
+            }
             Param::OffsetLinear => "Speed threshold (counts/ms) before acceleration begins.",
+            Param::OffsetClassic => {
+                "Speed threshold (counts/ms) before classic acceleration begins."
+            }
             Param::OutputCap => "Maximum sensitivity multiplier cap. Prevents excessive speed.",
+            Param::ClassicOutputCap => {
+                "Maximum classic sensitivity multiplier cap. Prevents excessive speed."
+            }
             Param::DecayRate => "How quickly acceleration decays. Higher = faster decay.",
             Param::OffsetNatural => "Speed threshold (counts/ms) for natural curve activation.",
             Param::Limit => "Maximum gain limit for natural acceleration.",
@@ -275,6 +299,7 @@ impl Param {
             Param::Smooth => "Smoothing factor (0-1). Higher = more gradual transitions.",
             Param::Motivity => "Degree of acceleration effect. Must be > 1.",
             Param::SyncSpeed => "Synchronization speed. Controls how fast sync responds.",
+            Param::Exponent => "Classic curve exponent. Values above 2 ramp up more aggressively.",
         }
     }
 }
@@ -316,9 +341,9 @@ pub(crate) fn validate_param_value(param_tag: Param, value: f64) -> anyhow::Resu
             }
         }
         Param::AngleRotation => {}
-        Param::Accel => {}
-        Param::OutputCap => {}
-        Param::OffsetLinear | Param::OffsetNatural => {
+        Param::Accel | Param::ClassicAccel => {}
+        Param::OutputCap | Param::ClassicOutputCap => {}
+        Param::OffsetLinear | Param::OffsetNatural | Param::OffsetClassic => {
             if value < 0.0 {
                 anyhow::bail!("offset cannot be less than 0");
             }
@@ -351,6 +376,11 @@ pub(crate) fn validate_param_value(param_tag: Param, value: f64) -> anyhow::Resu
         Param::SyncSpeed => {
             if value <= 0.0 {
                 anyhow::bail!("'Synchronous speed' must be positive");
+            }
+        }
+        Param::Exponent => {
+            if value <= 1.0 {
+                anyhow::bail!("Classic exponent must be greater than 1");
             }
         }
     }

@@ -10,8 +10,8 @@ use anyhow::{Context, anyhow};
 use crate::{
     fixedptc::Fpt,
     params::{
-        ALL_MODES, AccelMode, CommonParamArgs, LinearParamArgs, NaturalParamArgs, Param,
-        SynchronousParamArgs, format_param_value, validate_param_value,
+        ALL_MODES, AccelMode, ClassicParamArgs, CommonParamArgs, LinearParamArgs, NaturalParamArgs,
+        Param, SynchronousParamArgs, format_param_value, validate_param_value,
     },
 };
 
@@ -128,6 +128,22 @@ impl SysFsStore {
         self.set(Param::Smooth, smooth)?;
         self.set(Param::Motivity, motivity)?;
         self.set(Param::SyncSpeed, sync_speed)?;
+
+        Ok(())
+    }
+
+    pub fn set_all_classic(&mut self, args: ClassicParamArgs) -> anyhow::Result<()> {
+        let ClassicParamArgs {
+            classic_accel,
+            offset_classic,
+            classic_output_cap,
+            exponent,
+        } = args;
+
+        self.set(Param::ClassicAccel, classic_accel)?;
+        self.set(Param::OffsetClassic, offset_classic)?;
+        self.set(Param::ClassicOutputCap, classic_output_cap)?;
+        self.set(Param::Exponent, exponent)?;
 
         Ok(())
     }
