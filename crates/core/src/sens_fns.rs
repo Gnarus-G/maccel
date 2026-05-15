@@ -13,6 +13,7 @@ impl AllParamArgs {
                 accel: self.accel,
                 offset_linear: self.offset_linear,
                 output_cap: self.output_cap,
+                classic_exponent: self.classic_exponent,
             }),
             AccelMode::Natural => AccelParamsByMode::Natural(NaturalCurveParams {
                 decay_rate: self.decay_rate,

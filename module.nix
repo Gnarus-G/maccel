@@ -41,6 +41,7 @@ with lib; let
     ACCEL = cfg.parameters.acceleration;
     OFFSET = cfg.parameters.offset;
     OUTPUT_CAP = cfg.parameters.outputCap;
+    CLASSIC_EXPONENT = cfg.parameters.classicExponent;
 
     # Natural mode parameters
     DECAY_RATE = cfg.parameters.decayRate;
@@ -187,6 +188,14 @@ in {
         type = types.nullOr types.float;
         default = null;
         description = "Maximum sensitivity multiplier cap.";
+      };
+
+      classicExponent = mkOption {
+        type =
+          types.nullOr (types.addCheck types.float (x: x > 0.0)
+            // {description = "positive float";});
+        default = null;
+        description = "Power exponent for the linear/classic acceleration curve. 2 preserves existing behavior.";
       };
 
       # Natural mode parameters

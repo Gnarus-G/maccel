@@ -96,6 +96,7 @@ impl<PS: ParamStore> TuiContext<PS> {
             offset_linear: get!(OffsetLinear),
             offset_natural: get!(OffsetNatural),
             output_cap: get!(OutputCap),
+            classic_exponent: get!(ClassicExponent),
             decay_rate: get!(DecayRate),
             limit: get!(Limit),
             gamma: get!(Gamma),

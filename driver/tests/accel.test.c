@@ -33,11 +33,14 @@ static int test_acceleration(const char *filename, struct accel_args args) {
 
 static int test_linear_acceleration(const char *filename, fpt param_sens_mult,
                                     fpt param_yx_ratio, fpt param_accel,
-                                    fpt param_offset, fpt param_output_cap) {
+                                    fpt param_offset, fpt param_output_cap,
+                                    fpt param_classic_exponent) {
   struct linear_curve_args _args =
       (struct linear_curve_args){.accel = param_accel,
                                  .offset = param_offset,
-                                 .output_cap = param_output_cap};
+                                 .output_cap = param_output_cap,
+                                 .classic_exponent =
+                                     param_classic_exponent};
 
   struct accel_args args = {
       .sens_mult = param_sens_mult,
@@ -127,7 +130,7 @@ static int test_rotation_no_accel(const char *filename, fpt param_sens_mult,
              "SENS_MULT-" #sens_mult "-ACCEL-" #accel "-OFFSET" #offset        \
              "-OUTPUT_CAP-" #cap ".snapshot",                                  \
              fpt_rconst(sens_mult), fpt_rconst(yx_ratio), fpt_rconst(accel),   \
-             fpt_rconst(offset), fpt_rconst(cap)) == 0);
+             fpt_rconst(offset), fpt_rconst(cap), fpt_rconst(2)) == 0);
 
 #define test_natural(sens_mult, yx_ratio, decay_rate, offset, limit)           \
   assert(test_natural_acceleration(                                            \
@@ -159,6 +162,22 @@ static int test_rotation_no_accel(const char *filename, fpt param_sens_mult,
              ".snapshot",                                                      \
              fpt_rconst(sens_mult), fpt_rconst(angle_deg)) == 0);
 
+static void test_classic_exponent_changes_linear_curve(void) {
+  struct linear_curve_args exponent_2 =
+      (struct linear_curve_args){.accel = fpt_rconst(0.01),
+                                 .offset = 0,
+                                 .output_cap = 0,
+                                 .classic_exponent = fpt_rconst(2)};
+  struct linear_curve_args exponent_3 =
+      (struct linear_curve_args){.accel = fpt_rconst(0.01),
+                                 .offset = 0,
+                                 .output_cap = 0,
+                                 .classic_exponent = fpt_rconst(3)};
+
+  assert(__linear_sens_fun(fpt_rconst(20), exponent_3) >
+         __linear_sens_fun(fpt_rconst(20), exponent_2));
+}
+
 int main(void) {
   test_linear(1, 1, 0, 0, 0);
   test_linear(1, 1, 0.3, 2, 2);
@@ -166,6 +185,7 @@ int main(void) {
   test_linear(0.1875, 1, 0.05625, 10.6666666, 2);
   test_linear(0.0917, 1, 0.002048, 78.125, 2.0239);
   test_linear(0.07, 1.15, 0.055, 21, 3);
+  test_classic_exponent_changes_linear_curve();
 
   test_natural(1, 1, 0, 0, 0);
   test_natural(1, 1, 0.1, 0, 0);

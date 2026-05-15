@@ -93,11 +93,13 @@ impl SysFsStore {
             accel,
             offset_linear,
             output_cap,
+            classic_exponent,
         } = args;
 
         self.set(Param::Accel, accel)?;
         self.set(Param::OffsetLinear, offset_linear)?;
         self.set(Param::OutputCap, output_cap)?;
+        self.set(Param::ClassicExponent, classic_exponent)?;
 
         Ok(())
     }

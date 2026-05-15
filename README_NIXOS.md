@@ -42,6 +42,7 @@ Create your `maccel.nix` module:
       acceleration = 0.3;
       offset = 2.0;
       outputCap = 2.0;
+      classicExponent = 2.0;
 
       # Natural mode
       decayRate = 0.1;
