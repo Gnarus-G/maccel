@@ -180,6 +180,7 @@ declare_params!(
         Accel,
         OffsetLinear,
         OutputCap,
+        ClassicExponent,
     },
     Natural {
         DecayRate,
@@ -226,6 +227,7 @@ impl Param {
             Param::OffsetLinear => "OFFSET",
             Param::OffsetNatural => "OFFSET",
             Param::OutputCap => "OUTPUT_CAP",
+            Param::ClassicExponent => "CLASSIC_EXPONENT",
             Param::DecayRate => "DECAY_RATE",
             Param::Limit => "LIMIT",
             Param::Gamma => "GAMMA",
@@ -244,6 +246,7 @@ impl Param {
             Param::OffsetLinear => "Offset",
             Param::OffsetNatural => "Offset",
             Param::OutputCap => "Output-Cap",
+            Param::ClassicExponent => "Classic Exponent",
             Param::YxRatio => "Y/x Ratio",
             Param::DecayRate => "Decay-Rate",
             Param::Limit => "Limit",
@@ -268,6 +271,9 @@ impl Param {
             Param::Accel => "Acceleration strength. Higher values = faster cursor at high speeds.",
             Param::OffsetLinear => "Speed threshold (counts/ms) before acceleration begins.",
             Param::OutputCap => "Maximum sensitivity multiplier cap. Prevents excessive speed.",
+            Param::ClassicExponent => {
+                "Power exponent for the linear/classic curve. 2 preserves existing behavior."
+            }
             Param::DecayRate => "How quickly acceleration decays. Higher = faster decay.",
             Param::OffsetNatural => "Speed threshold (counts/ms) for natural curve activation.",
             Param::Limit => "Maximum gain limit for natural acceleration.",
@@ -317,6 +323,11 @@ pub(crate) fn validate_param_value(param_tag: Param, value: f64) -> anyhow::Resu
         }
         Param::AngleRotation => {}
         Param::Accel => {}
+        Param::ClassicExponent => {
+            if value <= 0.0 {
+                anyhow::bail!("classic exponent must be positive");
+            }
+        }
         Param::OutputCap => {}
         Param::OffsetLinear | Param::OffsetNatural => {
             if value < 0.0 {

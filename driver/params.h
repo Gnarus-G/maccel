@@ -40,6 +40,13 @@ PARAM(ANGLE_ROTATION, 0,
 PARAM(ACCEL, 0, "Control the sensitivity calculation.");
 PARAM(OFFSET, 0, "Input speed threshold (counts/ms) before acceleration begins.");
 PARAM(OUTPUT_CAP, 0, "Control the maximum sensitivity.");
+#if FIXEDPT_BITS == 64
+PARAM(CLASSIC_EXPONENT, 8589934592, // 2 << 32
+      "Exponent for the Linear curve's classic-style power calculation.");
+#else
+PARAM(CLASSIC_EXPONENT, 131072, // 2 << 16
+      "Exponent for the Linear curve's classic-style power calculation.");
+#endif
 
 // For Natural Mode
 

@@ -21,6 +21,11 @@ The more general function, which is relevant with a set input offset, is:
 
 $$(dx_f, dy_f) = (dx_0, dy_0) * (1 + a * (V - offset_in)^2 / V)$$
 
+The `classic-exponent` / `CLASSIC_EXPONENT` parameter controls that power.
+Its default value is `2`, which preserves the existing curve. Values greater
+than `2` create a more classic-style curve that stays lower near the offset and
+ramps more aggressively at higher input speeds.
+
 ## Other Curves
 
 - [x] **Natural**
