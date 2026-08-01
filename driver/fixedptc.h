@@ -148,6 +148,8 @@ static inline fpt fpt_mul(fpt A, fpt B) {
 
 #if FIXEDPT_BITS == 64
 static inline fpt div128_s64_s64(fpt dividend, fpt divisor) {
+  if (divisor == 0)
+    return 0;
   fpt high = dividend >> FIXEDPT_FBITS;
   fpt low = dividend << FIXEDPT_FBITS;
 
@@ -158,6 +160,8 @@ static inline fpt div128_s64_s64(fpt dividend, fpt divisor) {
 
 /* Divides two fpt numbers, returns the result. */
 static inline fpt fpt_div(fpt A, fpt B) {
+  if (B == 0)
+    return 0;
 #if FIXEDPT_BITS == 64
   return div128_s64_s64(A, B);
 #endif
