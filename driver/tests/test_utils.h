@@ -1,5 +1,5 @@
-#include <assert.h>
 #include <linux/limits.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,52 +7,90 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-static int diff(const char *content, const char *filename) {
+#define COLOR_RESET "\033[0m"
+#define COLOR_BOLD "\033[1m"
+#define COLOR_RED "\033[31m"
+#define COLOR_GREEN "\033[32m"
+#define COLOR_YELLOW "\033[33m"
+#define COLOR_CYAN "\033[36m"
 
+static int colors_enabled(FILE *stream) {
+  return isatty(fileno(stream)) && getenv("NO_COLOR") == NULL;
+}
+
+static const char *test_output_color(const char *format) {
+  if (strcmp(format, ".") == 0 || strncmp(format, "PASS ", 5) == 0)
+    return COLOR_GREEN;
+  if (strcmp(format, "F") == 0 || strncmp(format, "FAIL ", 5) == 0)
+    return COLOR_RED;
+  if (strcmp(format, "s") == 0 || strncmp(format, "SKIP ", 5) == 0)
+    return COLOR_YELLOW;
+  if (strncmp(format, "\n* Suite ", 9) == 0)
+    return COLOR_CYAN;
+  if (strncmp(format, "\nTotal: ", 8) == 0 || strncmp(format, "Pass: ", 6) == 0)
+    return COLOR_BOLD;
+  return NULL;
+}
+
+static int test_fprintf(FILE *stream, const char *format, ...) {
+  const char *color = colors_enabled(stream) ? test_output_color(format) : NULL;
+  va_list args;
+  int result;
+
+  if (color != NULL)
+    fputs(color, stream);
+  va_start(args, format);
+  result = vfprintf(stream, format, args);
+  va_end(args);
+  if (color != NULL)
+    fputs(COLOR_RESET, stream);
+  return result;
+}
+
+#define GREATEST_FPRINTF test_fprintf
+#include "vendor/greatest.h"
+
+#define TEST_MAIN_BEGIN()                                                      \
+  do {                                                                         \
+    GREATEST_MAIN_BEGIN();                                                     \
+    if (greatest_get_verbosity() == 0)                                         \
+      greatest_set_verbosity(1);                                               \
+  } while (0)
+
+static void print_diff(const char *content, const char *filename) {
   int pipe_fd[2];
   pid_t child_pid;
 
-  // Create a pipe for communication
+  fflush(stdout);
   if (pipe(pipe_fd) == -1) {
-    perror("Pipe creation failed");
-    exit(EXIT_FAILURE);
+    perror("failed to create snapshot diff pipe");
+    return;
   }
 
-  // Fork the process
   if ((child_pid = fork()) == -1) {
-    perror("Fork failed");
-    exit(EXIT_FAILURE);
-  }
-
-  if (child_pid == 0) { // Child process
-    // Close the write end of the pipe
-    close(pipe_fd[1]);
-
-    // Redirect stdin to read from the pipe
-    dup2(pipe_fd[0], STDIN_FILENO);
-
-    // Execute a command (e.g., "wc -l")
-    execlp("diff", "diff", "-u", "--color", filename, "-", NULL);
-
-    // If execlp fails
-    perror("Exec failed");
-    exit(EXIT_FAILURE);
-  } else { // Parent process
-    // Close the read end of the pipe
+    perror("failed to fork snapshot diff");
     close(pipe_fd[0]);
-
-    // Write data to the child process
-    if (write(pipe_fd[1], content, strlen(content)) == -1) {
-      perror("failed to write content to the pipe for diff");
-    }
-
     close(pipe_fd[1]);
-
-    // Wait for the child process to finish
-    wait(NULL);
+    return;
   }
 
-  return 0;
+  if (child_pid == 0) {
+    close(pipe_fd[1]);
+    dup2(pipe_fd[0], STDIN_FILENO);
+    close(pipe_fd[0]);
+    if (colors_enabled(stdout))
+      execlp("diff", "diff", "-u", "--color=always", filename, "-", NULL);
+    else
+      execlp("diff", "diff", "-u", filename, "-", NULL);
+    perror("failed to execute diff");
+    exit(EXIT_FAILURE);
+  }
+
+  close(pipe_fd[0]);
+  if (write(pipe_fd[1], content, strlen(content)) == -1)
+    perror("failed to write snapshot content to diff");
+  close(pipe_fd[1]);
+  waitpid(child_pid, NULL, 0);
 }
 
 static int get_current_working_dir(char *buf, size_t buf_size) {
@@ -70,15 +108,18 @@ static char *create_snapshot_file_path(const char *filename) {
   };
 
   static char filepath[PATH_MAX];
-  sprintf(filepath, "%s/tests/snapshots/%s", cwd, filename);
+  if (snprintf(filepath, sizeof(filepath), "%s/tests/snapshots/%s", cwd,
+               filename) >= (int)sizeof(filepath)) {
+    fprintf(stderr, "snapshot path is too long: %s\n", filename);
+    return NULL;
+  }
   return filepath;
 }
 
-static void assert_snapshot(const char *__filename, const char *content) {
+static int assert_snapshot(const char *__filename, const char *content) {
   char *filename = create_snapshot_file_path(__filename);
   if (filename == NULL) {
-    fprintf(stderr, "failed to create snapshot file: %s\n", filename);
-    exit(1);
+    return 1;
   }
 
   int snapshot_file_exists = access(filename, F_OK) != -1;
@@ -93,14 +134,18 @@ static void assert_snapshot(const char *__filename, const char *content) {
   if (snapshot_file == NULL) {
     fprintf(stderr, "failed to open or create the snapshot file: %s\n",
             filename);
-    exit(1);
+    return 1;
   }
 
   if (snapshot_file_exists) {
     struct stat stats;
     int file_size;
 
-    stat(filename, &stats);
+    if (stat(filename, &stats) != 0) {
+      perror("failed to stat snapshot file");
+      fclose(snapshot_file);
+      return 1;
+    }
     file_size = stats.st_size;
     char *snapshot = (char *)malloc(stats.st_size + 1);
 
@@ -109,29 +154,30 @@ static void assert_snapshot(const char *__filename, const char *content) {
               "failed to allocate %zd bytes of a string for the snapshot "
               "content in file: %s\n",
               stats.st_size, filename);
-      exit(1);
+      fclose(snapshot_file);
+      return 1;
     }
 
     size_t bytes_read = fread(snapshot, 1, file_size, snapshot_file);
     if (bytes_read != file_size) {
       fprintf(stderr, "failed to read a snapshot file %s\n", filename);
-      exit(1);
+      free(snapshot);
+      fclose(snapshot_file);
+      return 1;
     }
     snapshot[file_size] = 0; // null byte terminator
 
-    int string_test_diff = strcmp(snapshot, content);
-
-    diff(content, filename);
-
-    /* dbg("diff in content = %d: snapshot '%s' vs now '%s'", string_test, */
-    /*     snapshot, content); */
-    assert(string_test_diff == 0);
+    int snapshot_differs = strcmp(snapshot, content);
+    free(snapshot);
+    if (snapshot_differs)
+      print_diff(content, filename);
+    fclose(snapshot_file);
+    return snapshot_differs != 0;
   } else {
     fprintf(snapshot_file, "%s", content);
-    printf("created a snapshot file %s\n", filename);
+    printf("NEW  %s\n", filename);
   }
 
   fclose(snapshot_file);
+  return 0;
 }
-
-#define print_success printf("[%s]\t\tAll tests passed!\n", __FILE_NAME__)
