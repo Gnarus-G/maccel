@@ -12,11 +12,16 @@
 static fpt LAST_INPUT_MOUSE_SPEED = 0;
 
 static inline fpt input_speed(fpt dx, fpt dy, fpt time_ms) {
+  if (time_ms <= 0) {
+    LAST_INPUT_MOUSE_SPEED = 0;
+    return 0;
+  }
 
   fpt distance = magnitude((struct vector){dx, dy});
 
   if (distance == -1) {
     dbg("distance calculation failed: t = %s", fptoa(time_ms));
+    LAST_INPUT_MOUSE_SPEED = 0;
     return 0;
   }
 
