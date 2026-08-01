@@ -59,23 +59,15 @@ static struct accel_args default_synchronous_args(void) {
 
 /* --- crash cases: run each in a child and require clean survival --- */
 
-static void child_faccelerate_zero_time(void) {
-  struct accel_args args = default_linear_args();
-  int x = 10, y = 5;
-  f_accelerate(&x, &y, 0, args);
+static void child_input_speed_zero_time(void) {
+  fpt speed = input_speed(fpt_fromint(10), fpt_fromint(5), 0);
+  if (speed != 0)
+    _exit(2);
 }
 
-TEST faccelerate_time_zero_survives(void) {
-  int status = run_child_exit(child_faccelerate_zero_time);
-  ASSERT_EQ_FMTm("f_accelerate(time=0) should not crash", 0, status, "%d");
-  PASS();
-}
-
-static void child_input_speed_zero_time(void) { input_speed(fpt_fromint(10), fpt_fromint(5), 0); }
-
-TEST input_speed_time_zero_survives(void) {
+TEST input_speed_time_zero_returns_zero(void) {
   int status = run_child_exit(child_input_speed_zero_time);
-  ASSERT_EQ_FMTm("input_speed(time=0) should not crash", 0, status, "%d");
+  ASSERT_EQ_FMTm("input_speed(time=0) should return zero", 0, status, "%d");
   PASS();
 }
 
@@ -124,14 +116,13 @@ TEST faccelerate_time_zero_identity(void) {
 
 static void child_input_speed_negative_time(void) {
   fpt speed = input_speed(fpt_fromint(10), fpt_fromint(5), -FIXEDPT_ONE);
-  /* must produce a finite, non-garbage value (not INT64_MIN / sentinel) */
-  if (speed == (fpt)0x8000000000000000LL)
+  if (speed != 0)
     _exit(3);
 }
 
-TEST input_speed_negative_time_is_safe(void) {
+TEST input_speed_negative_time_returns_zero(void) {
   int status = run_child_exit(child_input_speed_negative_time);
-  ASSERT_EQ_FMTm("should not crash", 0, status, "%d");
+  ASSERT_EQ_FMTm("input_speed(time<0) should return zero", 0, status, "%d");
   PASS();
 }
 
@@ -139,11 +130,10 @@ GREATEST_MAIN_DEFS();
 
 int main(int argc, char **argv) {
   TEST_MAIN_BEGIN();
-  RUN_TEST(faccelerate_time_zero_survives);
-  RUN_TEST(input_speed_time_zero_survives);
+  RUN_TEST(input_speed_time_zero_returns_zero);
   RUN_TEST(faccelerate_input_dpi_zero_survives);
   RUN_TEST(synchronous_motivity_one_survives);
   RUN_TEST(faccelerate_time_zero_identity);
-  RUN_TEST(input_speed_negative_time_is_safe);
+  RUN_TEST(input_speed_negative_time_returns_zero);
   GREATEST_MAIN_END();
 }

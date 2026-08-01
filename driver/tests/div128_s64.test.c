@@ -31,12 +31,14 @@ TEST divides_zero_divisor(void) {
   }
   if (pid == 0) {
     freopen("/dev/null", "w", stdout);
-    div128_s64_s64(fpt_rconst(127), 0);
+    fpt quotient = div128_s64_s64(fpt_rconst(127), 0);
+    if (quotient != 0)
+      _exit(2);
     _exit(0);
   }
   int status;
   waitpid(pid, &status, 0);
-  ASSERT_EQ_FMTm("division by zero should not crash", 0, status, "%d");
+  ASSERT_EQ_FMTm("division by zero should return zero", 0, status, "%d");
   PASS();
 }
 
