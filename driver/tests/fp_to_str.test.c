@@ -1,27 +1,38 @@
 #include "../fixedptc.h"
 #include "test_utils.h"
-#include <assert.h>
-#include <linux/limits.h>
-#include <unistd.h>
 
-int assert_string_value(char *filename, double value) {
+static int assert_string_value(char *filename, double value) {
   fpt v = fpt_rconst(value);
-  char *_v = fptoa(v);
+  char *actual = fptoa(v);
 
-  dbg("to_string %f = %s", value, _v);
-
-  assert_snapshot(filename, _v);
-  return 0;
+  dbg("to_string %f = %s", value, actual);
+  return assert_snapshot(filename, actual);
 }
 
-#define test_str(value)                                                        \
-  assert(assert_string_value(__FILE_NAME__ "_" #value ".snapshot", value) == 0)
+#define fp_to_str_test(name, value)                                            \
+  TEST name(void) {                                                            \
+    ASSERT_EQm(                                                                \
+        "snapshot differs: " __FILE_NAME__ "_" #value ".snapshot", 0,          \
+        assert_string_value(__FILE_NAME__ "_" #value ".snapshot", value));     \
+    PASS();                                                                    \
+  }
 
-int main(void) {
-  test_str(0.25);
-  test_str(0.125);
-  test_str(0.3125);
-  test_str(-785);
+fp_to_str_test(converts_quarter, 0.25);
+fp_to_str_test(converts_eighth, 0.125);
+fp_to_str_test(converts_five_sixteenths, 0.3125);
+fp_to_str_test(converts_negative_integer, -785);
 
-  print_success;
+SUITE(fp_to_str) {
+  RUN_TEST(converts_quarter);
+  RUN_TEST(converts_eighth);
+  RUN_TEST(converts_five_sixteenths);
+  RUN_TEST(converts_negative_integer);
+}
+
+GREATEST_MAIN_DEFS();
+
+int main(int argc, char **argv) {
+  TEST_MAIN_BEGIN();
+  RUN_SUITE(fp_to_str);
+  GREATEST_MAIN_END();
 }
