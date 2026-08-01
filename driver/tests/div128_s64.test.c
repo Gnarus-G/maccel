@@ -1,45 +1,47 @@
 #include "../dbg.h"
 #include "../fixedptc.h"
 #include "test_utils.h"
-#include <assert.h>
-#include <stdint.h>
 
-void test_custom_division_against_fixedpt(double a, double b) {
+#define division_test(name, a, b)                                              \
+  TEST name(void) {                                                            \
+    fpt n = fpt_rconst(a);                                                     \
+    fpt divisor = fpt_rconst(b);                                               \
+    fpt quotient = div128_s64_s64(n, divisor);                                 \
+    fpt expected_quotient = fpt_xdiv(n, divisor);                              \
+    double actual = fpt_todouble(quotient);                                    \
+    double expected = fpt_todouble(expected_quotient);                         \
+    dbg("actual = (%li) -> %.10f", quotient, actual);                          \
+    dbg("expect = (%li) -> %.10f", expected_quotient, expected);               \
+    ASSERT_EQ(expected, actual);                                               \
+    PASS();                                                                    \
+  }
+
 #if FIXEDPT_BITS == 32
-  return;
+TEST division_is_not_supported(void) { SKIP(); }
 #else
+division_test(divides_positive_values, 57, 5.5);
+division_test(divides_zero, 0, 2.57);
+division_test(divides_negative_value, -1, 3);
+division_test(divides_negative_exactly, -128, 4);
+division_test(divides_positive_fraction, 127, 1.5);
+#endif
 
-  fpt n = fpt_rconst(a);
-  fpt divisor = fpt_rconst(b);
-
-  fpt quotient = div128_s64_s64(n, divisor);
-  fpt quotient1 = fpt_xdiv(n, divisor);
-
-  double actual = fpt_todouble(quotient);
-  double expected = fpt_todouble(quotient1);
-
-  dbg("actual = (%li) -> %.10f", quotient, actual);
-  dbg("expect = (%li) -> %.10f", quotient1, expected);
-
-  assert(actual == expected);
+SUITE(signed_128_bit_division) {
+#if FIXEDPT_BITS == 32
+  RUN_TEST(division_is_not_supported);
+#else
+  RUN_TEST(divides_positive_values);
+  RUN_TEST(divides_zero);
+  RUN_TEST(divides_negative_value);
+  RUN_TEST(divides_negative_exactly);
+  RUN_TEST(divides_positive_fraction);
 #endif
 }
 
-int main(void) {
+GREATEST_MAIN_DEFS();
 
-  test_custom_division_against_fixedpt(57, 5.5);
-
-  test_custom_division_against_fixedpt(0, 2.57);
-
-  test_custom_division_against_fixedpt(-1, 3);
-
-  test_custom_division_against_fixedpt(-128, 4);
-
-  test_custom_division_against_fixedpt(127, 1.5);
-
-  /* test_custom_division_against_fixedpth(135, 0); */ // You only crash once!
-
-  print_success;
-
-  return 0;
+int main(int argc, char **argv) {
+  TEST_MAIN_BEGIN();
+  RUN_SUITE(signed_128_bit_division);
+  GREATEST_MAIN_END();
 }
