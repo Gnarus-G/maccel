@@ -1,6 +1,7 @@
 #include "../dbg.h"
 #include "../fixedptc.h"
 #include "test_utils.h"
+#include <sys/wait.h>
 
 #define division_test(name, a, b)                                              \
   TEST name(void) {                                                            \
@@ -15,6 +16,38 @@
     ASSERT_EQ(expected, actual);                                               \
     PASS();                                                                    \
   }
+
+/*
+ * A zero divisor currently raises SIGFPE in the raw idivq helper. The guard
+ * must make division by zero *return* a defined value instead of trapping, so
+ * run it in a forked child and require a clean exit (red now, green after the
+ * guard). This keeps the failure an assertion instead of killing the suite.
+ */
+TEST divides_zero_divisor(void) {
+  pid_t pid = fork();
+  if (pid == -1) {
+    perror("fork");
+    FAILm("fork failed");
+  }
+  if (pid == 0) {
+    freopen("/dev/null", "w", stdout);
+    fpt quotient = div128_s64_s64(fpt_rconst(127), 0);
+    if (quotient != 0)
+      _exit(2);
+    _exit(0);
+  }
+  int status;
+  pid_t result;
+  do {
+    result = waitpid(pid, &status, 0);
+  } while (result == -1 && errno == EINTR);
+  if (result == -1) {
+    perror("waitpid");
+    FAILm("waitpid failed");
+  }
+  ASSERT_EQ_FMTm("division by zero should return zero", 0, status, "%d");
+  PASS();
+}
 
 #if FIXEDPT_BITS == 32
 TEST division_is_not_supported(void) { SKIP(); }
@@ -35,6 +68,7 @@ SUITE(signed_128_bit_division) {
   RUN_TEST(divides_negative_value);
   RUN_TEST(divides_negative_exactly);
   RUN_TEST(divides_positive_fraction);
+  RUN_TEST(divides_zero_divisor);
 #endif
 }
 
