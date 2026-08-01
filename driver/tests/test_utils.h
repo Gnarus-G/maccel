@@ -1,4 +1,6 @@
+#include <errno.h>
 #include <linux/limits.h>
+#include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,6 +20,7 @@ static int colors_enabled(FILE *stream) {
   return isatty(fileno(stream)) && getenv("NO_COLOR") == NULL;
 }
 
+/* These prefixes track format strings emitted by Greatest 1.5.0. */
 static const char *test_output_color(const char *format) {
   if (strcmp(format, ".") == 0 || strncmp(format, "PASS ", 5) == 0)
     return COLOR_GREEN;
@@ -60,6 +63,8 @@ static int test_fprintf(FILE *stream, const char *format, ...) {
 static void print_diff(const char *content, const char *filename) {
   int pipe_fd[2];
   pid_t child_pid;
+  struct sigaction ignore_sigpipe = {.sa_handler = SIG_IGN};
+  struct sigaction previous_sigpipe;
 
   fflush(stdout);
   if (pipe(pipe_fd) == -1) {
@@ -87,8 +92,28 @@ static void print_diff(const char *content, const char *filename) {
   }
 
   close(pipe_fd[0]);
-  if (write(pipe_fd[1], content, strlen(content)) == -1)
-    perror("failed to write snapshot content to diff");
+  sigemptyset(&ignore_sigpipe.sa_mask);
+  if (sigaction(SIGPIPE, &ignore_sigpipe, &previous_sigpipe) == -1) {
+    perror("failed to ignore SIGPIPE while writing snapshot diff");
+  } else {
+    size_t content_length = strlen(content);
+    size_t bytes_written = 0;
+
+    while (bytes_written < content_length) {
+      ssize_t result = write(pipe_fd[1], content + bytes_written,
+                             content_length - bytes_written);
+      if (result > 0) {
+        bytes_written += result;
+      } else if (result == -1 && errno == EINTR) {
+        continue;
+      } else {
+        perror("failed to write snapshot content to diff");
+        break;
+      }
+    }
+    if (sigaction(SIGPIPE, &previous_sigpipe, NULL) == -1)
+      perror("failed to restore SIGPIPE handler");
+  }
   close(pipe_fd[1]);
   waitpid(child_pid, NULL, 0);
 }
@@ -139,15 +164,15 @@ static int assert_snapshot(const char *__filename, const char *content) {
 
   if (snapshot_file_exists) {
     struct stat stats;
-    int file_size;
+    size_t file_size;
 
     if (stat(filename, &stats) != 0) {
       perror("failed to stat snapshot file");
       fclose(snapshot_file);
       return 1;
     }
-    file_size = stats.st_size;
-    char *snapshot = (char *)malloc(stats.st_size + 1);
+    file_size = (size_t)stats.st_size;
+    char *snapshot = (char *)malloc(file_size + 1);
 
     if (snapshot == NULL) {
       fprintf(stderr,
