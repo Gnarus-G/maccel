@@ -37,7 +37,14 @@ TEST divides_zero_divisor(void) {
     _exit(0);
   }
   int status;
-  waitpid(pid, &status, 0);
+  pid_t result;
+  do {
+    result = waitpid(pid, &status, 0);
+  } while (result == -1 && errno == EINTR);
+  if (result == -1) {
+    perror("waitpid");
+    FAILm("waitpid failed");
+  }
   ASSERT_EQ_FMTm("division by zero should return zero", 0, status, "%d");
   PASS();
 }

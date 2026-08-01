@@ -23,7 +23,14 @@ static int run_child_exit(void (*fn)(void)) {
     _exit(0);
   }
   int status;
-  waitpid(pid, &status, 0);
+  pid_t result;
+  do {
+    result = waitpid(pid, &status, 0);
+  } while (result == -1 && errno == EINTR);
+  if (result == -1) {
+    perror("waitpid");
+    return -1;
+  }
   return status;
 }
 
