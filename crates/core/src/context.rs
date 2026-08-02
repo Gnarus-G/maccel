@@ -103,6 +103,7 @@ impl<PS: ParamStore> TuiContext<PS> {
             motivity: get!(Motivity),
             sync_speed: get!(SyncSpeed),
             angle_rotation: get!(AngleRotation),
+            angle_snap: get!(AngleSnap),
         }
     }
 }

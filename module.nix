@@ -12,10 +12,6 @@ with lib; let
   pkgbuildContent = builtins.readFile ./PKGBUILD;
   kernelModuleVersion = builtins.head (builtins.match ".*pkgver=([^[:space:]]+).*" pkgbuildContent);
 
-  # Extract version from cli/Cargo.toml
-  cliCargoToml = builtins.fromTOML (builtins.readFile ./cli/Cargo.toml);
-  cliVersion = cliCargoToml.package.version;
-
   # Convert float to fixed-point integer (64-bit, 32 fractional bits)
   fixedPointScale = 4294967296; # 2^32
   toFixedPoint = value: builtins.floor (value * fixedPointScale + 0.5);
@@ -35,6 +31,7 @@ with lib; let
     YX_RATIO = cfg.parameters.yxRatio;
     INPUT_DPI = cfg.parameters.inputDpi;
     ANGLE_ROTATION = cfg.parameters.angleRotation;
+    ANGLE_SNAP = cfg.parameters.angleSnap;
     MODE = cfg.parameters.mode;
 
     # Linear mode parameters
@@ -101,23 +98,7 @@ with lib; let
     }) {};
 
   # Optional CLI tools
-  maccel-cli = pkgs.rustPlatform.buildRustPackage rec {
-    pname = "maccel-cli";
-    version = cliVersion;
-
-    src = ./.;
-
-    cargoLock.lockFile = "${src}/Cargo.lock";
-
-    cargoBuildFlags = ["--bin" "maccel"];
-
-    meta = with lib; {
-      description = "CLI and TUI tools for configuring maccel.";
-      homepage = "https://www.maccel.org/";
-      license = licenses.gpl2Plus;
-      platforms = platforms.linux;
-    };
-  };
+  maccel-cli = pkgs.callPackage ./package.nix {};
 in {
   options.hardware.maccel = {
     enable = mkEnableOption "Enable maccel mouse acceleration driver (kernel module). Parameters must be configured via `hardware.maccel.parameters`.";
@@ -160,6 +141,14 @@ in {
         type = types.nullOr types.float;
         default = null;
         description = "Apply rotation in degrees to mouse movement input.";
+      };
+
+      angleSnap = mkOption {
+        type =
+          types.nullOr (types.addCheck types.float (x: x >= 0.0 && x <= 45.0)
+            // {description = "float between 0.0 and 45.0";});
+        default = null;
+        description = "Snap movement to the nearest axis within this angle in degrees.";
       };
 
       mode = mkOption {

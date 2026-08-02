@@ -12,6 +12,15 @@ If you're on NixOS, maccel provides a declarative flake module to seamlessly int
 
 ## Quick Start
 
+To install only the CLI and TUI in a Nix profile:
+
+```sh
+nix profile add github:Gnarus-G/maccel
+```
+
+The profile package does not install the kernel module; use the NixOS module
+below for the complete driver installation.
+
 Add to your `flake.nix` inputs:
 
 ```nix
@@ -36,6 +45,7 @@ Create your `maccel.nix` module:
       yxRatio = 1.0;
       inputDpi = 1000.0;
       angleRotation = 0.0;
+      angleSnap = 0.0;
       mode = "synchronous";
 
       # Linear mode

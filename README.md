@@ -136,6 +136,17 @@ maccel set angle-rotation 15   # rotate input 15 degrees
 maccel set angle-rotation 0    # disable rotation (default)
 ```
 
+## Angle Snapping
+
+Angle snapping projects movement near the horizontal or vertical axis exactly
+onto that axis while preserving its magnitude; values range from `0` (disabled)
+to `45` degrees, and snapping is applied after rotation.
+
+```sh
+maccel set param angle-snap 10
+maccel set param angle-snap 0  # disable snapping (default)
+```
+
 ### Known limitation
 
 When the mouse moves along a single axis (purely horizontal or vertical), some mice and kernel versions only report one `EV_REL` event (`REL_X` or `REL_Y`) instead of both. The rotation transform produces a cross-axis component that needs to be injected as a synthetic event.

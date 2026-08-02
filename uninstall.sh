@@ -19,17 +19,36 @@ print_yellow() {
 }
 
 delete_module_dkms() {
-  sudo rmmod maccel
+  sudo rmmod maccel 2>/dev/null || true
 
-  if test -n "$(ls /var/lib/pacman/local/maccel*)"; then
-    sudo pacman -R maccel-dkms
-    sudo pacman -R maccel-dkms-debug
+  if command -v pacman >/dev/null 2>&1; then
+    for package in maccel-dkms maccel-dkms-debug; do
+      if pacman -Qq "$package" >/dev/null 2>&1; then
+        sudo pacman -R "$package"
+      fi
+    done
   fi
 
-  maccel_dkms_status=$(sudo dkms status maccel | grep 'maccel')
+  maccel_dkms_status=$(sudo dkms status maccel 2>/dev/null || true)
   if [ -n "$maccel_dkms_status" ]; then
-    curr_dkms_versions=$(echo $maccel_dkms_status | grep -oP '\d.\d.\d')
-    echo $curr_dkms_versions | xargs -I {} sudo dkms remove maccel/{}
+    seen_versions="|"
+    while IFS= read -r status_line; do
+      module_version=${status_line%%,*}
+      module_version=${module_version%%:*}
+
+      case "$module_version" in
+        maccel/*)
+          case "$seen_versions" in
+            *"|$module_version|"*) continue ;;
+          esac
+
+          sudo dkms remove "$module_version" --all
+          seen_versions="${seen_versions}${module_version}|"
+          ;;
+      esac
+    done <<EOF
+$maccel_dkms_status
+EOF
   fi
 
 }
@@ -40,7 +59,10 @@ udev_uninstall() {
 }
 
 uninstall_cli() {
-  sudo rm -vf $(which maccel)
+  maccel_path=$(command -v maccel || true)
+  case "$maccel_path" in
+    /usr/local/bin/maccel* | /opt/maccel/*) sudo rm -vf "$maccel_path" ;;
+  esac
 }
 
 delete_everything() {
@@ -64,4 +86,4 @@ run() {
   fi
 }
 
-run 2>/dev/null
+run
