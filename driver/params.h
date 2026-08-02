@@ -35,34 +35,6 @@ PARAM(INPUT_DPI, 65536000, // 1000 << 16
 
 PARAM(ANGLE_ROTATION, 0,
       "Apply rotation (degrees) to the mouse movement input");
-char *PARAM_ANGLE_SNAP = "0";
-fpt PARAM_ANGLE_SNAP_THRESHOLD = 0;
-
-static int _set_angle_snap(const char *value, const struct kernel_param *param) {
-  int result = param_set_charp(value, param);
-  if (result != 0) {
-    return result;
-  }
-
-  fpt degrees = atofp(PARAM_ANGLE_SNAP);
-  if (degrees > fpt_fromint(45)) {
-    degrees = fpt_fromint(45);
-  }
-  PARAM_ANGLE_SNAP_THRESHOLD =
-      fpt_tan(fpt_mul(degrees, fpt_div(FIXEDPT_PI, fpt_fromint(180))));
-  return 0;
-}
-
-static const struct kernel_param_ops _angle_snap_ops = {
-    .set = _set_angle_snap,
-    .get = param_get_charp,
-    .free = param_free_charp,
-};
-
-module_param_cb(ANGLE_SNAP, &_angle_snap_ops, &PARAM_ANGLE_SNAP, RW_USER_GROUP);
-MODULE_PARM_DESC(
-    ANGLE_SNAP,
-    "Snap mouse movement to the nearest axis within this angle (degrees)");
 // For Linear Mode
 
 PARAM(ACCEL, 0, "Control the sensitivity calculation.");

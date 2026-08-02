@@ -46,22 +46,14 @@ macro_rules! make_curve_params_struct {
 }
 
 macro_rules! declare_params {
-    (
-        Common { $($common_param:tt),+$(,)? },
-        OptionalCommon { $($optional_common_param:tt),+$(,)? },
-        $( $mode:tt { $($param:tt),*$(,)? }, )+
-    ) => {
+    ( Common { $($common_param:tt),+$(,)? } , $( $mode:tt { $($param:tt),*$(,)? }, )+) => {
         declare_common_params! {
             $( $common_param, )+
-            $( $optional_common_param, )+
             $( $( $param, )* )+
         }
 
         /// Array of all the common parameters for convenience.
-        pub const ALL_COMMON_PARAMS: &[Param] = &[
-            $( Param::$common_param, )+
-            $( Param::$optional_common_param ),+
-        ];
+        pub const ALL_COMMON_PARAMS: &[Param] = &[ $( Param::$common_param),+ ];
 
 
         #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
@@ -80,7 +72,6 @@ macro_rules! declare_params {
             #[repr(C)]
             pub struct AccelParams {
                 $( pub [< $common_param:snake:lower >] : Fpt, )+
-                $( pub [< $optional_common_param:snake:lower >] : Fpt, )+
                 pub by_mode: AccelParamsByMode,
             }
 
@@ -97,8 +88,7 @@ macro_rules! declare_params {
             #[cfg_attr(feature = "clap", derive(clap::Args))]
             #[derive(Debug, Clone, Copy, PartialEq)]
             pub struct CommonParamArgs {
-                $( pub [< $common_param:snake:lower >]: f64, )+
-                $( pub [< $optional_common_param:snake:lower >]: Option<f64> ),+
+                $( pub [< $common_param:snake:lower >]: f64 ),+
             }
         }
 
@@ -186,7 +176,6 @@ declare_params!(
         InputDpi,
         AngleRotation
     },
-    OptionalCommon { AngleSnap },
     Linear {
         Accel,
         OffsetLinear,
@@ -244,7 +233,6 @@ impl Param {
             Param::Motivity => "MOTIVITY",
             Param::SyncSpeed => "SYNC_SPEED",
             Param::AngleRotation => "ANGLE_ROTATION",
-            Param::AngleSnap => "ANGLE_SNAP",
         }
     }
 
@@ -264,7 +252,6 @@ impl Param {
             Param::Motivity => "Motivity",
             Param::SyncSpeed => "Sync Speed",
             Param::AngleRotation => "Angle Rotation",
-            Param::AngleSnap => "Angle Snap",
         }
     }
 
@@ -278,9 +265,6 @@ impl Param {
                 "Mouse DPI. Used to normalize to 1000 DPI equivalent for consistent acceleration."
             }
             Param::AngleRotation => "Rotation angle in degrees for sensitivity direction.",
-            Param::AngleSnap => {
-                "Snap movement to the nearest horizontal or vertical axis within 0-45 degrees."
-            }
             Param::Accel => "Acceleration strength. Higher values = faster cursor at high speeds.",
             Param::OffsetLinear => "Speed threshold (counts/ms) before acceleration begins.",
             Param::OutputCap => "Maximum sensitivity multiplier cap. Prevents excessive speed.",
@@ -322,15 +306,6 @@ fn format_param_value_works() {
     assert_eq!(format_param_value(0.055000), "0.055");
 }
 
-#[cfg(test)]
-#[test]
-fn angle_snap_must_be_between_zero_and_forty_five_degrees() {
-    assert!(validate_param_value(Param::AngleSnap, 0.0).is_ok());
-    assert!(validate_param_value(Param::AngleSnap, 45.0).is_ok());
-    assert!(validate_param_value(Param::AngleSnap, -0.1).is_err());
-    assert!(validate_param_value(Param::AngleSnap, 45.1).is_err());
-}
-
 pub(crate) fn validate_param_value(param_tag: Param, value: f64) -> anyhow::Result<()> {
     match param_tag {
         Param::SensMult => {}
@@ -341,11 +316,6 @@ pub(crate) fn validate_param_value(param_tag: Param, value: f64) -> anyhow::Resu
             }
         }
         Param::AngleRotation => {}
-        Param::AngleSnap => {
-            if !(0.0..=45.0).contains(&value) {
-                anyhow::bail!("Angle snap must be between 0 and 45 degrees");
-            }
-        }
         Param::Accel => {}
         Param::OutputCap => {}
         Param::OffsetLinear | Param::OffsetNatural => {
