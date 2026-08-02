@@ -19,7 +19,6 @@ static struct accel_args collect_args(void) {
   accel.yx_ratio = atofp(PARAM_YX_RATIO);
   accel.input_dpi = atofp(PARAM_INPUT_DPI);
   accel.angle_rotation_deg = atofp(PARAM_ANGLE_ROTATION);
-  accel.angle_snap_threshold = PARAM_ANGLE_SNAP_THRESHOLD;
 
   switch (mode) {
   case synchronous: {

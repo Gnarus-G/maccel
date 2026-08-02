@@ -45,7 +45,6 @@ Create your `maccel.nix` module:
       yxRatio = 1.0;
       inputDpi = 1000.0;
       angleRotation = 0.0;
-      angleSnap = 0.0;
       mode = "synchronous";
 
       # Linear mode
