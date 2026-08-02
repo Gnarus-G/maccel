@@ -11,7 +11,7 @@ use crate::{
     fixedptc::Fpt,
     params::{
         ALL_MODES, AccelMode, CommonParamArgs, LinearParamArgs, NaturalParamArgs, Param,
-        SynchronousParamArgs, format_param_value, validate_param_value,
+        SynchronousGainParamArgs, SynchronousParamArgs, format_param_value, validate_param_value,
     },
 };
 
@@ -128,6 +128,25 @@ impl SysFsStore {
         self.set(Param::Smooth, smooth)?;
         self.set(Param::Motivity, motivity)?;
         self.set(Param::SyncSpeed, sync_speed)?;
+
+        Ok(())
+    }
+
+    pub fn set_all_synchronous_gain(
+        &mut self,
+        args: SynchronousGainParamArgs,
+    ) -> anyhow::Result<()> {
+        let SynchronousGainParamArgs {
+            sync_gain_gamma,
+            sync_gain_smooth,
+            sync_gain_motivity,
+            sync_gain_speed,
+        } = args;
+
+        self.set(Param::SyncGainGamma, sync_gain_gamma)?;
+        self.set(Param::SyncGainSmooth, sync_gain_smooth)?;
+        self.set(Param::SyncGainMotivity, sync_gain_motivity)?;
+        self.set(Param::SyncGainSpeed, sync_gain_speed)?;
 
         Ok(())
     }

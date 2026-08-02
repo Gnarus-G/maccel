@@ -4,6 +4,7 @@ use maccel_core::ALL_LINEAR_PARAMS;
 use maccel_core::ALL_MODES;
 use maccel_core::ALL_NATURAL_PARAMS;
 use maccel_core::ALL_NOACCEL_PARAMS;
+use maccel_core::ALL_SYNCHRONOUS_GAIN_PARAMS;
 use maccel_core::ALL_SYNCHRONOUS_PARAMS;
 use maccel_core::Param;
 use maccel_core::get_param_value_from_ctx;
@@ -106,6 +107,20 @@ impl App {
                                 f64::from(get_param_value_from_ctx!(ctx, SensMult)) * 2.0; // No other factor, sens is 1.0
 
                             [0.0, upper_bound.max(1.0)] // Ensure at least a small visible range
+                        }),
+                    ),
+                ),
+                Screen::new(
+                    AccelMode::SynchronousGain,
+                    collect_inputs_for_params(ALL_SYNCHRONOUS_GAIN_PARAMS, context.clone()),
+                    Box::new(
+                        SensitivityGraph::new(context.clone()).on_y_axix_bounds_update(|ctx| {
+                            let upper_bound = f64::from(get_param_value_from_ctx!(ctx, SensMult))
+                                * f64::from(get_param_value_from_ctx!(ctx, SyncGainMotivity))
+                                    .max(1.0)
+                                * 2.0;
+
+                            [0.0, upper_bound]
                         }),
                     ),
                 ),

@@ -53,6 +53,12 @@ Create your `maccel.nix` module:
       smooth = 0.5;
       motivity = 2.5;
       syncSpeed = 10.0;
+
+      # Synchronous Gain mode
+      syncGainGamma = 1.0;
+      syncGainSmooth = 0.5;
+      syncGainMotivity = 2.5;
+      syncGainSpeed = 10.0;
     };
   };
 

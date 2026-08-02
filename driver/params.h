@@ -12,6 +12,14 @@
   module_param_named(param, PARAM_##param, charp, RW_USER_GROUP);              \
   MODULE_PARM_DESC(param, desc);
 
+static const struct kernel_param_ops synchronous_gain_param_ops;
+
+#define SYNCHRONOUS_GAIN_PARAM(param, default_value, desc)                     \
+  char *PARAM_##param = #default_value;                                        \
+  module_param_cb(param, &synchronous_gain_param_ops, &PARAM_##param,          \
+                  RW_USER_GROUP);                                              \
+  MODULE_PARM_DESC(param, desc);
+
 #if FIXEDPT_BITS == 64
 PARAM(
     SENS_MULT, 4294967296, // 1 << 32
@@ -20,8 +28,8 @@ PARAM(YX_RATIO, 4294967296, // 1 << 32
       "A factor (Y/X) by which the final sensitivity calculated is multiplied "
       "to produce the sensitivity applied to the Y axis.");
 PARAM(INPUT_DPI, 4294967296000, // 1000 << 32
-       "The DPI of the mouse, used to normalize input to 1000 DPI equivalent "
-       "for consistent acceleration across different mice.");
+      "The DPI of the mouse, used to normalize input to 1000 DPI equivalent "
+      "for consistent acceleration across different mice.");
 #else
 PARAM(SENS_MULT, 65536, // 1 << 16
       "A factor applied the sensitivity calculation after ACCEL is applied.");
@@ -29,8 +37,8 @@ PARAM(YX_RATIO, 65536, // 1 << 16
       "A factor (Y/X) by which the final sensitivity calculated is multiplied "
       "to produce the sensitivity applied to the Y axis.");
 PARAM(INPUT_DPI, 65536000, // 1000 << 16
-       "The DPI of the mouse, used to normalize input to 1000 DPI equivalent "
-       "for consistent acceleration across different mice.");
+      "The DPI of the mouse, used to normalize input to 1000 DPI equivalent "
+      "for consistent acceleration across different mice.");
 #endif
 
 PARAM(ANGLE_ROTATION, 0,
@@ -38,7 +46,8 @@ PARAM(ANGLE_ROTATION, 0,
 // For Linear Mode
 
 PARAM(ACCEL, 0, "Control the sensitivity calculation.");
-PARAM(OFFSET, 0, "Input speed threshold (counts/ms) before acceleration begins.");
+PARAM(OFFSET, 0,
+      "Input speed threshold (counts/ms) before acceleration begins.");
 PARAM(OUTPUT_CAP, 0, "Control the maximum sensitivity.");
 
 // For Natural Mode
@@ -67,6 +76,18 @@ PARAM(MOTIVITY, 6442450944, // 1.5 << 32
       "1/MOTIVITY");
 PARAM(SYNC_SPEED, 21474836480, // 5 << 32
       "Set The middle sensitivity between you min and max sensitivity");
+
+SYNCHRONOUS_GAIN_PARAM(
+    SYNC_GAIN_GAMMA, 4294967296, // 1 << 32
+    "Control how fast Synchronous Gain changes around the midpoint");
+SYNCHRONOUS_GAIN_PARAM(
+    SYNC_GAIN_SMOOTH, 2147483648, // 0.5 << 32
+    "Control the suddenness of the Synchronous Gain increase");
+SYNCHRONOUS_GAIN_PARAM(
+    SYNC_GAIN_MOTIVITY, 6442450944, // 1.5 << 32
+    "Set the Synchronous Gain maximum and reciprocal minimum");
+SYNCHRONOUS_GAIN_PARAM(SYNC_GAIN_SPEED, 21474836480, // 5 << 32
+                       "Set the midpoint speed for Synchronous Gain");
 #else
 PARAM(GAMMA, 65536, // 1 << 16
       "Control how fast you get from low to fast around the midpoint");
@@ -77,7 +98,52 @@ PARAM(MOTIVITY, 98304, // 1.5 << 16
       "1/MOTIVITY");
 PARAM(SYNC_SPEED, 327680, // 5 << 16
       "Set The middle sensitivity between you min and max sensitivity");
+
+SYNCHRONOUS_GAIN_PARAM(
+    SYNC_GAIN_GAMMA, 65536, // 1 << 16
+    "Control how fast Synchronous Gain changes around the midpoint");
+SYNCHRONOUS_GAIN_PARAM(
+    SYNC_GAIN_SMOOTH, 32768, // 0.5 << 16
+    "Control the suddenness of the Synchronous Gain increase");
+SYNCHRONOUS_GAIN_PARAM(
+    SYNC_GAIN_MOTIVITY, 98304, // 1.5 << 16
+    "Set the Synchronous Gain maximum and reciprocal minimum");
+SYNCHRONOUS_GAIN_PARAM(SYNC_GAIN_SPEED, 327680, // 5 << 16
+                       "Set the midpoint speed for Synchronous Gain");
 #endif
+
+static inline struct synchronous_curve_args collect_synchronous_args(void) {
+  return (struct synchronous_curve_args){
+      .gamma = atofp(PARAM_GAMMA),
+      .smooth = atofp(PARAM_SMOOTH),
+      .motivity = atofp(PARAM_MOTIVITY),
+      .sync_speed = atofp(PARAM_SYNC_SPEED),
+  };
+}
+
+static inline struct synchronous_curve_args
+collect_synchronous_gain_args(void) {
+  return (struct synchronous_curve_args){
+      .gamma = atofp(PARAM_SYNC_GAIN_GAMMA),
+      .smooth = atofp(PARAM_SYNC_GAIN_SMOOTH),
+      .motivity = atofp(PARAM_SYNC_GAIN_MOTIVITY),
+      .sync_speed = atofp(PARAM_SYNC_GAIN_SPEED),
+  };
+}
+
+static int set_synchronous_gain_param(const char *value,
+                                      const struct kernel_param *param) {
+  int error = param_set_charp(value, param);
+
+  if (!error)
+    update_synchronous_gain_lut(collect_synchronous_gain_args());
+  return error;
+}
+
+static const struct kernel_param_ops synchronous_gain_param_ops = {
+    .set = set_synchronous_gain_param,
+    .get = param_get_charp,
+};
 
 // Flags
 #define PARAM_FLAG(param, default_value, desc)                                 \

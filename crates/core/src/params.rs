@@ -193,7 +193,15 @@ declare_params!(
         SyncSpeed,
     },
     NoAccel {},
+    SynchronousGain {
+        SyncGainGamma,
+        SyncGainSmooth,
+        SyncGainMotivity,
+        SyncGainSpeed,
+    },
 );
+
+pub const ALL_SYNCHRONOUS_GAIN_PARAMS: &[Param] = ALL_SYNCHRONOUSGAIN_PARAMS;
 
 impl AccelMode {
     pub fn as_title(&self) -> &'static str {
@@ -202,6 +210,7 @@ impl AccelMode {
             AccelMode::Natural => "Natural (w/ Gain)",
             AccelMode::Synchronous => "Synchronous",
             AccelMode::NoAccel => "No Acceleration",
+            AccelMode::SynchronousGain => "Synchronous (Gain)",
         }
     }
 }
@@ -232,6 +241,10 @@ impl Param {
             Param::Smooth => "SMOOTH",
             Param::Motivity => "MOTIVITY",
             Param::SyncSpeed => "SYNC_SPEED",
+            Param::SyncGainGamma => "SYNC_GAIN_GAMMA",
+            Param::SyncGainSmooth => "SYNC_GAIN_SMOOTH",
+            Param::SyncGainMotivity => "SYNC_GAIN_MOTIVITY",
+            Param::SyncGainSpeed => "SYNC_GAIN_SPEED",
             Param::AngleRotation => "ANGLE_ROTATION",
         }
     }
@@ -251,6 +264,10 @@ impl Param {
             Param::Smooth => "Smooth",
             Param::Motivity => "Motivity",
             Param::SyncSpeed => "Sync Speed",
+            Param::SyncGainGamma => "Gamma",
+            Param::SyncGainSmooth => "Smooth",
+            Param::SyncGainMotivity => "Motivity",
+            Param::SyncGainSpeed => "Sync Speed",
             Param::AngleRotation => "Angle Rotation",
         }
     }
@@ -275,6 +292,10 @@ impl Param {
             Param::Smooth => "Smoothing factor (0-1). Higher = more gradual transitions.",
             Param::Motivity => "Degree of acceleration effect. Must be > 1.",
             Param::SyncSpeed => "Synchronization speed. Controls how fast sync responds.",
+            Param::SyncGainGamma => "Exponent controlling the gain curve shape.",
+            Param::SyncGainSmooth => "Gain curve smoothing factor (0-1).",
+            Param::SyncGainMotivity => "Degree of gain acceleration effect. Must be > 1.",
+            Param::SyncGainSpeed => "Synchronization speed for the gain curve.",
         }
     }
 }
@@ -306,6 +327,17 @@ fn format_param_value_works() {
     assert_eq!(format_param_value(0.055000), "0.055");
 }
 
+#[cfg(test)]
+#[test]
+fn synchronous_gain_has_stable_mode_and_parameter_names() {
+    assert_eq!(AccelMode::NoAccel.ordinal(), 3);
+    assert_eq!(AccelMode::SynchronousGain.ordinal(), 4);
+    assert_eq!(Param::SyncGainGamma.name(), "SYNC_GAIN_GAMMA");
+    assert_eq!(Param::SyncGainSmooth.name(), "SYNC_GAIN_SMOOTH");
+    assert_eq!(Param::SyncGainMotivity.name(), "SYNC_GAIN_MOTIVITY");
+    assert_eq!(Param::SyncGainSpeed.name(), "SYNC_GAIN_SPEED");
+}
+
 pub(crate) fn validate_param_value(param_tag: Param, value: f64) -> anyhow::Result<()> {
     match param_tag {
         Param::SensMult => {}
@@ -333,22 +365,22 @@ pub(crate) fn validate_param_value(param_tag: Param, value: f64) -> anyhow::Resu
                 anyhow::bail!("limit cannot be less than 1");
             }
         }
-        Param::Gamma => {
+        Param::Gamma | Param::SyncGainGamma => {
             if value <= 0.0 {
                 anyhow::bail!("Gamma must be positive");
             }
         }
-        Param::Smooth => {
+        Param::Smooth | Param::SyncGainSmooth => {
             if !(0.0..=1.0).contains(&value) {
                 anyhow::bail!("Smooth must be between 0 and 1");
             }
         }
-        Param::Motivity => {
+        Param::Motivity | Param::SyncGainMotivity => {
             if value <= 1.0 {
                 anyhow::bail!("Motivity must be greater than 1");
             }
         }
-        Param::SyncSpeed => {
+        Param::SyncSpeed | Param::SyncGainSpeed => {
             if value <= 0.0 {
                 anyhow::bail!("'Synchronous speed' must be positive");
             }

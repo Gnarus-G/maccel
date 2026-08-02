@@ -26,6 +26,7 @@ with lib; let
     natural = 1;
     synchronous = 2;
     no_accel = 3;
+    synchronous-gain = 4;
   };
 
   # Parameter mapping (from driver/params.h)
@@ -51,6 +52,12 @@ with lib; let
     SMOOTH = cfg.parameters.smooth;
     MOTIVITY = cfg.parameters.motivity;
     SYNC_SPEED = cfg.parameters.syncSpeed;
+
+    # Synchronous Gain mode parameters
+    SYNC_GAIN_GAMMA = cfg.parameters.syncGainGamma;
+    SYNC_GAIN_SMOOTH = cfg.parameters.syncGainSmooth;
+    SYNC_GAIN_MOTIVITY = cfg.parameters.syncGainMotivity;
+    SYNC_GAIN_SPEED = cfg.parameters.syncGainSpeed;
   };
 
   # Generate modprobe parameter string
@@ -163,7 +170,7 @@ in {
       };
 
       mode = mkOption {
-        type = types.nullOr (types.enum ["linear" "natural" "synchronous" "no_accel"]);
+        type = types.nullOr (types.enum ["linear" "natural" "synchronous" "no_accel" "synchronous-gain"]);
         default = null;
         description = "Acceleration mode.";
       };
@@ -238,6 +245,40 @@ in {
         default = null;
         description = "Sets the middle sensitivity between min and max sensitivity. Must be positive.";
       };
+
+      # Synchronous Gain mode parameters
+      syncGainGamma = mkOption {
+        type =
+          types.nullOr (types.addCheck types.float (x: x > 0.0)
+            // {description = "positive float";});
+        default = null;
+        description = "Controls how fast Synchronous Gain changes around its midpoint.";
+      };
+
+      syncGainSmooth = mkOption {
+        type =
+          types.nullOr (types.addCheck types.float (x: x >= 0.0 && x <= 1.0)
+            // {description = "float between 0.0 and 1.0";});
+        default = null;
+        description = "Controls the suddenness of the Synchronous Gain increase.";
+      };
+
+      syncGainMotivity = mkOption {
+        type =
+          types.nullOr (types.addCheck types.float (x: x > 1.0)
+            // {description = "float > 1.0";});
+        default = null;
+        description = "Sets the Synchronous Gain maximum and reciprocal minimum.";
+      };
+
+      syncGainSpeed = mkOption {
+        type =
+          types.nullOr (types.addCheck types.float (x: x > 0.0)
+            // {description = "positive float";});
+        default = null;
+        description = "Sets the midpoint speed for Synchronous Gain.";
+      };
+
     };
   };
 
