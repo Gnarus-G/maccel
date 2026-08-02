@@ -12,10 +12,6 @@ with lib; let
   pkgbuildContent = builtins.readFile ./PKGBUILD;
   kernelModuleVersion = builtins.head (builtins.match ".*pkgver=([^[:space:]]+).*" pkgbuildContent);
 
-  # Extract version from cli/Cargo.toml
-  cliCargoToml = builtins.fromTOML (builtins.readFile ./cli/Cargo.toml);
-  cliVersion = cliCargoToml.package.version;
-
   # Convert float to fixed-point integer (64-bit, 32 fractional bits)
   fixedPointScale = 4294967296; # 2^32
   toFixedPoint = value: builtins.floor (value * fixedPointScale + 0.5);
@@ -101,23 +97,7 @@ with lib; let
     }) {};
 
   # Optional CLI tools
-  maccel-cli = pkgs.rustPlatform.buildRustPackage rec {
-    pname = "maccel-cli";
-    version = cliVersion;
-
-    src = ./.;
-
-    cargoLock.lockFile = "${src}/Cargo.lock";
-
-    cargoBuildFlags = ["--bin" "maccel"];
-
-    meta = with lib; {
-      description = "CLI and TUI tools for configuring maccel.";
-      homepage = "https://www.maccel.org/";
-      license = licenses.gpl2Plus;
-      platforms = platforms.linux;
-    };
-  };
+  maccel-cli = pkgs.callPackage ./package.nix {};
 in {
   options.hardware.maccel = {
     enable = mkEnableOption "Enable maccel mouse acceleration driver (kernel module). Parameters must be configured via `hardware.maccel.parameters`.";
