@@ -189,6 +189,90 @@ no_accel_test(no_accel_yx_ratio, 0.5, 1.5);
 rotation_test(rotation_45_degrees, 1, 45);
 rotation_test(rotation_90_degrees, 1, 90);
 
+TEST angle_snap_horizontal(void) {
+  struct accel_args args = {
+      .sens_mult = FIXEDPT_ONE,
+      .yx_ratio = FIXEDPT_ONE,
+      .input_dpi = fpt_fromint(1000),
+      .angle_snap_threshold = snap_threshold(fpt_fromint(10)),
+      .tag = no_accel,
+  };
+  int x = 10;
+  int y = 1;
+
+  f_accelerate(&x, &y, FIXEDPT_ONE, args);
+
+  ASSERT_EQ(10, x);
+  ASSERT_EQ(0, y);
+  PASS();
+}
+
+TEST angle_snap_vertical(void) {
+  struct vector snapped = snap_to_axis(
+      (struct vector){fpt_fromint(1), fpt_fromint(-10)},
+      snap_threshold(fpt_fromint(10)));
+
+  ASSERT_EQ(0, snapped.x);
+  ASSERT(snapped.y < 0);
+  fpt expected = magnitude((struct vector){fpt_fromint(1), fpt_fromint(-10)});
+  ASSERT(fpt_abs(expected - fpt_abs(snapped.y)) < fpt_rconst(0.0001));
+  PASS();
+}
+
+TEST angle_snap_leaves_movement_outside_threshold(void) {
+  struct vector input = {fpt_fromint(10), fpt_fromint(2)};
+  struct vector snapped = snap_to_axis(input, snap_threshold(fpt_fromint(10)));
+
+  ASSERT_EQ(input.x, snapped.x);
+  ASSERT_EQ(input.y, snapped.y);
+  PASS();
+}
+
+TEST angle_snap_leaves_diagonal_at_forty_five_degrees(void) {
+  struct vector input = {fpt_fromint(10), fpt_fromint(10)};
+  struct vector snapped = snap_to_axis(input, snap_threshold(fpt_fromint(45)));
+
+  ASSERT_EQ(input.x, snapped.x);
+  ASSERT_EQ(input.y, snapped.y);
+  PASS();
+}
+
+TEST angle_snap_is_applied_after_rotation(void) {
+  struct accel_args args = {
+      .sens_mult = FIXEDPT_ONE,
+      .yx_ratio = FIXEDPT_ONE,
+      .input_dpi = fpt_fromint(1000),
+      .angle_rotation_deg = fpt_fromint(-5),
+      .angle_snap_threshold = snap_threshold(fpt_fromint(10)),
+      .tag = no_accel,
+  };
+  int x = 100;
+  int y = 10;
+
+  f_accelerate(&x, &y, FIXEDPT_ONE, args);
+
+  ASSERT(x >= 101);
+  ASSERT_EQ(0, y);
+  PASS();
+}
+
+TEST angle_snap_handles_large_vectors(void) {
+  struct vector snapped = snap_to_axis(
+      (struct vector){fpt_fromint(46341), fpt_fromint(1)},
+      snap_threshold(fpt_fromint(10)));
+
+  ASSERT(snapped.x > 0);
+  ASSERT_EQ(0, snapped.y);
+
+  fpt max_value = (fpt)(((fptu)~0) >> 1);
+  snapped = snap_to_axis(
+      (struct vector){fpt_fromint(2147483647), fpt_fromint(100000000)},
+      snap_threshold(fpt_fromint(10)));
+  ASSERT_EQ(max_value, snapped.x);
+  ASSERT_EQ(0, snapped.y);
+  PASS();
+}
+
 SUITE(acceleration) {
   RUN_TEST(linear_identity);
   RUN_TEST(linear_default);
@@ -205,6 +289,12 @@ SUITE(acceleration) {
   RUN_TEST(no_accel_yx_ratio);
   RUN_TEST(rotation_45_degrees);
   RUN_TEST(rotation_90_degrees);
+  RUN_TEST(angle_snap_horizontal);
+  RUN_TEST(angle_snap_vertical);
+  RUN_TEST(angle_snap_leaves_movement_outside_threshold);
+  RUN_TEST(angle_snap_leaves_diagonal_at_forty_five_degrees);
+  RUN_TEST(angle_snap_is_applied_after_rotation);
+  RUN_TEST(angle_snap_handles_large_vectors);
 }
 
 GREATEST_MAIN_DEFS();
