@@ -1,0 +1,53 @@
+# Maintainer: Gnarus-G <Gnarus-G at users dot noreply dot github dot com>
+
+pkgname=maccel-dkms
+_pkgname=maccel
+pkgver=0.6.0
+pkgrel=1
+_driverver=0.5.8
+pkgdesc="Mouse acceleration driver and kernel module for Linux."
+arch=("x86_64")
+url="https://www.maccel.org/"
+license=("GPL-2.0-or-later")
+
+install=maccel.install
+depends=("dkms")
+makedepends=("cargo")
+
+options=(!debug !lto)
+
+_srcname="${_pkgname}-${pkgver}"
+source=("${_srcname}.tar.gz::https://github.com/Gnarus-G/maccel/archive/refs/tags/v${pkgver}.tar.gz")
+sha256sums=("79d4189df71cc2c9750732c500fe75838d746e77b26e383a656c78e017b260dc")
+
+prepare() {
+  export RUSTUP_TOOLCHAIN=stable
+
+  platform="$(rustc -vV | sed -n 's/host: //p')"
+  cargo fetch --locked --target "${platform}" --manifest-path="${srcdir}/${_srcname}/Cargo.toml"
+}
+
+build() {
+  export RUSTUP_TOOLCHAIN=stable
+  export CARGO_TARGET_DIR=target
+  export RUSTFLAGS="${RUSTFLAGS} --remap-path-prefix=${srcdir}=."
+
+  cargo build --bin maccel --release --frozen --manifest-path="${srcdir}/${_srcname}/Cargo.toml"
+}
+
+package() {
+  install -Dm 644 "${srcdir}/${_srcname}/maccel.sysusers" "${pkgdir}/usr/lib/sysusers.d/${_pkgname}.conf"
+  install -Dm 644 "${srcdir}/${_srcname}/dkms.conf" "${pkgdir}/usr/src/${_pkgname}-${_driverver}/dkms.conf"
+
+  DRIVER_CFLAGS=$(echo ${DEBUG_CFLAGS} | sed -e "s/\//\\\\\//g")
+  sed -e "s/@_PKGNAME@/${_pkgname}/" \
+    -e "s/@PKGVER@/${_driverver}/" \
+    -e "s/@DRIVER_CFLAGS@/'${DRIVER_CFLAGS}'/" \
+    -i "${pkgdir}/usr/src/${_pkgname}-${_driverver}/dkms.conf"
+
+  cp -r "${srcdir}/${_srcname}/driver/." "${pkgdir}/usr/src/${_pkgname}-${_driverver}/"
+  install -Dm 755 "${srcdir}/target/release/maccel" "${pkgdir}/usr/bin/maccel"
+  install -Dm 644 "${srcdir}/${_srcname}/udev_rules/99-maccel.rules" "${pkgdir}/usr/lib/udev/rules.d/99-maccel.rules"
+  install -Dm 755 "${srcdir}/${_srcname}/udev_rules/maccel_param_ownership_and_resets" "${pkgdir}/usr/lib/udev/maccel_param_ownership_and_resets"
+  install -Dm 644 "${srcdir}/${_srcname}/LICENSE" "${pkgdir}/usr/share/licenses/${_pkgname}/LICENSE"
+}
