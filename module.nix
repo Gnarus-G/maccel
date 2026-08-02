@@ -31,7 +31,6 @@ with lib; let
     YX_RATIO = cfg.parameters.yxRatio;
     INPUT_DPI = cfg.parameters.inputDpi;
     ANGLE_ROTATION = cfg.parameters.angleRotation;
-    ANGLE_SNAP = cfg.parameters.angleSnap;
     MODE = cfg.parameters.mode;
 
     # Linear mode parameters
@@ -141,14 +140,6 @@ in {
         type = types.nullOr types.float;
         default = null;
         description = "Apply rotation in degrees to mouse movement input.";
-      };
-
-      angleSnap = mkOption {
-        type =
-          types.nullOr (types.addCheck types.float (x: x >= 0.0 && x <= 45.0)
-            // {description = "float between 0.0 and 45.0";});
-        default = null;
-        description = "Snap movement to the nearest axis within this angle in degrees.";
       };
 
       mode = mkOption {

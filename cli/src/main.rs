@@ -17,18 +17,6 @@ struct Cli {
     command: Option<CLiCommands>,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn common_bulk_set_keeps_angle_snap_optional() {
-        let cli = Cli::try_parse_from(["maccel", "set", "all", "common", "1", "1", "1000", "0"]);
-
-        assert!(cli.is_ok());
-    }
-}
-
 #[derive(clap::Subcommand, Default)]
 enum CLiCommands {
     /// Open the Terminal UI to manage the parameters
