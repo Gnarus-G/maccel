@@ -11,16 +11,23 @@
 #include "speed.h"
 
 #ifdef __KERNEL__
+#include <linux/mutex.h>
 #include <linux/spinlock.h>
 
 static DEFINE_RWLOCK(synchronous_gain_lut_lock);
+static DEFINE_MUTEX(synchronous_gain_lut_update_lock);
 static struct synchronous_gain_lut synchronous_gain_lut;
 
 static inline void
-publish_synchronous_gain_lut(const struct synchronous_gain_lut *lut) {
+update_synchronous_gain_lut(struct synchronous_curve_args args) {
+  static struct synchronous_gain_lut next_lut;
+
+  mutex_lock(&synchronous_gain_lut_update_lock);
+  __synchronous_gain_lut_init(&next_lut, args);
   write_lock(&synchronous_gain_lut_lock);
-  synchronous_gain_lut = *lut;
+  synchronous_gain_lut = next_lut;
   write_unlock(&synchronous_gain_lut_lock);
+  mutex_unlock(&synchronous_gain_lut_update_lock);
 }
 
 static inline fpt

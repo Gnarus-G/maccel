@@ -4,7 +4,6 @@
 #include "accel/mode.h"
 #include "fixedptc.h"
 #include "linux/moduleparam.h"
-#include "linux/mutex.h"
 
 #define RW_USER_GROUP 0664
 
@@ -98,23 +97,14 @@ SYNCHRONOUS_PARAM(
 SYNCHRONOUS_PARAM(
     GAIN, 0, "Interpret the Synchronous curve as gain instead of sensitivity");
 
-static DEFINE_MUTEX(synchronous_gain_update_lock);
-
-static inline void rebuild_synchronous_gain_lut(void) {
-  static struct synchronous_gain_lut next_lut;
-  struct synchronous_curve_args args;
-
-  mutex_lock(&synchronous_gain_update_lock);
-  args = (struct synchronous_curve_args){
+static inline struct synchronous_curve_args collect_synchronous_args(void) {
+  return (struct synchronous_curve_args){
       .gamma = atofp(PARAM_GAMMA),
       .smooth = atofp(PARAM_SMOOTH),
       .motivity = atofp(PARAM_MOTIVITY),
       .sync_speed = atofp(PARAM_SYNC_SPEED),
       .gain = atofp(PARAM_GAIN),
   };
-  __synchronous_gain_lut_init(&next_lut, args);
-  publish_synchronous_gain_lut(&next_lut);
-  mutex_unlock(&synchronous_gain_update_lock);
 }
 
 static int set_synchronous_param(const char *value,
@@ -122,7 +112,7 @@ static int set_synchronous_param(const char *value,
   int error = param_set_charp(value, param);
 
   if (!error)
-    rebuild_synchronous_gain_lut();
+    update_synchronous_gain_lut(collect_synchronous_args());
   return error;
 }
 

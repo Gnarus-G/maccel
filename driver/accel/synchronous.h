@@ -129,17 +129,12 @@ __synchronous_gain_lut_init(struct synchronous_gain_lut *lut,
   int i;
 
   for (i = 0; i < SYNCHRONOUS_GAIN_LUT_SIZE; i++) {
-    fpt x = i == SYNCHRONOUS_GAIN_LUT_SIZE - 1
-                ? __synchronous_gain_pow2(SYNCHRONOUS_GAIN_LUT_STOP)
-                : __synchronous_gain_x(i);
+    fpt x = __synchronous_gain_x(i);
     fpt interval = fpt_div(x - previous_x, fpt_fromint(2));
-    int partition;
 
-    for (partition = 1; partition <= 2; partition++) {
-      fpt sample_x = previous_x + fpt_mul(fpt_fromint(partition), interval);
-      sum += fpt_mul(__synchronous_sens_fun(sample_x, args), interval);
-    }
-
+    sum +=
+        fpt_mul(__synchronous_sens_fun(previous_x + interval, args), interval);
+    sum += fpt_mul(__synchronous_sens_fun(x, args), interval);
     lut->velocity[i] = sum;
     previous_x = x;
   }
