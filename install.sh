@@ -108,13 +108,13 @@ install_udev_rules() {
 }
 
 install_driver_dkms() {
-  dkms_version=$(cat PKGBUILD | grep "pkgver=" | grep -oP '\d.\d.\d')
+  dkms_version=$(grep "^pkgver=" PKGBUILD | grep -oP '\d+\.\d+\.\d+')
 
   ! sudo rmmod maccel 2>/dev/null; # It's obviously okay if this fails
 
   # Uninstall if this version already exists
   test -n "$(sudo dkms status maccel/$dkms_version)" && {
-    sudo dkms remove maccel/$dkms_version
+    sudo dkms remove "maccel/$dkms_version" --all
   }
 
   # Install Driver 
