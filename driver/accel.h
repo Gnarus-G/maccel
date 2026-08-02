@@ -29,7 +29,62 @@ struct accel_args {
   union __accel_args args;
 };
 
+union __prepared_accel_args {
+  struct prepared_natural_curve_args natural;
+  struct prepared_linear_curve_args linear;
+  struct prepared_synchronous_curve_args synchronous;
+  struct no_accel_curve_args no_accel;
+};
+
+struct prepared_accel_args {
+  fpt sens_mult;
+  fpt yx_ratio;
+  fpt dpi_factor;
+  fpt cos_angle;
+  fpt sin_angle;
+  bool rotation_enabled;
+  enum accel_mode tag;
+  union __prepared_accel_args args;
+};
+
 const fpt NORMALIZED_DPI = fpt_fromint(1000);
+const fpt DEG_TO_RAD_FACTOR = fpt_xdiv(FIXEDPT_PI, fpt_rconst(180));
+
+static inline struct prepared_accel_args
+prepare_accel_args(struct accel_args args) {
+  struct prepared_accel_args prepared = {
+      .sens_mult = args.sens_mult,
+      .yx_ratio = args.yx_ratio,
+      .dpi_factor = fpt_div(NORMALIZED_DPI, args.input_dpi),
+      .cos_angle = FIXEDPT_ONE,
+      .rotation_enabled = args.angle_rotation_deg != 0,
+      .tag = args.tag,
+  };
+
+  if (prepared.rotation_enabled) {
+    fpt radians = fpt_mul(args.angle_rotation_deg, DEG_TO_RAD_FACTOR);
+    prepared.cos_angle = fpt_cos(radians);
+    prepared.sin_angle = fpt_sin(radians);
+  }
+
+  switch (args.tag) {
+  case synchronous:
+    prepared.args.synchronous =
+        prepare_synchronous_curve_args(args.args.synchronous);
+    break;
+  case natural:
+    prepared.args.natural = prepare_natural_curve_args(args.args.natural);
+    break;
+  case linear:
+    prepared.args.linear = prepare_linear_curve_args(args.args.linear);
+    break;
+  case no_accel:
+  default:
+    break;
+  }
+
+  return prepared;
+}
 
 /**
  * Calculate the factor by which to multiply the input vector
@@ -60,14 +115,41 @@ static inline struct vector sensitivity(fpt input_speed,
   default:
     sens = FIXEDPT_ONE;
   }
+
   sens = fpt_mul(sens, args.sens_mult);
   return (struct vector){sens, fpt_mul(sens, args.yx_ratio)};
 }
 
-const fpt DEG_TO_RAD_FACTOR = fpt_xdiv(FIXEDPT_PI, fpt_rconst(180));
+static inline struct vector
+prepared_sensitivity(fpt input_speed, struct prepared_accel_args args) {
+  fpt sens;
 
-static inline void f_accelerate(int *x, int *y, fpt time_interval_ms,
-                                struct accel_args args) {
+  switch (args.tag) {
+  case synchronous:
+    dbg("accel mode %d: synchronous", args.tag);
+    sens = __prepared_synchronous_sens_fun(input_speed, args.args.synchronous);
+    break;
+  case natural:
+    dbg("accel mode %d: natural", args.tag);
+    sens = __prepared_natural_sens_fun(input_speed, args.args.natural);
+    break;
+  case linear:
+    dbg("accel mode %d: linear", args.tag);
+    sens = __prepared_linear_sens_fun(input_speed, args.args.linear);
+    break;
+  case no_accel:
+    dbg("accel mode %d: no_accel", args.tag);
+    sens = FIXEDPT_ONE;
+    break;
+  default:
+    sens = FIXEDPT_ONE;
+  }
+  sens = fpt_mul(sens, args.sens_mult);
+  return (struct vector){sens, fpt_mul(sens, args.yx_ratio)};
+}
+
+static inline void f_accelerate_prepared(int *x, int *y, fpt time_interval_ms,
+                                         struct prepared_accel_args args) {
   static fpt carry_x = 0;
   static fpt carry_y = 0;
 
@@ -75,25 +157,13 @@ static inline void f_accelerate(int *x, int *y, fpt time_interval_ms,
   fpt dy = fpt_fromint(*y);
 
   {
-    if (args.angle_rotation_deg == 0) {
+    if (!args.rotation_enabled) {
       goto accel_routine;
     }
-    // Add rotation of input vector
-    fpt degrees = args.angle_rotation_deg;
-    fpt radians =
-        fpt_mul(degrees, DEG_TO_RAD_FACTOR); // Convert degrees to radians
-
-    fpt cos_angle = fpt_cos(radians);
-    fpt sin_angle = fpt_sin(radians);
-
-    dbg("rotation angle(deg):     %s deg", fptoa(degrees));
-    dbg("rotation angle(rad):     %s rad", fptoa(radians));
-    dbg("cosine of rotation:      %s", fptoa(cos_angle));
-    dbg("sine of rotation:        %s", fptoa(sin_angle));
 
     // Rotate input vector
-    fpt dx_rot = fpt_mul(dx, cos_angle) - fpt_mul(dy, sin_angle);
-    fpt dy_rot = fpt_mul(dx, sin_angle) + fpt_mul(dy, cos_angle);
+    fpt dx_rot = fpt_mul(dx, args.cos_angle) - fpt_mul(dy, args.sin_angle);
+    fpt dy_rot = fpt_mul(dx, args.sin_angle) + fpt_mul(dy, args.cos_angle);
 
     dbg("rotated x:               %s", fptoa(dx_rot));
     dbg("rotated y:               %s", fptoa(dy_rot));
@@ -107,13 +177,12 @@ accel_routine:
   dbg("in: x (fpt conversion) %s", fptoa(dx));
   dbg("in: y (fpt conversion) %s", fptoa(dy));
 
-  fpt dpi_factor = fpt_div(NORMALIZED_DPI, args.input_dpi);
-  dbg("dpi adjustment factor:     %s", fptoa(dpi_factor));
-  dx = fpt_mul(dx, dpi_factor);
-  dy = fpt_mul(dy, dpi_factor);
+  dbg("dpi adjustment factor:     %s", fptoa(args.dpi_factor));
+  dx = fpt_mul(dx, args.dpi_factor);
+  dy = fpt_mul(dy, args.dpi_factor);
 
   fpt speed_in = input_speed(dx, dy, time_interval_ms);
-  struct vector sens = sensitivity(speed_in, args);
+  struct vector sens = prepared_sensitivity(speed_in, args);
   dbg("scale x                    %s", fptoa(sens.x));
   dbg("scale y                    %s", fptoa(sens.y));
 
@@ -135,6 +204,11 @@ accel_routine:
   carry_y = fpt_sub(dy_out, fpt_fromint(*y));
 
   dbg("carry                     (%s, %s)", fptoa(carry_x), fptoa(carry_x));
+}
+
+static inline void f_accelerate(int *x, int *y, fpt time_interval_ms,
+                                struct accel_args args) {
+  f_accelerate_prepared(x, y, time_interval_ms, prepare_accel_args(args));
 }
 
 #endif

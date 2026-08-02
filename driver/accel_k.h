@@ -6,10 +6,11 @@
 #include "accel/mode.h"
 #include "fixedptc.h"
 #include "linux/ktime.h"
+#include "linux/seqlock.h"
 #include "params.h"
 #include "speed.h"
 
-static struct accel_args collect_args(void) {
+static struct accel_args parse_accel_args(void) {
   struct accel_args accel = {0};
 
   enum accel_mode mode = PARAM_MODE;
@@ -47,6 +48,30 @@ static struct accel_args collect_args(void) {
   return accel;
 }
 
+static DEFINE_SEQLOCK(accel_args_lock);
+static struct prepared_accel_args cached_args;
+
+static void refresh_cached_args(void) {
+  struct prepared_accel_args next = prepare_accel_args(parse_accel_args());
+  unsigned long flags;
+
+  write_seqlock_irqsave(&accel_args_lock, flags);
+  cached_args = next;
+  write_sequnlock_irqrestore(&accel_args_lock, flags);
+}
+
+static struct prepared_accel_args collect_args(void) {
+  struct prepared_accel_args args;
+  unsigned sequence;
+
+  do {
+    sequence = read_seqbegin(&accel_args_lock);
+    args = cached_args;
+  } while (read_seqretry(&accel_args_lock, sequence));
+
+  return args;
+}
+
 #if FIXEDPT_BITS == 64
 const fpt UNIT_PER_MS = fpt_rconst(1000000); // 1 million nanoseconds
 #else
@@ -81,7 +106,7 @@ static inline void accelerate(int *x, int *y) {
       fptoa(millisecond));
 #endif
 
-  return f_accelerate(x, y, millisecond, collect_args());
+  f_accelerate_prepared(x, y, millisecond, collect_args());
 }
 
 #endif // !_ACCELK_H_

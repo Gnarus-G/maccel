@@ -79,6 +79,7 @@
 #include <linux/stddef.h>
 #include <linux/types.h>
 #else
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #endif

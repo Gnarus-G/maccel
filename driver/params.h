@@ -7,9 +7,40 @@
 
 #define RW_USER_GROUP 0664
 
+static void refresh_cached_args(void);
+
+static int set_param_and_refresh(const char *value,
+                                 const struct kernel_param *param) {
+  int error = param_set_charp(value, param);
+
+  if (!error)
+    refresh_cached_args();
+  return error;
+}
+
+static const struct kernel_param_ops cached_param_ops = {
+    .set = set_param_and_refresh,
+    .get = param_get_charp,
+    .free = param_free_charp,
+};
+
+static int set_flag_and_refresh(const char *value,
+                                const struct kernel_param *param) {
+  int error = param_set_byte(value, param);
+
+  if (!error)
+    refresh_cached_args();
+  return error;
+}
+
+static const struct kernel_param_ops cached_flag_ops = {
+    .set = set_flag_and_refresh,
+    .get = param_get_byte,
+};
+
 #define PARAM(param, default_value, desc)                                      \
   char *PARAM_##param = #default_value;                                        \
-  module_param_named(param, PARAM_##param, charp, RW_USER_GROUP);              \
+  module_param_cb(param, &cached_param_ops, &PARAM_##param, RW_USER_GROUP);    \
   MODULE_PARM_DESC(param, desc);
 
 #if FIXEDPT_BITS == 64
@@ -82,7 +113,7 @@ PARAM(SYNC_SPEED, 327680, // 5 << 16
 // Flags
 #define PARAM_FLAG(param, default_value, desc)                                 \
   unsigned char PARAM_##param = default_value;                                 \
-  module_param_named(param, PARAM_##param, byte, RW_USER_GROUP);               \
+  module_param_cb(param, &cached_flag_ops, &PARAM_##param, RW_USER_GROUP);     \
   MODULE_PARM_DESC(param, desc);
 
 PARAM_FLAG(MODE, linear, "Desired type of acceleration.");

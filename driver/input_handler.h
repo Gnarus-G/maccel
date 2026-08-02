@@ -67,6 +67,46 @@ static void event(struct input_handle *handle, struct input_value *value_ptr) {
 }
 
 #if __cleanup_events
+static noinline __cold unsigned int
+inject_rotation_events(struct input_handle *handle, struct input_value *vals,
+                       struct input_value *end) {
+  struct input_value *v;
+  struct input_value *syn_pos = NULL;
+  unsigned int count = end - vals;
+  unsigned int max = handle->dev->max_vals;
+
+  for (v = vals; v != end; v++) {
+    if (v->type == EV_SYN && v->code == SYN_REPORT)
+      syn_pos = v;
+  }
+
+  if (injected_x && synthetic_x_val != NONE_EVENT_VALUE && count < max) {
+    if (syn_pos) {
+      memmove(syn_pos + 1, syn_pos, (end - syn_pos) * sizeof(*syn_pos));
+      syn_pos->type = EV_REL;
+      syn_pos->code = REL_X;
+      syn_pos->value = synthetic_x_val;
+      syn_pos++;
+      end++;
+      count++;
+    }
+    dbg("rotation: injected synthetic REL_X = %d", synthetic_x_val);
+  }
+
+  if (injected_y && synthetic_y_val != NONE_EVENT_VALUE && count < max) {
+    if (syn_pos) {
+      memmove(syn_pos + 1, syn_pos, (end - syn_pos) * sizeof(*syn_pos));
+      syn_pos->type = EV_REL;
+      syn_pos->code = REL_Y;
+      syn_pos->value = synthetic_y_val;
+      count++;
+    }
+    dbg("rotation: injected synthetic REL_Y = %d", synthetic_y_val);
+  }
+
+  return count;
+}
+
 static unsigned int maccel_events(struct input_handle *handle,
                                   struct input_value *vals,
                                   unsigned int count) {
@@ -103,42 +143,8 @@ static void maccel_events(struct input_handle *handle,
    * Writing extra events into the buffer on those kernels is undefined
    * behavior — the kernel won't deliver them and may behave erratically.
    */
-  {
-    struct input_value *syn_pos = NULL;
-    unsigned int max = handle->dev->max_vals;
-
-    /* Find the last SYN_REPORT so we can insert before it */
-    for (v = vals; v != end; v++) {
-      if (v->type == EV_SYN && v->code == SYN_REPORT)
-        syn_pos = v;
-    }
-
-    if (injected_x && synthetic_x_val != NONE_EVENT_VALUE && _count < max) {
-      if (syn_pos) {
-        /* Shift SYN_REPORT and everything after it forward by one */
-        memmove(syn_pos + 1, syn_pos, (end - syn_pos) * sizeof(*syn_pos));
-        syn_pos->type = EV_REL;
-        syn_pos->code = REL_X;
-        syn_pos->value = synthetic_x_val;
-        syn_pos++;
-        end++;
-        _count++;
-      }
-      dbg("rotation: injected synthetic REL_X = %d", synthetic_x_val);
-    }
-
-    if (injected_y && synthetic_y_val != NONE_EVENT_VALUE && _count < max) {
-      if (syn_pos) {
-        memmove(syn_pos + 1, syn_pos, (end - syn_pos) * sizeof(*syn_pos));
-        syn_pos->type = EV_REL;
-        syn_pos->code = REL_Y;
-        syn_pos->value = synthetic_y_val;
-        end++;
-        _count++;
-      }
-      dbg("rotation: injected synthetic REL_Y = %d", synthetic_y_val);
-    }
-  }
+  if (injected_x || injected_y)
+    _count = inject_rotation_events(handle, vals, end);
 #endif
 
   handle->dev->num_vals = _count;
