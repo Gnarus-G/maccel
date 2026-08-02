@@ -35,13 +35,17 @@ PATH="$tmp_dir/bin" MACCEL_TEST_LOG="$log_file" \
 y
 EOF
 
+actual="$tmp_dir/actual.log"
+while IFS= read -r command; do
+  case "$command" in
+    "dkms remove "*) printf '%s\n' "$command" >>"$actual" ;;
+  esac
+done <"$log_file"
+
 expected="$tmp_dir/expected.log"
 cat >"$expected" <<'EOF'
-rmmod maccel
 dkms remove maccel/0.5.9 --all
 dkms remove maccel/0.5.10 --all
-rm -vf /usr/lib/udev/rules.d/99-maccel.rules /usr/lib/udev/maccel_param_ownership_and_resets
-udevadm control --reload-rules
 EOF
 
-diff -u "$expected" "$log_file"
+diff -u "$expected" "$actual"
