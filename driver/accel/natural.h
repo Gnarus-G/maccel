@@ -9,40 +9,62 @@ struct natural_curve_args {
   fpt limit;
 };
 
+struct prepared_natural_curve_args {
+  fpt offset;
+  fpt limit;
+  fpt accel;
+  fpt constant;
+  bool enabled;
+};
+
+static inline struct prepared_natural_curve_args
+prepare_natural_curve_args(struct natural_curve_args args) {
+  struct prepared_natural_curve_args prepared = {
+      .offset = args.offset,
+      .enabled = args.limit > FIXEDPT_ONE && args.decay_rate > 0,
+  };
+
+  if (prepared.enabled) {
+    prepared.limit = args.limit - FIXEDPT_ONE;
+    prepared.accel = fpt_div(args.decay_rate, fpt_abs(prepared.limit));
+    prepared.constant = fpt_div(-prepared.limit, prepared.accel);
+  }
+
+  return prepared;
+}
+
 /**
  * Gain Function for Natural Acceleration
  */
-static inline fpt __natural_sens_fun(fpt input_speed,
-                                         struct natural_curve_args args) {
-  dbg("natural: decay_rate        %s", fptoa(args.decay_rate));
+static inline fpt
+__prepared_natural_sens_fun(fpt input_speed,
+                            struct prepared_natural_curve_args args) {
   dbg("natural: offset            %s", fptoa(args.offset));
   dbg("natural: limit             %s", fptoa(args.limit));
   if (input_speed <= args.offset) {
     return FIXEDPT_ONE;
   }
 
-  if (args.limit <= FIXEDPT_ONE) {
+  if (!args.enabled) {
     return FIXEDPT_ONE;
   }
 
-  if (args.decay_rate <= 0) {
-    return FIXEDPT_ONE;
-  }
-
-  fpt limit = args.limit - FIXEDPT_ONE;
-  fpt accel = fpt_div(args.decay_rate, fpt_abs(limit));
-  fpt constant = fpt_div(-limit, accel);
-
-  dbg("natural: constant          %s", fptoa(constant));
+  dbg("natural: constant          %s", fptoa(args.constant));
 
   fpt offset_x = args.offset - input_speed;
-  fpt decay = fpt_exp(fpt_mul(accel, offset_x));
+  fpt decay = fpt_exp(fpt_mul(args.accel, offset_x));
 
   dbg("natural: decay             %s", fptoa(decay));
 
-  fpt output_denom = fpt_div(decay, accel) - offset_x;
-  fpt output = fpt_mul(limit, output_denom) + constant;
+  fpt output_denom = fpt_div(decay, args.accel) - offset_x;
+  fpt output = fpt_mul(args.limit, output_denom) + args.constant;
 
   return fpt_div(output, input_speed) + FIXEDPT_ONE;
+}
+
+static inline fpt __natural_sens_fun(fpt input_speed,
+                                     struct natural_curve_args args) {
+  return __prepared_natural_sens_fun(input_speed,
+                                     prepare_natural_curve_args(args));
 }
 #endif
