@@ -1,0 +1,102 @@
+name: Release AUR
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Install build dependencies
+        run: pacman -Syu --noconfirm base-devel cargo
+
+      - name: Check out release
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Build package
+        run: |
+          useradd --create-home builder
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+          runuser -u builder -- sh -c 'cd packaging/aur && makepkg --cleanbuild --clean --nodeps'
+
+  publish:
+    needs: validate
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Check out release
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Validate release version
+        shell: bash
+        run: |
+          set -euo pipefail
+          package_version=$(bash -c 'source packaging/aur/PKGBUILD; printf "%s" "$pkgver"')
+          cli_version=$(awk -F ' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' cli/Cargo.toml)
+
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            release_version=$package_version
+          else
+            release_version=${GITHUB_REF_NAME#v}
+          fi
+
+          test "$release_version" = "$package_version"
+          test "$release_version" = "$cli_version"
+
+      - name: Install publishing dependencies
+        run: pacman -Syu --noconfirm base-devel git openssh
+
+      - name: Publish package
+        shell: bash
+        env:
+          AUR_EMAIL: ${{ secrets.AUR_EMAIL }}
+          AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
+          AUR_USERNAME: ${{ secrets.AUR_USERNAME }}
+        run: |
+          set -euo pipefail
+
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$AUR_SSH_KEY" > "$HOME/.ssh/aur"
+          chmod 600 "$HOME/.ssh/aur"
+          ssh-keyscan -t rsa,ecdsa,ed25519 aur.archlinux.org > "$HOME/.ssh/known_hosts"
+
+          fingerprints=$(ssh-keygen -lf "$HOME/.ssh/known_hosts" -E sha256)
+          for expected in \
+            'SHA256:RFzBCUItH9LZS0cKB5UE6ceAYhBD5C8GeOBip8Z11+4' \
+            'SHA256:uTa/0PndEgPZTf76e1DFqXKJEXKsn7m9ivhLQtzGOCI' \
+            'SHA256:5s5cIyReIfNNVGRFdDbe3hdYiI5OelHGpw2rOUud3Q8'; do
+            case "$fingerprints" in
+              *"$expected"*) ;;
+              *) printf 'Missing trusted AUR host key: %s\n' "$expected" >&2; exit 1 ;;
+            esac
+          done
+
+          cat > "$HOME/.ssh/config" <<'EOF'
+          Host aur.archlinux.org
+            IdentityFile ~/.ssh/aur
+            IdentitiesOnly yes
+            StrictHostKeyChecking yes
+          EOF
+          chmod 600 "$HOME/.ssh/config" "$HOME/.ssh/known_hosts"
+
+          git clone ssh://aur@aur.archlinux.org/maccel-dkms.git /tmp/maccel-dkms
+          cp packaging/aur/PKGBUILD packaging/aur/maccel.install packaging/aur/LICENSE /tmp/maccel-dkms/
+          package_version=$(bash -c 'source packaging/aur/PKGBUILD; printf "%s" "$pkgver"')
+          (
+            cd /tmp/maccel-dkms
+            makepkg --printsrcinfo > .SRCINFO
+            git config user.name "$AUR_USERNAME"
+            git config user.email "$AUR_EMAIL"
+            git add PKGBUILD .SRCINFO maccel.install LICENSE
+            if ! git diff --cached --quiet; then
+              git commit -m "Release maccel-dkms ${package_version}"
+              git push origin master
+            fi
+          )
