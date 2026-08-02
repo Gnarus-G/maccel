@@ -12,11 +12,11 @@
   module_param_named(param, PARAM_##param, charp, RW_USER_GROUP);              \
   MODULE_PARM_DESC(param, desc);
 
-static const struct kernel_param_ops synchronous_param_ops;
+static const struct kernel_param_ops synchronous_gain_param_ops;
 
-#define SYNCHRONOUS_PARAM(param, default_value, desc)                          \
+#define SYNCHRONOUS_GAIN_PARAM(param, default_value, desc)                     \
   char *PARAM_##param = #default_value;                                        \
-  module_param_cb(param, &synchronous_param_ops, &PARAM_##param,               \
+  module_param_cb(param, &synchronous_gain_param_ops, &PARAM_##param,          \
                   RW_USER_GROUP);                                              \
   MODULE_PARM_DESC(param, desc);
 
@@ -67,35 +67,50 @@ PARAM(LIMIT, 98304, // 1.5 << 16
 // For Synchronous Mode
 
 #if FIXEDPT_BITS == 64
-SYNCHRONOUS_PARAM(
-    GAMMA, 4294967296, // 1 << 32
-    "Control how fast you get from low to fast around the midpoint");
-SYNCHRONOUS_PARAM(SMOOTH, 2147483648, // 0.5 << 32
-                  "Control the suddeness of the sensitivity increase.");
-SYNCHRONOUS_PARAM(
-    MOTIVITY, 6442450944, // 1.5 << 32
-    "Set the maximum sensitivity while also setting the minimum to "
-    "1/MOTIVITY");
-SYNCHRONOUS_PARAM(
-    SYNC_SPEED, 21474836480, // 5 << 32
-    "Set The middle sensitivity between you min and max sensitivity");
-#else
-SYNCHRONOUS_PARAM(
-    GAMMA, 65536, // 1 << 16
-    "Control how fast you get from low to fast around the midpoint");
-SYNCHRONOUS_PARAM(SMOOTH, 32768, // 0.5 << 16
-                  "Control the suddeness of the sensitivity increase.");
-SYNCHRONOUS_PARAM(
-    MOTIVITY, 98304, // 1.5 << 16
-    "Set the maximum sensitivity while also setting the minimum to "
-    "1/MOTIVITY");
-SYNCHRONOUS_PARAM(
-    SYNC_SPEED, 327680, // 5 << 16
-    "Set The middle sensitivity between you min and max sensitivity");
-#endif
+PARAM(GAMMA, 4294967296, // 1 << 32
+      "Control how fast you get from low to fast around the midpoint");
+PARAM(SMOOTH, 2147483648, // 0.5 << 32
+      "Control the suddeness of the sensitivity increase.");
+PARAM(MOTIVITY, 6442450944, // 1.5 << 32
+      "Set the maximum sensitivity while also setting the minimum to "
+      "1/MOTIVITY");
+PARAM(SYNC_SPEED, 21474836480, // 5 << 32
+      "Set The middle sensitivity between you min and max sensitivity");
 
-SYNCHRONOUS_PARAM(
-    GAIN, 0, "Interpret the Synchronous curve as gain instead of sensitivity");
+SYNCHRONOUS_GAIN_PARAM(
+    SYNC_GAIN_GAMMA, 4294967296, // 1 << 32
+    "Control how fast Synchronous Gain changes around the midpoint");
+SYNCHRONOUS_GAIN_PARAM(
+    SYNC_GAIN_SMOOTH, 2147483648, // 0.5 << 32
+    "Control the suddenness of the Synchronous Gain increase");
+SYNCHRONOUS_GAIN_PARAM(
+    SYNC_GAIN_MOTIVITY, 6442450944, // 1.5 << 32
+    "Set the Synchronous Gain maximum and reciprocal minimum");
+SYNCHRONOUS_GAIN_PARAM(SYNC_GAIN_SPEED, 21474836480, // 5 << 32
+                       "Set the midpoint speed for Synchronous Gain");
+#else
+PARAM(GAMMA, 65536, // 1 << 16
+      "Control how fast you get from low to fast around the midpoint");
+PARAM(SMOOTH, 32768, // 0.5 << 16
+      "Control the suddeness of the sensitivity increase.");
+PARAM(MOTIVITY, 98304, // 1.5 << 16
+      "Set the maximum sensitivity while also setting the minimum to "
+      "1/MOTIVITY");
+PARAM(SYNC_SPEED, 327680, // 5 << 16
+      "Set The middle sensitivity between you min and max sensitivity");
+
+SYNCHRONOUS_GAIN_PARAM(
+    SYNC_GAIN_GAMMA, 65536, // 1 << 16
+    "Control how fast Synchronous Gain changes around the midpoint");
+SYNCHRONOUS_GAIN_PARAM(
+    SYNC_GAIN_SMOOTH, 32768, // 0.5 << 16
+    "Control the suddenness of the Synchronous Gain increase");
+SYNCHRONOUS_GAIN_PARAM(
+    SYNC_GAIN_MOTIVITY, 98304, // 1.5 << 16
+    "Set the Synchronous Gain maximum and reciprocal minimum");
+SYNCHRONOUS_GAIN_PARAM(SYNC_GAIN_SPEED, 327680, // 5 << 16
+                       "Set the midpoint speed for Synchronous Gain");
+#endif
 
 static inline struct synchronous_curve_args collect_synchronous_args(void) {
   return (struct synchronous_curve_args){
@@ -103,21 +118,30 @@ static inline struct synchronous_curve_args collect_synchronous_args(void) {
       .smooth = atofp(PARAM_SMOOTH),
       .motivity = atofp(PARAM_MOTIVITY),
       .sync_speed = atofp(PARAM_SYNC_SPEED),
-      .gain = atofp(PARAM_GAIN),
   };
 }
 
-static int set_synchronous_param(const char *value,
-                                 const struct kernel_param *param) {
+static inline struct synchronous_curve_args
+collect_synchronous_gain_args(void) {
+  return (struct synchronous_curve_args){
+      .gamma = atofp(PARAM_SYNC_GAIN_GAMMA),
+      .smooth = atofp(PARAM_SYNC_GAIN_SMOOTH),
+      .motivity = atofp(PARAM_SYNC_GAIN_MOTIVITY),
+      .sync_speed = atofp(PARAM_SYNC_GAIN_SPEED),
+  };
+}
+
+static int set_synchronous_gain_param(const char *value,
+                                      const struct kernel_param *param) {
   int error = param_set_charp(value, param);
 
   if (!error)
-    update_synchronous_gain_lut(collect_synchronous_args());
+    update_synchronous_gain_lut(collect_synchronous_gain_args());
   return error;
 }
 
-static const struct kernel_param_ops synchronous_param_ops = {
-    .set = set_synchronous_param,
+static const struct kernel_param_ops synchronous_gain_param_ops = {
+    .set = set_synchronous_gain_param,
     .get = param_get_charp,
 };
 

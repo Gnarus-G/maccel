@@ -67,6 +67,7 @@ union __accel_args {
   struct natural_curve_args natural;
   struct linear_curve_args linear;
   struct synchronous_curve_args synchronous;
+  struct synchronous_curve_args synchronous_gain;
   struct no_accel_curve_args no_accel;
 };
 
@@ -92,12 +93,14 @@ static inline struct vector sensitivity(fpt input_speed,
   fpt sens;
 
   switch (args.tag) {
+  case synchronous_gain:
+    dbg("accel mode %d: synchronous_gain", args.tag);
+    sens =
+        synchronous_gain_sensitivity(input_speed, args.args.synchronous_gain);
+    break;
   case synchronous:
     dbg("accel mode %d: synchronous", args.tag);
-    sens =
-        args.args.synchronous.gain
-            ? synchronous_gain_sensitivity(input_speed, args.args.synchronous)
-            : __synchronous_sens_fun(input_speed, args.args.synchronous);
+    sens = __synchronous_sens_fun(input_speed, args.args.synchronous);
     break;
   case natural:
     dbg("accel mode %d: natural", args.tag);

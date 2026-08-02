@@ -21,6 +21,10 @@ static struct accel_args collect_args(void) {
   accel.angle_rotation_deg = atofp(PARAM_ANGLE_ROTATION);
 
   switch (mode) {
+  case synchronous_gain: {
+    accel.args.synchronous_gain = collect_synchronous_gain_args();
+    break;
+  }
   case synchronous: {
     accel.args.synchronous = collect_synchronous_args();
     break;

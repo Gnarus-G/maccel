@@ -102,7 +102,10 @@ impl<PS: ParamStore> TuiContext<PS> {
             smooth: get!(Smooth),
             motivity: get!(Motivity),
             sync_speed: get!(SyncSpeed),
-            gain: get!(Gain),
+            sync_gain_gamma: get!(SyncGainGamma),
+            sync_gain_smooth: get!(SyncGainSmooth),
+            sync_gain_motivity: get!(SyncGainMotivity),
+            sync_gain_speed: get!(SyncGainSpeed),
             angle_rotation: get!(AngleRotation),
         }
     }

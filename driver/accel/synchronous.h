@@ -16,7 +16,6 @@ struct synchronous_curve_args {
   fpt smooth;
   fpt motivity;
   fpt sync_speed;
-  fpt gain;
 };
 
 struct synchronous_gain_lut {

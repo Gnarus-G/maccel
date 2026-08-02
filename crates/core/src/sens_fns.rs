@@ -1,5 +1,6 @@
 use crate::{
     AccelParams, AccelParamsByMode, LinearCurveParams, NaturalCurveParams, SynchronousCurveParams,
+    SynchronousGainCurveParams,
     libmaccel::{self, fixedptc::Fpt},
     params::AllParamArgs,
 };
@@ -24,10 +25,17 @@ impl AllParamArgs {
                 smooth: self.smooth,
                 motivity: self.motivity,
                 sync_speed: self.sync_speed,
-                gain: self.gain,
             }),
             AccelMode::NoAccel => {
                 AccelParamsByMode::NoAccel(crate::params::NoAccelCurveParams { _ffi_guard: [] })
+            }
+            AccelMode::SynchronousGain => {
+                AccelParamsByMode::SynchronousGain(SynchronousGainCurveParams {
+                    sync_gain_gamma: self.sync_gain_gamma,
+                    sync_gain_smooth: self.sync_gain_smooth,
+                    sync_gain_motivity: self.sync_gain_motivity,
+                    sync_gain_speed: self.sync_gain_speed,
+                })
             }
         };
 
