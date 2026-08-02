@@ -132,12 +132,6 @@ use crate::params::Param;
 3. `git add -A && git commit -m "Bump CLI version to x.y.z"`
 4. `git tag v<x.y.z> && git push origin v<x.y.z>`
 
-**AUR release:**
-1. Update `packaging/aur/PKGBUILD` with the release and driver versions.
-2. Update its source checksum.
-3. Define `AUR_USERNAME`, `AUR_EMAIL`, and `AUR_SSH_KEY` repository secrets.
-4. Push the matching `v<version>` tag; `.github/workflows/Release_AUR.yml` builds and publishes the package.
-
 ## 6. Commit Messages
 
 - Short subject line (<50 chars), imperative mood
