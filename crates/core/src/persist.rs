@@ -78,12 +78,16 @@ impl SysFsStore {
             yx_ratio,
             input_dpi,
             angle_rotation,
+            angle_snap,
         } = args;
 
         self.set(Param::SensMult, sens_mult)?;
         self.set(Param::YxRatio, yx_ratio)?;
         self.set(Param::InputDpi, input_dpi)?;
         self.set(Param::AngleRotation, angle_rotation)?;
+        if let Some(angle_snap) = angle_snap {
+            self.set(Param::AngleSnap, angle_snap)?;
+        }
 
         Ok(())
     }
