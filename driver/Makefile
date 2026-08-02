@@ -28,4 +28,4 @@ test_debug: test
 
 test: **/*.test.c
 	@mkdir -p tests/snapshots
-	DRIVER_CFLAGS="$(DRIVER_CFLAGS)" TEST_NAME=$(name) sh tests/run_tests.sh
+	DRIVER_CFLAGS="$(DRIVER_CFLAGS)" TEST_NAME=$(name) bash tests/run_tests.sh
