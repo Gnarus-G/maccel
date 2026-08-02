@@ -121,9 +121,9 @@ static inline struct synchronous_curve_args collect_synchronous_args(void) {
   };
 }
 
-static inline struct synchronous_curve_args
+static inline struct synchronous_gain_curve_args
 collect_synchronous_gain_args(void) {
-  return (struct synchronous_curve_args){
+  return (struct synchronous_gain_curve_args){
       .gamma = atofp(PARAM_SYNC_GAIN_GAMMA),
       .smooth = atofp(PARAM_SYNC_GAIN_SMOOTH),
       .motivity = atofp(PARAM_SYNC_GAIN_MOTIVITY),

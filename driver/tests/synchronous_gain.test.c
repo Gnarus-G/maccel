@@ -6,7 +6,7 @@ static int fpt_near(fpt actual, fpt expected, fpt tolerance) {
 }
 
 TEST matches_raw_accel_reference(void) {
-  struct synchronous_curve_args args = {
+  struct synchronous_gain_curve_args args = {
       .gamma = fpt_rconst(0.8),
       .smooth = fpt_rconst(0.5),
       .motivity = fpt_rconst(1.5),
@@ -35,7 +35,7 @@ TEST matches_raw_accel_reference(void) {
 }
 
 TEST clamps_sensitivity_below_first_point(void) {
-  struct synchronous_curve_args args = {
+  struct synchronous_gain_curve_args args = {
       .gamma = fpt_rconst(0.8),
       .smooth = fpt_rconst(0.5),
       .motivity = fpt_rconst(1.5),
@@ -51,7 +51,7 @@ TEST clamps_sensitivity_below_first_point(void) {
 }
 
 TEST is_a_separate_acceleration_mode(void) {
-  struct synchronous_curve_args curve = {
+  struct synchronous_gain_curve_args gain_curve = {
       .gamma = fpt_rconst(0.8),
       .smooth = fpt_rconst(0.5),
       .motivity = fpt_rconst(1.5),
@@ -61,13 +61,22 @@ TEST is_a_separate_acceleration_mode(void) {
       .sens_mult = FIXEDPT_ONE,
       .yx_ratio = FIXEDPT_ONE,
       .tag = synchronous_gain,
-      .args = (union __accel_args){.synchronous_gain = curve},
+      .args = (union __accel_args){.synchronous_gain = gain_curve},
   };
   struct accel_args legacy_args = {
       .sens_mult = FIXEDPT_ONE,
       .yx_ratio = FIXEDPT_ONE,
       .tag = synchronous,
-      .args = (union __accel_args){.synchronous = curve},
+      .args =
+          (union __accel_args){
+              .synchronous =
+                  {
+                      .gamma = fpt_rconst(0.8),
+                      .smooth = fpt_rconst(0.5),
+                      .motivity = fpt_rconst(1.5),
+                      .sync_speed = fpt_rconst(32),
+                  },
+          },
   };
   struct vector gain = sensitivity(fpt_rconst(32), gain_args);
   struct vector legacy = sensitivity(fpt_rconst(32), legacy_args);

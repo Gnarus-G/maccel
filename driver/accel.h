@@ -5,61 +5,11 @@
 #include "accel/mode.h"
 #include "accel/natural.h"
 #include "accel/synchronous.h"
+#include "accel/synchronous_gain.h"
 #include "dbg.h"
 #include "fixedptc.h"
 #include "math.h"
 #include "speed.h"
-
-#ifdef __KERNEL__
-#include <linux/mutex.h>
-#include <linux/spinlock.h>
-
-static DEFINE_RWLOCK(synchronous_gain_lut_lock);
-static DEFINE_MUTEX(synchronous_gain_lut_update_lock);
-static struct synchronous_gain_lut synchronous_gain_lut;
-
-static inline void
-update_synchronous_gain_lut(struct synchronous_curve_args args) {
-  static struct synchronous_gain_lut next_lut;
-
-  mutex_lock(&synchronous_gain_lut_update_lock);
-  __synchronous_gain_lut_init(&next_lut, args);
-  write_lock(&synchronous_gain_lut_lock);
-  synchronous_gain_lut = next_lut;
-  write_unlock(&synchronous_gain_lut_lock);
-  mutex_unlock(&synchronous_gain_lut_update_lock);
-}
-
-static inline fpt
-synchronous_gain_sensitivity(fpt input_speed,
-                             struct synchronous_curve_args args) {
-  fpt sens;
-
-  read_lock(&synchronous_gain_lut_lock);
-  sens = __synchronous_gain_lut_lookup(input_speed, &synchronous_gain_lut);
-  read_unlock(&synchronous_gain_lut_lock);
-  return sens;
-}
-#else
-static inline fpt
-synchronous_gain_sensitivity(fpt input_speed,
-                             struct synchronous_curve_args args) {
-  static _Thread_local struct synchronous_gain_lut lut;
-  static _Thread_local struct synchronous_curve_args cached_args;
-  static _Thread_local int initialized;
-
-  if (!initialized || args.gamma != cached_args.gamma ||
-      args.smooth != cached_args.smooth ||
-      args.motivity != cached_args.motivity ||
-      args.sync_speed != cached_args.sync_speed) {
-    __synchronous_gain_lut_init(&lut, args);
-    cached_args = args;
-    initialized = 1;
-  }
-
-  return __synchronous_gain_lut_lookup(input_speed, &lut);
-}
-#endif
 
 struct no_accel_curve_args {};
 
@@ -67,7 +17,7 @@ union __accel_args {
   struct natural_curve_args natural;
   struct linear_curve_args linear;
   struct synchronous_curve_args synchronous;
-  struct synchronous_curve_args synchronous_gain;
+  struct synchronous_gain_curve_args synchronous_gain;
   struct no_accel_curve_args no_accel;
 };
 
