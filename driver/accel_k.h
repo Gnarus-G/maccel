@@ -26,6 +26,7 @@ static struct accel_args collect_args(void) {
     accel.args.synchronous.smooth = atofp(PARAM_SMOOTH);
     accel.args.synchronous.motivity = atofp(PARAM_MOTIVITY);
     accel.args.synchronous.sync_speed = atofp(PARAM_SYNC_SPEED);
+    accel.args.synchronous.gain = atofp(PARAM_GAIN);
     break;
   }
   case natural: {

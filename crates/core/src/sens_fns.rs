@@ -24,6 +24,7 @@ impl AllParamArgs {
                 smooth: self.smooth,
                 motivity: self.motivity,
                 sync_speed: self.sync_speed,
+                gain: self.gain,
             }),
             AccelMode::NoAccel => {
                 AccelParamsByMode::NoAccel(crate::params::NoAccelCurveParams { _ffi_guard: [] })

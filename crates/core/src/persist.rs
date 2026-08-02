@@ -122,12 +122,14 @@ impl SysFsStore {
             smooth,
             motivity,
             sync_speed,
+            gain,
         } = args;
 
         self.set(Param::Gamma, gamma)?;
         self.set(Param::Smooth, smooth)?;
         self.set(Param::Motivity, motivity)?;
         self.set(Param::SyncSpeed, sync_speed)?;
+        self.set(Param::Gain, gain)?;
 
         Ok(())
     }

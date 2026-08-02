@@ -10,6 +10,50 @@
 #include "math.h"
 #include "speed.h"
 
+#ifdef __KERNEL__
+#include <linux/spinlock.h>
+
+static DEFINE_RWLOCK(synchronous_gain_lut_lock);
+static struct synchronous_gain_lut synchronous_gain_lut;
+
+static inline void
+publish_synchronous_gain_lut(const struct synchronous_gain_lut *lut) {
+  write_lock(&synchronous_gain_lut_lock);
+  synchronous_gain_lut = *lut;
+  write_unlock(&synchronous_gain_lut_lock);
+}
+
+static inline fpt
+synchronous_gain_sensitivity(fpt input_speed,
+                             struct synchronous_curve_args args) {
+  fpt sens;
+
+  read_lock(&synchronous_gain_lut_lock);
+  sens = __synchronous_gain_lut_lookup(input_speed, &synchronous_gain_lut);
+  read_unlock(&synchronous_gain_lut_lock);
+  return sens;
+}
+#else
+static inline fpt
+synchronous_gain_sensitivity(fpt input_speed,
+                             struct synchronous_curve_args args) {
+  static _Thread_local struct synchronous_gain_lut lut;
+  static _Thread_local struct synchronous_curve_args cached_args;
+  static _Thread_local int initialized;
+
+  if (!initialized || args.gamma != cached_args.gamma ||
+      args.smooth != cached_args.smooth ||
+      args.motivity != cached_args.motivity ||
+      args.sync_speed != cached_args.sync_speed) {
+    __synchronous_gain_lut_init(&lut, args);
+    cached_args = args;
+    initialized = 1;
+  }
+
+  return __synchronous_gain_lut_lookup(input_speed, &lut);
+}
+#endif
+
 struct no_accel_curve_args {};
 
 union __accel_args {
@@ -43,7 +87,10 @@ static inline struct vector sensitivity(fpt input_speed,
   switch (args.tag) {
   case synchronous:
     dbg("accel mode %d: synchronous", args.tag);
-    sens = __synchronous_sens_fun(input_speed, args.args.synchronous);
+    sens =
+        args.args.synchronous.gain
+            ? synchronous_gain_sensitivity(input_speed, args.args.synchronous)
+            : __synchronous_sens_fun(input_speed, args.args.synchronous);
     break;
   case natural:
     dbg("accel mode %d: natural", args.tag);

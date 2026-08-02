@@ -7,6 +7,7 @@
  */
 static int __init driver_initialization(void) {
   int error;
+  rebuild_synchronous_gain_lut();
   error = create_char_device();
   if (error)
     return error;

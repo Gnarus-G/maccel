@@ -51,6 +51,7 @@ with lib; let
     SMOOTH = cfg.parameters.smooth;
     MOTIVITY = cfg.parameters.motivity;
     SYNC_SPEED = cfg.parameters.syncSpeed;
+    GAIN = cfg.parameters.gain;
   };
 
   # Generate modprobe parameter string
@@ -59,6 +60,8 @@ with lib; let
     formatParam = name: value:
       if name == "MODE"
       then "${name}=${toString (modeMap.${value})}"
+      else if name == "GAIN"
+      then "${name}=${toString (toFixedPoint (if value then 1.0 else 0.0))}"
       else "${name}=${toString (toFixedPoint value)}";
   in
     concatStringsSep " " (mapAttrsToList formatParam validParams);
@@ -237,6 +240,12 @@ in {
             // {description = "positive float";});
         default = null;
         description = "Sets the middle sensitivity between min and max sensitivity. Must be positive.";
+      };
+
+      gain = mkOption {
+        type = types.nullOr types.bool;
+        default = null;
+        description = "Interpret the Synchronous curve as gain instead of sensitivity.";
       };
     };
   };

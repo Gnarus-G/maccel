@@ -191,6 +191,7 @@ declare_params!(
         Smooth,
         Motivity,
         SyncSpeed,
+        Gain,
     },
     NoAccel {},
 );
@@ -232,6 +233,7 @@ impl Param {
             Param::Smooth => "SMOOTH",
             Param::Motivity => "MOTIVITY",
             Param::SyncSpeed => "SYNC_SPEED",
+            Param::Gain => "GAIN",
             Param::AngleRotation => "ANGLE_ROTATION",
         }
     }
@@ -251,6 +253,7 @@ impl Param {
             Param::Smooth => "Smooth",
             Param::Motivity => "Motivity",
             Param::SyncSpeed => "Sync Speed",
+            Param::Gain => "Gain",
             Param::AngleRotation => "Angle Rotation",
         }
     }
@@ -275,6 +278,7 @@ impl Param {
             Param::Smooth => "Smoothing factor (0-1). Higher = more gradual transitions.",
             Param::Motivity => "Degree of acceleration effect. Must be > 1.",
             Param::SyncSpeed => "Synchronization speed. Controls how fast sync responds.",
+            Param::Gain => "Interpret the Synchronous curve as gain (0 or 1).",
         }
     }
 }
@@ -304,6 +308,16 @@ fn format_param_value_works() {
     assert_eq!(format_param_value(100.0), "100");
     assert_eq!(format_param_value(0.0600), "0.06");
     assert_eq!(format_param_value(0.055000), "0.055");
+}
+
+#[cfg(test)]
+#[test]
+fn gain_is_a_binary_switch() {
+    assert!(validate_param_value(Param::Gain, 0.0).is_ok());
+    assert!(validate_param_value(Param::Gain, 1.0).is_ok());
+    assert!(validate_param_value(Param::Gain, -1.0).is_err());
+    assert!(validate_param_value(Param::Gain, 0.5).is_err());
+    assert!(validate_param_value(Param::Gain, 2.0).is_err());
 }
 
 pub(crate) fn validate_param_value(param_tag: Param, value: f64) -> anyhow::Result<()> {
@@ -351,6 +365,11 @@ pub(crate) fn validate_param_value(param_tag: Param, value: f64) -> anyhow::Resu
         Param::SyncSpeed => {
             if value <= 0.0 {
                 anyhow::bail!("'Synchronous speed' must be positive");
+            }
+        }
+        Param::Gain => {
+            if value != 0.0 && value != 1.0 {
+                anyhow::bail!("Gain must be either 0 or 1");
             }
         }
     }
