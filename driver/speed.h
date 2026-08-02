@@ -11,13 +11,11 @@
  */
 static fpt LAST_INPUT_MOUSE_SPEED = 0;
 
-static inline fpt input_speed(fpt dx, fpt dy, fpt time_ms) {
+static inline fpt input_speed_from_distance(fpt distance, fpt time_ms) {
   if (time_ms <= 0) {
     LAST_INPUT_MOUSE_SPEED = 0;
     return 0;
   }
-
-  fpt distance = magnitude((struct vector){dx, dy});
 
   if (distance == -1) {
     dbg("distance calculation failed: t = %s", fptoa(time_ms));
@@ -34,6 +32,15 @@ static inline fpt input_speed(fpt dx, fpt dy, fpt time_ms) {
   dbg("speed (in)                 %s", fptoa(speed));
 
   return speed;
+}
+
+static inline fpt input_speed(fpt dx, fpt dy, fpt time_ms) {
+  if (time_ms <= 0) {
+    LAST_INPUT_MOUSE_SPEED = 0;
+    return 0;
+  }
+
+  return input_speed_from_distance(magnitude((struct vector){dx, dy}), time_ms);
 }
 
 #endif // !__SPEED_H__
