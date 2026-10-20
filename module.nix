@@ -64,6 +64,7 @@ with lib; let
     lib,
     stdenv,
     kernel,
+    kernelModuleMakeFlags,
   }:
     stdenv.mkDerivation rec {
       pname = "maccel-dkms";
@@ -74,19 +75,27 @@ with lib; let
       nativeBuildInputs = kernel.moduleBuildDependencies;
 
       makeFlags =
-        [
+        kernelModuleMakeFlags
+        ++ [
           "KVER=${kernel.modDirVersion}"
           "KDIR=${kernel.dev}/lib/modules/${kernel.modDirVersion}/build"
           "DRIVER_CFLAGS=-DFIXEDPT_BITS=64"
+          "INSTALL_MOD_PATH=${placeholder "out"}"
+          "INSTALL_MOD_DIR=kernel/drivers/usb"
+          "INSTALL_MOD_STRIP=1"
+          "DEPMOD=true"
         ]
         ++ optionals cfg.debug ["DRIVER_CFLAGS+=-g -DDEBUG"];
 
       preBuild = "cd driver";
 
-      installPhase = ''
-        mkdir -p $out/lib/modules/${kernel.modDirVersion}/kernel/drivers/usb
-        cp maccel.ko $out/lib/modules/${kernel.modDirVersion}/kernel/drivers/usb/
-      '';
+      installTargets = ["modules_install"];
+
+      installFlags = [
+        "-C"
+        "${kernel.dev}/lib/modules/${kernel.modDirVersion}/build"
+        "M=$(PWD)"
+      ];
 
       meta = with lib; {
         description = "Mouse acceleration driver and kernel module for Linux.";
